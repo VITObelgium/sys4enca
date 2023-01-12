@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/plugins/enca_plugin" >
+        <file>icon.png</file>
+        <file>mActionFileOpen.svg</file>
+        <file>mActionFileSaveAs.svg</file>
+        <file>play-button-svgrepo-com.svg</file>
+    </qresource>
+</RCC>
