@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sys4enca"
+authors = [
+    {name = "Thomas Danckaert", email = "thomas.danckaert@vito.be"},
+    {name = "Marcel Buchhorn", email = "marcel.buchhorn@vito.be"},
+    {name = "Bruno Smets", email = "bruno.smets@vito.be"},
+    {name = "Catherine Van Den Hoof", email = "catherine.vandenhoof@vito.be"}
+]
+description = "Natural Capital Accounting package"
+readme = "README.rst"
+requires-python = ">=3.7"
+keywords = ["ecosystem", "accounting", "SEEA"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "requests",
+    'importlib-metadata; python_version<"3.8"',
+    'importlib-resources; python_version<"3.9"',
+    'pandas',
+    'numpy',
+    'geopandas',
+    'rasterio',
+    'richdem',
+    'scikit-learn',
+    'openpyxl',
+    'Rtree',
+    'pyshp'
+]
+dynamic = ["version"]
+
+[project.scripts]
+enca = "enca.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
