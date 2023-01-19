@@ -63,14 +63,14 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="0">
+         <item row="4" column="0">
           <widget class="QLabel" name="label_3">
            <property name="text">
             <string>Land cover map</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
+         <item row="4" column="1">
           <widget class="QgsFileWidget" name="mQgsFileWidget_2"/>
          </item>
          <item row="1" column="0">
@@ -93,14 +93,14 @@
          <item row="2" column="1">
           <widget class="QgsFileWidget" name="mQgsFileWidget_4"/>
          </item>
-         <item row="4" column="0">
+         <item row="5" column="0">
           <widget class="QLabel" name="label_6">
            <property name="text">
             <string>Tier level</string>
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
+         <item row="5" column="1">
           <widget class="QComboBox" name="comboBox">
            <item>
             <property name="text">
@@ -119,15 +119,18 @@
            </item>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="6" column="0">
           <widget class="QLabel" name="label_7">
            <property name="text">
             <string>Area of interest name</string>
            </property>
           </widget>
          </item>
-         <item row="5" column="1">
+         <item row="6" column="1">
           <widget class="QLineEdit" name="lineEdit"/>
+         </item>
+         <item row="3" column="1">
+          <widget class="RegionPicker" name="widget" native="true"/>
          </item>
         </layout>
        </widget>
@@ -373,6 +376,12 @@
    <class>QgsSpinBox</class>
    <extends>QSpinBox</extends>
    <header>qgsspinbox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>RegionPicker</class>
+   <extends>QWidget</extends>
+   <header>enca_plugin/region_picker.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <tabstops>
