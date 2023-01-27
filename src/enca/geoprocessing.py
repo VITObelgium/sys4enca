@@ -17,10 +17,10 @@ import pandas as pd
 import rasterio
 import rasterio.mask
 import shapely.geometry
+from osgeo import __version__ as GDALversion
 
-import enca
-from enca.ecosystem import SHAPE_ID, ECOTYPE, ECO_ID
-from enca.errors import Error
+from .ecosystem import SHAPE_ID, ECOTYPE, ECO_ID
+from .errors import Error
 
 if sys.version_info[:2] >= (3, 8):
     from importlib.metadata import version
@@ -32,13 +32,23 @@ logger = logging.getLogger(__name__)
 
 GEO_ID = 'GEO_ID'  #: Column label for unique region identifier in GeoDataFrames
 
-LIST_UNITS = ['kilometre', 'km', 'German legal metre', 'm', 'metre', 'dm', 'cm', 'mm']
+LIST_UNITS = ['German legal metre', 'm', 'metre', 'Meter']
 DIC_KNOWN_WKT_STRINGS = {'ETRS_1989_LAEA': 3035,
-                         'ETRS89-extended / LAEA Europe': 3035}
+                         'ETRS89-extended / LAEA Europe': 3035,
+                         'World_Mollweide': 54009}  # Note: 54009 is an ESRI identifier so add to ESRI id CONSTANT
+ESRI_IDENTIFIER = [54009]
+ENCA_EPSG = 3035
+ENCA_MINIMUM_RESOLUTION = 100.
 POLY_MIN_SIZE = 0.1  # size in square metre for minimum area for valid statistics vector to be used
+EARTH_CIRCUMFERENCE_METRE = 40075000
 
 _GDAL_FILLNODATA = 'gdal_fillnodata.bat' if os.name == 'nt' else 'gdal_fillnodata.py'
 _GDAL_EDIT = 'gdal_edit.bat' if os.name == 'nt' else 'gdal_edit.py'
+_GDAL_CALC = 'gdal_calc.bat' if os.name == 'nt' else 'gdal_calc.py'
+_GDAL_POLY = 'gdal_polygonize.bat' if os.name == 'nt' else 'gdal_polygonize.py'
+
+SUM = 'sum'
+COUNT = 'px_count'
 
 # Map rasterio dtypes to GDAL command line dtypes names:
 _dtype_map = {
@@ -57,12 +67,12 @@ _dtype_map = {
 
 
 class RasterType(Enum):
-    """When rescaling / reprojecting rasters, we need to take into account the type of data contained in a raster."""
-    CATEGORICAL = 0  # Discrete values, to be resampled with nearest neighbour method
-    POINT_DATA = 1  # Point data such as height, slope, wind speed
-    VOLUME_DATA = 2  # "Volume" contained in pixel, e.g. population.  Must preserve total volume in geographical area.
-    RELATIVE = 3  # Quantities expressed in a unit relative to an area (e.g tonne / ha.)
-    ABSOLUTE = 4  # Quantities expressed in absolute units (content of a pixel), e.g tonne.
+    """When rescaling / reprojecting rasters, we need to take into account the type of data contained in a raster.
+    """
+    CATEGORICAL = 0  # Discrete values (map data), to be resampled with nearest neighbour method
+    RELATIVE = 1  # Quantities expressed in a unit relative to an area (e.g tonne / ha.)
+    ABSOLUTE_POINT = 2  # Point data such as height, slope, wind speed
+    ABSOLUTE_VOLUME = 3  # Quantities contained in pixel, e.g. population, precipitation. Must preserve total volume in geographical area.
 
 
 class Metadata(object):
@@ -73,11 +83,14 @@ class Metadata(object):
         self.module = seaa_model
         self.master_tags = {"creator": creator,
                             "SEAA-Module": self.module,
-                            "enca_version": version(enca.dist_name),
-                            "software_raster": "rasterio {} with GDAL {}".format(rasterio.__version__,
-                                                                                 rasterio.__gdal_version__),
-                            "software_vector": "geopandas {}".format(gpd.__version__),
-                            "module_run_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            "ENCA-version": version('sys4enca'),
+                            "software_raster_processing": "rasterio {} (on GDAL {}); "
+                                                          "GDAL binary {}".format(rasterio.__version__,
+                                                                                  rasterio.__gdal_version__,
+                                                                                  GDALversion),
+                            "software_vector_processing": "geopandas {}".format(gpd.__version__),
+                            "ENCA_run_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "TIFFTAG_SOFTWARE": 'ENCA version {}'.format(version('sys4enca'))
                             }
         self.raster_tags = {}
 
@@ -113,10 +126,9 @@ class Metadata(object):
                     # now we add this tag line to the history of the specific file
                     self.raster_tags.update({"input-file{}-history{}".format(counter, history_counter): src_tags[key]})
                     history_counter += 1
-
             counter += 1
 
-    def prepare_raster_tags(self, processing_info, unit_info='N/A'):
+    def prepare_raster_tags(self, processing_info, unit_info='N/A', output_file_name=None, output_profile=None):
         """Prepare the tags to write out a raster via rasterio"""
         # first we fill the main tags for the new file
         out_tags = {"file_creation": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -131,6 +143,21 @@ class Metadata(object):
             out_tags.update(self.raster_tags)
             # reset raster_tags since it is a one-time use
             self.raster_tags = {}
+        # add some standard TIFFTAGS
+        if output_file_name is not None:
+            out_tags.update(TIFFTAG_DOCUMENTNAME=os.path.splitext(os.path.basename(output_file_name))[0],
+                            TIFFTAG_IMAGEDESCRIPTION=processing_info,
+                            TIFFTAG_DATETIME=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        if output_profile is not None:
+            try:
+                unit = output_profile['crs'].linear_units
+                res = (float(output_profile['transform'].a), float(abs(output_profile['transform'].e)))
+            except:
+                pass
+            else:
+                out_tags.update(TIFFTAG_XRESOLUTION=res[0],
+                                TIFFTAG_YRESOLUTION=res[1],
+                                TIFFTAG_RESOLUTIONUNIT=unit)
         return out_tags
 
 
@@ -144,11 +171,24 @@ class GeoProcessing(object):
         if ProjectExtentTiff is not None:
             # get key parameter of input file
             param = self._load_profile(ProjectExtentTiff)
-            # run test
+            # run checks (that we have valid EPSG number, is projected coordinate system, unit is metre
+            # Important: otherwise certain class functions will not work
+            # note: if really Geographical projection needed then init the ref_profile and ref_extent manually
             try:
                 self._epsg_check(param['epsg'], ProjectExtentTiff)
             except:
                 raise ValueError('the provided raster file to init the GeoProcessing object has no valid EPSG.')
+
+            if param['epsg'] in ESRI_IDENTIFIER:
+                raise RuntimeError('ESRI projections without EPSG conversion are currently not supported as '
+                                   'reference file for the GeoProcessing object.')
+
+            if param['projected'] is False:
+                raise Error(f'Currently the GeoProcessing object only supports reference files with projected '
+                            f'coordinate systems.')
+            if param['unit'] not in LIST_UNITS:
+                raise Error('Currently the GeoProcessing object only supports reference files with projected '
+                            'coordinate systems in the following units: ' + ', '.join(LIST_UNITS))
 
             self.ref_profile = param['profile']
             self.ref_extent = param['bbox']  # tuple: (lower left x, lower left y, upper right x, upper right y)
@@ -176,9 +216,18 @@ class GeoProcessing(object):
             raise ValueError("The AccoRD object was not completely initialized. "
                              "The rasterio BoundingBox for the reporting raster file is missing")
 
+    def _check3(self, filename):
+        """ checks if we have projected raster AND the projection unit is in the list we accept"""
+        if self.src_parameters['projected'] is False:
+            raise Error(f'Currently the ENCA tool only supports raster maps with absolute volume-based data '
+                        f' ({filename}) with a projected coordinate system.')
+        if self.src_parameters['unit'] not in LIST_UNITS:
+            raise Error(f'Currently the ENCA tool only supports raster maps with absolute volume-based data'
+                        f' ({filename}) with the following projection units: ' + ', '.join(LIST_UNITS))
+
     def _epsg_check(self, epsg, filename):
         """ check for the main current limitation of theGeoProcessing class - processing of datasets with valid EPSG"""
-        if epsg == 'no_epsg_code':
+        if (epsg == 'no_epsg_code') or (epsg is None):
             raise Error(f'The raster map {filename} does not have a valid EPSG projection or know WKT-string. '
                         f'Please adapt your raster map or insert a EPSG number in DIC_KNOWN_WKT_STRINGS dictionary.')
 
@@ -194,27 +243,28 @@ class GeoProcessing(object):
         # check if all parameters of input files are existing - when run in stand-alone mode
         if not self.src_parameters:
             self.src_parameters = self._load_profile(path_in)
-            # check for main current geoprocessing limitation
-            self._epsg_check(self.src_parameters['epsg'], path_in)
+        # check for main current geoprocessing limitation
+        self._epsg_check(self.src_parameters['epsg'], path_in)
 
-    def vectorize(self, vector_path, root_out):
+    def vectorize(self, raster_path, root_out):
         """Wrapper for `gdal_polygonize`."""
 
         # create output file name
-        out_path = os.path.join(root_out, 'vector_{}.shp'.format(splitext(basename(vector_path))[0]))
+        out_path = os.path.join(root_out, 'vector_{}.shp'.format(splitext(basename(raster_path))[0]))
 
         # setup cmd command
-        cmd = 'gdal_polygonize.py -8 "{}" "{}" vectorized ID'.format(normpath(vector_path), out_path)
+        cmd = '{} -8 "{}" "{}" vectorized ID'.format(_GDAL_POLY, normpath(raster_path), out_path)
 
         if not os.path.exists(out_path):
             try:
                 subprocess.check_call(cmd, shell=True)
             except subprocess.CalledProcessError as e:
                 raise OSError(f'Could not polygonize needed raster file: {e}')
+            else:
+                logger.debug('* Raster file (%s) was successfully polygonized.', raster_path)
         else:
-            logger.debug('Vector file %s already exists, skipping.', out_path)
+            logger.debug('* Vector file %s already exists, skipping.', out_path)
             pass
-
         return out_path
 
     def rasterize(self, gdb: gpd.GeoDataFrame, gdb_column_name: str, path_out: str, nodata_value=0, dtype='Float32',
@@ -285,8 +335,13 @@ class GeoProcessing(object):
                     'Vector file was rasterized to reference file extent.', '')
                 with rasterio.open(path_out, 'r+') as dst:
                     dst.update_tags(**tags)
+                logger.debug('* Vector file was successfully rasterized.')
+            finally:
+                # remove temp files
+                if os.path.exists(temp_out):
+                    os.remove(temp_out)
         else:
-            logger.debug('Rasterized file %s already exists, skipping.', path_out)
+            logger.debug('* Rasterized file %s already exists, skipping.', path_out)
             pass
 
     def FillHoles(self, path_in, path_out, maxdistance=25, smooth=0):
@@ -307,7 +362,8 @@ class GeoProcessing(object):
         cmd2 = '{} -a_nodata {} "{}"'.format(_GDAL_EDIT, nodata, path_temp)
 
         # and compress it
-        cmd3 = 'gdal_translate -co COMPRESS=LZW -co INTERLEAVE=BAND "{}" "{}"'.format(path_temp, path_out)
+        cmd3 = 'gdal_translate -co COMPRESS=DEFLATE -co TILED=YES -co INTERLEAVE=BAND ' \
+               '"{}" "{}"'.format(path_temp, path_out)
 
         # run
         if not os.path.exists(path_out):
@@ -317,14 +373,23 @@ class GeoProcessing(object):
                 subprocess.check_call(cmd3, shell=True)
             except subprocess.CalledProcessError as e:
                 raise OSError(f'Could not fill the holes in the input raster: {e}')
+            else:
+                logger.debug('* Raster file (%s) was successfully filled.', path_in)
+            finally:
+                # remove temp files
+                if os.path.exists(path_temp):
+                    os.remove(path_temp)
         else:
-            logger.debug('File with filled data (%s) already exists, skipping.', path_out)
+            logger.debug('* File with filled data (%s) already exists, skipping.', path_out)
             pass
 
     def pixel_area_m2(self):
         """ gives the area of one pixel in square meter for the AccoRD reference file"""
         self._check()
-        return pixel_area(self.ref_profile['crs'], self.ref_profile['transform'])
+        if self.ref_profile['crs'].is_projected:
+            return pixel_area(self.ref_profile['crs'], self.ref_profile['transform'])
+        else:
+            return None
 
     def _load_profile(self, raster_path):
         """ function to extract key variables of the given raster file
@@ -367,9 +432,15 @@ class GeoProcessing(object):
                 # dataset file tags (no band tags)
                 dFile['tags'] = src.tags
                 # pixel area in square metre
-                dFile['px_area_m2'] = pixel_area(src.crs, src.transform)
+                if src.crs.is_projected:
+                    dFile['px_area_m2'] = pixel_area(src.crs, src.transform)
+                    _, dFile['unit_factor'] = src.crs.linear_units_factor
+                else:
+                    dFile['px_area_m2'] = None
+                    dFile['unit_factor'] = None
                 # projected and units
                 dFile['projected'] = src.crs.is_projected
+                dFile['geographic'] = src.crs.is_geographic
                 dFile['unit'] = src.crs.linear_units
         except rasterio.errors.RasterioIOError as e:
             raise Error(f'Failed to open raster file "{raster_path}": {e}')
@@ -392,12 +463,13 @@ class GeoProcessing(object):
         else:
             return False
 
-    def AutomaticBring2AOI(self, path_in, wResampling='nearest', wOT=None, path_out=None, secure_run=False):
+    def AutomaticBring2AOI(self, path_in, raster_type=RasterType.CATEGORICAL, wOT=None, path_out=None,
+                           secure_run=False):
         """Wrapper around :func:`Bring2AOI` which checks if the raster needs to be adjusted, and if yes,
            generates all settings automatically PLUS it returns the absolute filename of the adapted raster file.
 
         :param path_in: input file path (absolute) of raster file to be processed to reference file specifications
-        :param wResampling: resampling method
+        :param raster_type: type of raster data used to define the geoprocessing method
         :param wOT: overwriting the input raster data type
         :param path_out: output filename (a filename is derived from the input filename if not provided)
         :param secure_run: self.src_parameters is reset before function execution
@@ -408,6 +480,7 @@ class GeoProcessing(object):
 
         # test if we even have to process the input raster file
         if self._check_raster_processing_needed():
+            logger.debug('* raster file {} OK'.format(os.path.basename(path_in)))
             # reset the src_parameter before close to definitely clean (One Time Use)
             self.src_parameters = {}
             return path_in
@@ -419,12 +492,10 @@ class GeoProcessing(object):
                                                                         int(self.ref_profile['transform'].a),
                                                                         self.ref_profile['crs'].to_epsg()))
             # run the standard Bring2AOI function
-            self.Bring2AOI(path_in, path_out, wResampling=wResampling, wOT=wOT)
-            # reset the src_parameter before close to definitely clean (One Time use)
-            self.src_parameters = {}
+            self.Bring2AOI(path_in, path_out, raster_type=raster_type, wOT=wOT)
             return path_out
 
-    def Bring2AOI(self, path_in, path_out, wResampling='nearest', wOT=None, secure_run=False):
+    def Bring2AOI(self, path_in, path_out, raster_type=RasterType.CATEGORICAL, wOT=None, secure_run=False):
         """Wrapper to automatically determine which geoprocessing mode has to applied to get the input file
            to the raster configurations of the reference file (extent, resolution, projection)."""
         # check if all parameters of input files are existing - when run in stand-alone mode
@@ -437,18 +508,208 @@ class GeoProcessing(object):
         if wOT is None:
             wOT = _dtype_map[self.src_parameters['dtype']]
 
-        # run the decision tree what process we have to use
-        if self.src_parameters['epsg'] == self.ref_profile['crs'].to_epsg():
-            # just need a cut-2-AOI
-            self.Cut2AOI(path_in, path_out, wResampling=wResampling, wOT=wOT)
+        # decision tree for geoprocessing method based on:
+        # processing case: crop, resample, or warp
+        # resolution change: same, up-sampling, or down-sampling
+        # data type: discrete data, continuous_relative unit, continuous_absolute_point, continuous_absolute_volume
+        res_case, processing_case = self._get_case_parameters()
+
+        # now get the name of correct GeoProcessing function to run and settings
+        processing_mode, resampling_mode = self._query_raster_processing_table(res_case, processing_case, raster_type)
+
+        # apply the decision
+        logger.warning(f'- raster ({os.path.basename(path_in)}) will be adjusted ({processing_mode}) '
+                       f'with {resampling_mode} filter.')
+        if processing_mode == 'Crop2AOI':
+            self.Crop2AOI(path_in, path_out, wResampling=resampling_mode, wOT=wOT)
+        elif processing_mode == 'Translate2AOI':
+            self.Translate2AOI(path_in, path_out, wResampling=resampling_mode, wOT=wOT, mode=res_case)
+        elif processing_mode == 'Warp2AOI':
+            self.Warp2AOI(path_in, path_out, wResampling=resampling_mode, wOT=wOT)
+        elif processing_mode == 'VolumeWarp2AOI':
+            self.VolumeWarp2AOI(path_in, path_out, wOT=wOT, oversampling_factor=10)
         else:
-            self.Warp2AOI(path_in, path_out, wResampling=wResampling, wOT=wOT)
+            raise RuntimeError(f'the processing mode {processing_mode} is currently not implemented. '
+                               f'Adapt your input dataset manually to full-fill the ENCA-tool input data '
+                               f'specifications (see manual)')
 
-        # reset the src_parameter dic since function is a 'one time run'
-        self.src_parameters = {}
+    def _query_raster_processing_table(self, res_case, processing_case, raster_type):
+        """ evaluate which GEoProcessing function and settings have to be used based on given parameters"""
 
-    def Cut2AOI(self, path_in, path_out, wResampling='nearest', wOT='Float64', secure_run=False):
-        """Cut raster to AOI when in same coordinate system.
+        # possible processing_modes: Crop2AOI, Translate2AOI, Warp2AOI, VolumeWarp2AOI, VolumeTranslate2AOI
+        # possible resampling_modes: nearest, sum, bilinear, mode, average
+        decision_tree = {
+            'crop': {RasterType.CATEGORICAL: {'same': ('Crop2AOI', 'nearest')},
+                     RasterType.RELATIVE: {'same': ('Crop2AOI', 'bilinear')},
+                     RasterType.ABSOLUTE_POINT: {'same': ('Crop2AOI', 'nearest')},
+                     RasterType.ABSOLUTE_VOLUME: {'same': ('Crop2AOI', 'nearest')}},
+            'resample': {RasterType.CATEGORICAL: {'up-sampling': ('Translate2AOI', 'nearest'),
+                                                  'down-sampling': ('Translate2AOI', 'mode')},
+                         RasterType.RELATIVE: {'up-sampling': ('Translate2AOI', 'bilinear'),
+                                               'down-sampling': ('Translate2AOI', 'average')},
+                         RasterType.ABSOLUTE_POINT: {'up-sampling': ('Translate2AOI', 'bilinear'),
+                                                     'down-sampling': ('Translate2AOI', 'average')},
+                         RasterType.ABSOLUTE_VOLUME: {'up-sampling': ('VolumeWarp2AOI', '3-step'),
+                                                      'down-sampling': ('VolumeWarp2AOI', '3-step')}},
+            'warp': {RasterType.CATEGORICAL: {'same': ('Warp2AOI', 'nearest'),
+                                              'up-sampling': ('Warp2AOI', 'nearest'),
+                                              'down-sampling': ('Warp2AOI', 'mode')},
+                     RasterType.RELATIVE: {'same': ('Warp2AOI', 'near'),
+                                           'up-sampling': ('Warp2AOI', 'bilinear'),
+                                           'down-sampling': ('Warp2AOI', 'average')},
+                     RasterType.ABSOLUTE_POINT: {'same': ('Warp2AOI', 'near'),
+                                                 'up-sampling': ('Warp2AOI', 'bilinear'),
+                                                 'down-sampling': ('Warp2AOI', 'average')},
+                     RasterType.ABSOLUTE_VOLUME: {'same': ('VolumeWarp2AOI', '3-step'),
+                                                  'up-sampling': ('VolumeWarp2AOI', '3-step'),
+                                                  'down-sampling': ('VolumeWarp2AOI', '3-step')}}}
+        try:
+            processing_mode, resampling_mode = decision_tree[processing_case][raster_type][res_case]
+        except:
+            raise ValueError(f'the given data ({processing_case, raster_type, res_case}) is not in the GeoProcessing '
+                             f'decision tree to be evaluated. No geoprocessing mode and resampling mode can be '
+                             f'determined.')
+
+        return processing_mode, resampling_mode
+
+    def _get_case_parameters(self):
+        """ run some tests to get the connection between src_dataset and reference dataset in terms of
+            spatial resolution and geoprocessing method"""
+        # First, check resolution change
+        if self.src_parameters['projected']:
+            if self.src_parameters['unit_factor'] != 1:
+                # multiply the resolution with unit factor to get resolution in metre
+                src_res = (self.src_parameters['res'][0] * self.src_parameters['unit_factor'],
+                           self.src_parameters['res'][1] * self.src_parameters['unit_factor'])
+            else:
+                src_res = self.src_parameters['res']
+        elif self.src_parameters['geographic']:
+            # way more complicated to get resolution in metre (we estimate for center of raster)
+            center_lat = self.src_parameters['bbox'].top - \
+                         (self.src_parameters['height'] / 2 * self.src_parameters['res'][1])
+            src_res = (EARTH_CIRCUMFERENCE_METRE * np.cos(np.radians(center_lat)) / 360 * self.src_parameters['res'][0],
+                       np.round(EARTH_CIRCUMFERENCE_METRE / 360, 0) * self.src_parameters['res'][1])
+        else:
+            raise RuntimeError('Input dataset neither projected nor geographic coordinate system')
+
+        if src_res == (float(self.ref_profile['transform'].a),
+                       float(abs(self.ref_profile['transform'].e))):
+            res_case = 'same'
+        elif (src_res[0] * src_res[1]) > (float(self.ref_profile['transform'].a) *
+                                          float(abs(self.ref_profile['transform'].e))):
+            res_case = 'up-sampling'  # higher resolution of the image is needed to get reference image specs
+        else:
+            res_case = 'down-sampling'  # lower resolution of the image is needed to get reference image specs
+
+        # Second, check processing method
+        if self.src_parameters['epsg'] == self.ref_profile['crs'].to_epsg():
+            if res_case == 'same':
+                processing_case = 'crop'
+            else:
+                processing_case = 'resample'
+        else:
+            processing_case = 'warp'
+
+        return res_case, processing_case
+
+    def VolumeWarp2AOI(self, path_in, path_out, wOT='Float64', oversampling_factor=10, secure_run=False):
+        """ Special case for warping raster with absolute volume based data
+            Note: still based on gdalwarp but in a 3 step approach which works for up-sampling and down-sampling
+            IMPORTANT: since gdal_translate has no "sum" resample method we also use this approach
+        """
+        # check if all parameters of input files are existing - when run in stand-alone mode
+        self._full_pre_check(path_in, clean_src=secure_run)
+        # yet another check - if we have an absolute_volume datatype then we need a check that we have projected
+        # coordinate system and a known unit --> otherwise we got issues with the pixel area needed
+        self._check3(path_in)
+        # TODO: implement Volume-based processing for raster with geographic coordinate systems
+        # create a raster in src file resolution and extent which holds the px area as value for each pixel
+        # also warp this file with oversampling --> so we know for each warped and oversampled pixel the
+        # original value and original pixel area --> each pixel value can now correctly scaled
+        # TODO: implement volume-based processing for projected raster with non-metre units
+        # first translate src dataset into raster with metre unit in original resolution and scale the values
+
+        # resolve ESRI / EPSG issue
+        if self.src_parameters['epsg'] in ESRI_IDENTIFIER:
+            s_srs_string = 'ESRI:{}'.format(self.src_parameters['epsg'])
+        else:
+            s_srs_string = 'EPSG:{}'.format(self.src_parameters['epsg'])
+
+        # 1. warp to target EPSG with oversampled resolution (nearest neighbor) (crop to ref file with buffer of 10 px)
+        buffer_x = 10 * self.ref_profile['transform'].a
+        buffer_y = 10 * abs(self.ref_profile['transform'].e)
+
+        path_temp1 = os.path.join(self.temp_dir, 'VolumeData_helper_file1.tif')
+        cmd1 = 'gdalwarp --config GDAL_CACHEMAX 256 -s_srs "{}" -t_srs "EPSG:{}" -te {} {} {} {} -tr {} {} ' \
+               '-r {} -et 0 -ot {} -ovr None ' \
+               '-wo SAMPLE_STEPS=50 -wo SOURCE_EXTRA=5 -wo SAMPLE_GRID=YES ' \
+               '-co COMPRESS=DEFLATE -co INTERLEAVE=BAND -co BIGTIFF=YES -multi -co TILED=YES ' \
+               '-overwrite "{}" "{}"'.format(s_srs_string,
+                                             self.ref_profile['crs'].to_epsg(),
+                                             self.ref_extent.left - buffer_x,
+                                             self.ref_extent.bottom - buffer_y,
+                                             self.ref_extent.right + buffer_x,
+                                             self.ref_extent.top + buffer_y,
+                                             float(self.ref_profile['transform'].a) / oversampling_factor,
+                                             float(abs(self.ref_profile['transform'].e)) / oversampling_factor,
+                                             'near',
+                                             wOT,
+                                             path_in,
+                                             path_temp1)
+
+        # 2. adjust raster values to oversampling rate (gdal_calc)
+        path_temp2 = os.path.join(self.temp_dir, 'VolumeData_helper_file2.tif')
+        cmd2 = '{} -A "{}" --outfile="{}" --calc="A/({}*{})" --overwrite --quiet ' \
+               '--co="INTERLEAVE=BAND" --co="COMPRESS=DEFLATE" ' \
+               '--co="TILED=YES"'.format(_GDAL_CALC, path_temp1, path_temp2,
+                                         self.src_parameters['res'][0] / (float(self.ref_profile['transform'].a) /
+                                                                          oversampling_factor),
+                                         self.src_parameters['res'][1] / (float(abs(self.ref_profile['transform'].e)) /
+                                                                          oversampling_factor))
+
+        # 3. use 'sum' resampling mode in warp method to get final results (gdalwarp)
+        cmd3 = 'gdalwarp --config GDAL_CACHEMAX 256 -t_srs "EPSG:{}" -te {} {} {} {} -tr {} {} ' \
+               '-r {} -et 0 -ot {} -ovr None ' \
+               '-wo SAMPLE_STEPS=50 -wo SOURCE_EXTRA=5 -wo SAMPLE_GRID=YES ' \
+               '-co COMPRESS=DEFLATE -co INTERLEAVE=BAND -co BIGTIFF=YES -multi -co TILED=YES ' \
+               '-overwrite "{}" "{}"'.format(self.ref_profile['crs'].to_epsg(),
+                                             self.ref_extent.left,
+                                             self.ref_extent.bottom,
+                                             self.ref_extent.right,
+                                             self.ref_extent.top,
+                                             float(self.ref_profile['transform'].a),
+                                             float(abs(self.ref_profile['transform'].e)),
+                                             'sum',
+                                             wOT,
+                                             path_temp2,
+                                             path_out)
+
+        log_message = '* file {} was warped to AOI and resampled to target resolution'.format(os.path.basename(path_in))
+
+        if not os.path.exists(path_out):
+            try:
+                subprocess.check_call(cmd1, shell=True)
+                subprocess.check_call(cmd2, shell=True)
+                subprocess.check_call(cmd3, shell=True)
+                logger.debug(log_message)
+            except subprocess.CalledProcessError as e:
+                raise OSError('Could not warp the raster file ({}) to the AOI: {}'.format(os.path.basename(path_in), e))
+            else:
+                self.adapt_file_metadata(path_in, path_out)
+            finally:
+                # reset the src_parameter dic since function is a 'one time run'
+                self.src_parameters = {}
+                if os.path.exists(path_temp1):
+                    os.remove(path_temp1)
+                if os.path.exists(path_temp2):
+                    os.remove(path_temp2)
+        else:
+            logger.warning('* file already processed. Use existing one {}!'.format(os.path.basename(path_out)))
+            # reset the src_parameter dic since function is a 'one time run'
+            self.src_parameters = {}
+
+    def Crop2AOI(self, path_in, path_out, wResampling='nearest', wOT='Float64', secure_run=False):
+        """Crop raster to AOI when in same coordinate system and same resolution. no checks are made
 
         Note: Nodata value is kept but dtype of output can be adjusted."""
         # check if all parameters of input files are existing - when run in stand-alone mode
@@ -458,45 +719,87 @@ class GeoProcessing(object):
         if wResampling == 'near':
             wResampling = 'nearest'
 
-        # check if we have to resample and cut or only to cut the raster file
-        if self.src_parameters['res'] == (float(self.ref_profile['transform'].a),
-                                          float(abs(self.ref_profile['transform'].e))):
-            # the input raster file has only to be cut to the reference raster extent
-            # TODO: currently no check if the whole requested extent is covered --> missing pixels will be nodata
-            cmd_pre = None  # that the pre-run needed for resampling is not run
-            if self.src_parameters['overwrite_s_srs']:
-                # that case is needed since when input raster had no valid EPSG then gdal command gives wired results
-                cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=DEFLATE -co TILED=YES ' \
-                      '-co INTERLEAVE=BAND -ot {} -projwin {} {} {} {} -projwin_srs "EPSG:{}" -a_srs "EPSG:{}" ' \
-                      '"{}" "{}"'.format(wOT,
-                                         self.ref_extent.left,
-                                         self.ref_extent.top,
-                                         self.ref_extent.right,
-                                         self.ref_extent.bottom,
-                                         self.ref_profile['crs'].to_epsg(),
-                                         self.ref_profile['crs'].to_epsg(),
-                                         path_in,
-                                         path_out)
-            else:
-                cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=DEFLATE -co TILED=YES ' \
-                      '-co INTERLEAVE=BAND -ot {} -projwin {} {} {} {} ' \
-                      '"{}" "{}"'.format(wOT,
-                                         self.ref_extent.left,
-                                         self.ref_extent.top,
-                                         self.ref_extent.right,
-                                         self.ref_extent.bottom,
-                                         path_in,
-                                         path_out)
-            log_message = 'file {} was cut to AOI'.format(os.path.basename(path_in))
+        # Note: the resampling method was added to allow switches to different projection units even when theoretically
+        #       no resampling is done (e.g. image in projection with kilometer unit and resolution 1 is same as
+        #       reference in metre projection and resolution of 1000)
+        if self.src_parameters['overwrite_s_srs']:
+            # that case is needed since when input raster had no valid EPSG then gdal command gives wired results
+            cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=DEFLATE -co TILED=YES ' \
+                  '-co INTERLEAVE=BAND -ot {} -projwin {} {} {} {} -projwin_srs "EPSG:{}" -a_srs "EPSG:{}" ' \
+                  '-r {} -tr {} {} "{}" "{}"'.format(wOT,
+                                                     self.ref_extent.left,
+                                                     self.ref_extent.top,
+                                                     self.ref_extent.right,
+                                                     self.ref_extent.bottom,
+                                                     self.ref_profile['crs'].to_epsg(),
+                                                     self.ref_profile['crs'].to_epsg(),
+                                                     wResampling,
+                                                     float(self.ref_profile['transform'].a),
+                                                     float(abs(self.ref_profile['transform'].e)),
+                                                     path_in,
+                                                     path_out)
         else:
-            # we have to resample and cut --> due to gdal_translate sub-pixel shifts we use a 2-step approach
+            cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=DEFLATE -co TILED=YES ' \
+                  '-co INTERLEAVE=BAND -ot {} -projwin {} {} {} {} -r {} -tr {} {} ' \
+                  '"{}" "{}"'.format(wOT,
+                                     self.ref_extent.left,
+                                     self.ref_extent.top,
+                                     self.ref_extent.right,
+                                     self.ref_extent.bottom,
+                                     wResampling,
+                                     float(self.ref_profile['transform'].a),
+                                     float(abs(self.ref_profile['transform'].e)),
+                                     path_in,
+                                     path_out)
+        log_message = '* file {} was successfully cropped to AOI'.format(os.path.basename(path_in))
+
+        if not os.path.exists(path_out):
+            try:
+                subprocess.check_call(cmd, shell=True)
+                logger.debug(log_message)
+            except subprocess.CalledProcessError as e:
+                raise OSError(
+                    'Could not crop the raster file ({}) to the AOI: {}'.format(os.path.basename(path_in), e))
+            else:
+                self.adapt_file_metadata(path_in, path_out)
+            finally:
+                # reset the src_parameter dic since function is a 'one time run'
+                self.src_parameters = {}
+        else:
+            logger.warning('* file already processed. Use existing one {}!'.format(os.path.basename(path_out)))
+            # reset the src_parameter dic since function is a 'one time run'
+            self.src_parameters = {}
+
+    def Translate2AOI(self, path_in, path_out, wResampling='nearest', wOT='Float64', secure_run=False,
+                      mode=None):
+        """Translate raster (resampling and cropping) to AOI when in same coordinate system. no checks are made
+
+        Note: Nodata value is kept but dtype of output can be adjusted."""
+        # check if all parameters of input files are existing - when run in stand-alone mode
+        self._full_pre_check(path_in, clean_src=secure_run)
+
+        # first resolve gdal_translate and gdalwarp language issue
+        if wResampling == 'near':
+            wResampling = 'nearest'
+
+        # due to gdal_translate sub-pixel shifts we have to distinguish between up & down sampling
+        if mode is None:
+            mode, _ = self._get_case_parameters()
+        if mode == 'same':
+            # that is a Crop case
+            self.Crop2AOI(path_in, path_out, wOT=wOT, secure_run=False)
+            return
+
+        # now the different approaches
+        if mode == 'up-sampling':
+            # use 2-step approach since gdal_translate first crop and then resample which leds to shifts
             # get the index of UL and LR corner for reference file in existing input file
             UL_row, UL_column = coord_2_index(self.ref_extent.left, self.ref_extent.top,
                                               self.src_parameters['bbox'].left, self.src_parameters['bbox'].top,
-                                              self.src_parameters['res'][0])
+                                              self.src_parameters['res'])
             LR_row, LR_column = coord_2_index(self.ref_extent.right, self.ref_extent.bottom,
                                               self.src_parameters['bbox'].left, self.src_parameters['bbox'].top,
-                                              self.src_parameters['res'][0])
+                                              self.src_parameters['res'])
             # add buffer of 1 pixel in input file resolution
             if UL_column >= 1:
                 UL_column -= 1
@@ -549,7 +852,45 @@ class GeoProcessing(object):
                                      self.ref_extent.bottom,
                                      path_temp,
                                      path_out)
-            log_message = 'file {} was cut to AOI and resampled to target resolution'.format(os.path.basename(path_in))
+            log_message = '* file {} was cropped to AOI & resampled to target resolution in 2-step approach'.format(
+                os.path.basename(path_in))
+        elif mode == 'down-sampling':
+            cmd_pre = None
+            path_temp = os.path.join(self.temp_dir, 'translation_helper_file.tif')
+
+            # again the check is needed if we have a raster file without valid EPSG code
+            if self.src_parameters['overwrite_s_srs']:
+                # that case is needed since when input raster had no valid EPSG then gdal command gives wired results
+                cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=DEFLATE -co TILED=YES ' \
+                      '-a_srs "EPSG:{}" -co INTERLEAVE=BAND -ot {} -tr {} {} -r {} -projwin {} {} {} {} ' \
+                      '"{}" "{}"'.format(self.ref_profile['crs'].to_epsg(),
+                                         wOT,
+                                         float(self.ref_profile['transform'].a),
+                                         float(abs(self.ref_profile['transform'].e)),
+                                         wResampling,
+                                         self.ref_extent.left,
+                                         self.ref_extent.top,
+                                         self.ref_extent.right,
+                                         self.ref_extent.bottom,
+                                         path_in,
+                                         path_out)
+            else:
+                cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=DEFLATE -co TILED=YES ' \
+                      '-co INTERLEAVE=BAND -ot {} -tr {} {} -r {} -projwin {} {} {} {} ' \
+                      '"{}" "{}"'.format(wOT,
+                                         float(self.ref_profile['transform'].a),
+                                         float(abs(self.ref_profile['transform'].e)),
+                                         wResampling,
+                                         self.ref_extent.left,
+                                         self.ref_extent.top,
+                                         self.ref_extent.right,
+                                         self.ref_extent.bottom,
+                                         path_in,
+                                         path_out)
+            log_message = '* file {} was cropped to AOI & resampled to target resolution'.format(
+                os.path.basename(path_in))
+        else:
+            raise RuntimeError(f'this mode {mode} is currently not forseen.')
 
         if not os.path.exists(path_out):
             try:
@@ -565,8 +906,11 @@ class GeoProcessing(object):
             finally:
                 # reset the src_parameter dic since function is a 'one time run'
                 self.src_parameters = {}
+                # remove temp files
+                if os.path.exists(path_temp):
+                    os.remove(path_temp)
         else:
-            logger.warning('file {} already exists. Use existing one!'.format(os.path.basename(path_in)))
+            logger.warning('* file already processed. Use existing one {}!'.format(os.path.basename(path_out)))
             # reset the src_parameter dic since function is a 'one time run'
             self.src_parameters = {}
 
@@ -581,11 +925,17 @@ class GeoProcessing(object):
         if wResampling == 'nearest':
             wResampling = 'near'
 
-        cmd = 'gdalwarp --config GDAL_CACHEMAX 256 -s_srs "EPSG:{}" -t_srs "EPSG:{}" -te {} {} {} {} -tr {} {} -r {} ' \
-              '-et 0 -ot {} ' \
-              '-wo SAMPLE_STEPS=50 -wo SOURCE_EXTRA=5 -wo SAMPLE-GRID=YES ' \
-              '-co COMPRESS=DEFLATE -co INTERLEAVE=BAND -co BIGTIFF=IF_SAVER -multi -co TILED=YES ' \
-              '-overwrite "{}" "{}"'.format(self.src_parameters['epsg'],
+        # resolve ESRI / EPSG issue
+        if self.src_parameters['epsg'] in ESRI_IDENTIFIER:
+            s_srs_string = 'ESRI:{}'.format(self.src_parameters['epsg'])
+        else:
+            s_srs_string = 'EPSG:{}'.format(self.src_parameters['epsg'])
+
+        cmd = 'gdalwarp --config GDAL_CACHEMAX 256 -s_srs "{}" -t_srs "EPSG:{}" -te {} {} {} {} -tr {} {} -r {} ' \
+              '-et 0 -ot {} -ovr None ' \
+              '-wo SAMPLE_STEPS=50 -wo SOURCE_EXTRA=5 -wo SAMPLE_GRID=YES ' \
+              '-co COMPRESS=DEFLATE -co INTERLEAVE=BAND -co BIGTIFF=YES -multi -co TILED=YES ' \
+              '-overwrite "{}" "{}"'.format(s_srs_string,
                                             self.ref_profile['crs'].to_epsg(),
                                             self.ref_extent.left,
                                             self.ref_extent.bottom,
@@ -597,7 +947,7 @@ class GeoProcessing(object):
                                             wOT,
                                             path_in,
                                             path_out)
-        log_message = 'file {} was warped to AOI and resampled to target resolution'.format(os.path.basename(path_in))
+        log_message = '* file {} was warped to AOI and resampled to target resolution'.format(os.path.basename(path_in))
 
         if not os.path.exists(path_out):
             try:
@@ -611,7 +961,7 @@ class GeoProcessing(object):
                 # reset the src_parameter dic since function is a 'one time run'
                 self.src_parameters = {}
         else:
-            logger.warning('file {} already exists. Use existing one!'.format(os.path.basename(path_in)))
+            logger.warning('* file already processed. Use existing one {}!'.format(os.path.basename(path_out)))
             # reset the src_parameter dic since function is a 'one time run'
             self.src_parameters = {}
 
@@ -666,7 +1016,7 @@ class GeoProcessing(object):
         if gdf.crs.to_epsg() != self.src_parameters['epsg']:
             df_raster.to_crs(epsg=gdf.crs.to_epsg(), inplace=True)
 
-        # reset src_parameters if needed
+        # reset src_parameters if needed - otherwise further geoprocessing is possible without parameter extraction
         if stand_alone:
             self.src_parameters = {}
 
@@ -760,6 +1110,12 @@ class GeoProcessing(object):
             subprocess.check_call(cmd, shell=True)
         except subprocess.CalledProcessError as e:
             raise OSError(f'Could not translate the VRT file into raster file: {e}.')
+        finally:
+            # remove temp files
+            if os.path.exists(path_vrt):
+                os.remove(path_vrt)
+            if os.path.exists(path_list):
+                os.remove(path_list)
 
     def spatial_disaggregation_byArea(self, path_proxy_raster, data, path_area_raster, area_names, path_out,
                                       add_progress=lambda p: None, proxy_sums=None,
@@ -974,10 +1330,6 @@ def Bring2COG():
     pass
 
 
-SUM = 'sum'
-COUNT = 'px_count'
-
-
 def statistics_byArea(path_data_raster, path_area_raster, area_names,
                       add_progress=lambda p: None, block_shape=(2048, 2048)):
     """Extract sum and count statistics for all areas given in the area_raster for the data_raster.
@@ -1144,8 +1496,6 @@ def pixel_area(crs: rasterio.crs.CRS, transform: affine.Affine):
     """Calculate the area of a pixel in units of m2."""
     affine_area = abs(transform.a * transform.e - transform.b * transform.d)
     unit, factor = crs.linear_units_factor
-    if unit not in ['metre']:
-        raise RuntimeError(f'Cannot calculate area of pixel in CRS with unit {unit}')
     return affine_area * factor ** 2
 
 
@@ -1168,8 +1518,8 @@ def coord_2_index(x, y, raster_x_min, raster_y_max, pixres, raster_x_max=None, r
         output tuple is directly in numpy indexing order (row, column).
     """
 
-    index_column = int((x - raster_x_min) / float(pixres))
-    index_row = int((y - raster_y_max) / float(-pixres))
+    index_column = int((x - raster_x_min) / float(pixres[0]))
+    index_row = int((y - raster_y_max) / float(-pixres[1]))
 
     if (raster_x_max is None) or (raster_y_min is None):
         return index_row, index_column
