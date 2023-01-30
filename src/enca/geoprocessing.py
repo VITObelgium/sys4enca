@@ -37,8 +37,7 @@ DIC_KNOWN_WKT_STRINGS = {'ETRS_1989_LAEA': 3035,
                          'ETRS89-extended / LAEA Europe': 3035,
                          'World_Mollweide': 54009}  # Note: 54009 is an ESRI identifier so add to ESRI id CONSTANT
 ESRI_IDENTIFIER = [54009]
-ENCA_EPSG = 3035
-ENCA_MINIMUM_RESOLUTION = 100.
+MINIMUM_RESOLUTION = 100.
 POLY_MIN_SIZE = 0.1  # size in square metre for minimum area for valid statistics vector to be used
 EARTH_CIRCUMFERENCE_METRE = 40075000
 

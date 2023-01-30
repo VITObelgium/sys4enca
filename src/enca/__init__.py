@@ -28,11 +28,17 @@ ENCA = 'ENCA'
 ACCOUNT = 'ENCA_ACCOUNT'
 PREPROCESS = 'ENCA_PREPROCESS'
 
+HYBAS_ID = 'HYBAS_ID'
+GID_0 = 'GID_0'
 
 class ENCARun(Run):
 
     component = None  #: ENCA component, to be set in each subclass.
     run_type = None  #: One of ENCA, ACCOUNT, or PREPROCESS
+    id_col_statistics = HYBAS_ID
+    id_col_reporting = GID_0
+
+    epsg = 3857
 
     def __init__(self, config):
         super().__init__(config)

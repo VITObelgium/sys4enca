@@ -18,7 +18,7 @@ _component_registry = {cls.component: cls for cls in _run_components}
 def make_run(config):
     """Read the component from config, and create a Run object for that component."""
     if COMPONENT not in config:
-        raise ConfigError('Config does not contain an inca component name.', [COMPONENT])
+        raise ConfigError('Config does not contain an ENCA component name.', [COMPONENT])
 
     component_name = config[COMPONENT]
     if component_name not in _component_registry:
