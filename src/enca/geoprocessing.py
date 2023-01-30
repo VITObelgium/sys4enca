@@ -978,24 +978,22 @@ class GeoProcessing(object):
 
     def check_raster_contains_ref_extent(self, raster_path):
         """Check if the bounding box of a given raster contains the bounding box of the reference grid."""
-        raster_parameters = self._load_profile(raster_path)
-        self._epsg_check(raster_parameters, raster_path)
-
-        df_raster = gpd.GeoDataFrame({'id': 1, 'geometry': [shapely.geometry.box(*raster_parameters['bbox'])]})
-        df_raster.crs = f'EPSG:{raster_parameters["epsg"]}'
+        with rasterio.open(raster_path) as ds_raster:
+            raster_crs = ds_raster.crs
+            raster_bbox = shapely.geometry.box(*ds_raster.bounds)
+        # GeoDataFrame for easy coordinate transformation
+        df_raster = gpd.GeoDataFrame({'id': 1, 'geometry': [raster_bbox]}, crs=raster_crs)
 
         # Transform raster bounding box to reference coordinate system if needed.
         # TODO : Only tranforming the 4 corners of the bounding box may not be sufficiently accurate for some
         #  coordinate transforms.  Better to create a polygon from a list of points on the bounding box and transform
         #  that.
-        ref_epsg = self.ref_profile['crs'].to_epsg()
-        if ref_epsg != raster_parameters['epsg']:
-            df_raster.to_crs(crs=self.ref_profile['crs'], inplace=True)
+        df_raster.to_crs(crs=self.ref_profile['crs'], inplace=True)
 
         bbox_ref = shapely.geometry.box(*self.ref_extent)
-
         logger.debug('Raster bbox: %s\nref bbox: %s', df_raster.loc[0, 'geometry'], bbox_ref)
         if not bbox_ref.within(df_raster.loc[0, 'geometry']):
+            ref_epsg = self.ref_profile['crs'].to_epsg()
             raise Error(f'Raster file {raster_path} does not contain the complete reference extent.  Please provide a '
                         f'raster file with a minimum extent of {self.ref_extent} (in EPSG:{ref_epsg}).')
 
