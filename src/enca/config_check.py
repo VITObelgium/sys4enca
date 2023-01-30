@@ -203,15 +203,7 @@ class RasterMixin:
             raise Error(f'Failed to open raster file {file}: {e}')
 
         # Check if raster extent contains all regions we need.
-        extent = self._configcheck.run.accord.ref_extent
-        if not self._configcheck.run.accord.vector_in_raster_extent_check(file,
-                                                                          self._configcheck.run.statistics_shape,
-                                                                          check_projected=self.check_projected,
-                                                                          check_unit=self.check_unit,
-                                                                          stand_alone=True):
-            raise Error(f'Raster file {file} does not contain all required statistical regions.  '
-                        f'Please provide a raster file with a minimum extent of {extent} in EPSG:{self._configcheck.config["EPSG"]}.')
-
+        self._configcheck.accord.check_raster_contains_ref_extent(file)
 
 class ConfigRaster(ConfigItem, RasterMixin):
 
@@ -284,9 +276,11 @@ class ConfigKeyValue(ConfigItem):
 
 class ConfigCheck:
 
-    def __init__(self, config_template, config, add_progress=lambda p: None):
+    def __init__(self, config_template, config, accord, add_progress=lambda p: None):
         # Presence of 'years' should have been checked in Run init code.  If it is not available here, that's a bug:
         assert 'years' in config, 'Config["years"] is missing.  This is a bug.'
+        self.config = config
+        self.accord = accord
         self.years = config['years']  #: List of years processed in this run.
         self.config_items = self._compile(config_template)  #: Dictionary of :obj:`ConfigItem`.
         self._validated = False

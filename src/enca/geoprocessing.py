@@ -226,6 +226,7 @@ class GeoProcessing(object):
 
     def _epsg_check(self, epsg, filename):
         """ check for the main current limitation of theGeoProcessing class - processing of datasets with valid EPSG"""
+        # TODO make this method part of _load_profile since we always call it after _load_profile()  anyway?
         if (epsg == 'no_epsg_code') or (epsg is None):
             raise Error(f'The raster map {filename} does not have a valid EPSG projection or know WKT-string. '
                         f'Please adapt your raster map or insert a EPSG number in DIC_KNOWN_WKT_STRINGS dictionary.')
@@ -974,6 +975,29 @@ class GeoProcessing(object):
 
         with rasterio.open(path_out, 'r+') as dst:
             dst.update_tags(**tags)
+
+    def check_raster_contains_ref_extent(self, raster_path):
+        """Check if the bounding box of a given raster contains the bounding box of the reference grid."""
+        raster_parameters = self._load_profile(raster_path)
+        self._epsg_check(raster_parameters, raster_path)
+
+        df_raster = gpd.GeoDataFrame({'id': 1, 'geometry': [shapely.geometry.box(*raster_parameters['bbox'])]})
+        df_raster.crs = f'EPSG:{raster_parameters["epsg"]}'
+
+        # Transform raster bounding box to reference coordinate system if needed.
+        # TODO : Only tranforming the 4 corners of the bounding box may not be sufficiently accurate for some
+        #  coordinate transforms.  Better to create a polygon from a list of points on the bounding box and transform
+        #  that.
+        ref_epsg = self.ref_profile['crs'].to_epsg()
+        if ref_epsg != raster_parameters['epsg']:
+            df_raster.to_crs(crs=self.ref_profile['crs'], inplace=True)
+
+        bbox_ref = shapely.geometry.box(*self.ref_extent)
+
+        logger.debug('Raster bbox: %s\nref bbox: %s', df_raster.loc[0, 'geometry'], bbox_ref)
+        if not bbox_ref.within(df_raster.loc[0, 'geometry']):
+            raise Error(f'Raster file {raster_path} does not contain the complete reference extent.  Please provide a '
+                        f'raster file with a minimum extent of {self.ref_extent} (in EPSG:{ref_epsg}).')
 
     def vector_in_raster_extent_check(self, raster_path, gdf, check_projected=True, check_unit=True, stand_alone=False):
         """Check a set of geographical regions is included in the raster bounds of a given file.

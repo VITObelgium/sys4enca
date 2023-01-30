@@ -131,7 +131,7 @@ class Run:
         try:
             self._load_region_shapes()
             self._StudyScopeCheck()
-            config_check = ConfigCheck(self.config_template, self.config)
+            config_check = ConfigCheck(self.config_template, self.config, self.accord)
             config_check.validate()
             self.adjust_rasters(config_check)
             self._progress = 100. * (1. - self._progress_weight_run)
