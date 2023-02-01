@@ -474,3 +474,12 @@ class Run:
         if self._progress_callback is not None:
             self._progress += p
             self._progress_callback(p)
+
+    def _add_progress_prerun(self, p):
+        """Update progress bar outside of the main run phase.
+
+        This method should be used to update the progress bar for calculations in during initialization and raster
+        checks, outside of the specific ecosystem service run itself."""
+        self._progress += p * (1 - self._progress_weight_run)
+        if self._progress_callback:
+            self._progress_callback(self._progress)
