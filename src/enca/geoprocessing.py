@@ -1351,6 +1351,31 @@ def Bring2COG():
     pass
 
 
+def statistics_area(area_raster, area_names, add_progress=lambda p: None, block_shape=(2048, 2048)):
+    """"Count number of pixels per region.
+
+    :param area_raster: Filename of the rasterized area shapefile.
+    :param area_names: dict or Series mapping raster values to the area id.  (key/index = area id, value: raster value)
+    """
+
+    # convert area_names to DataFrame, indexed by SHAPE_ID
+    area_names = pd.DataFrame(area_names.items(), columns=[GEO_ID, SHAPE_ID]).set_index(SHAPE_ID)
+
+    df = pd.DataFrame(0, index=area_names.index, columns=[COUNT], dtype=int)
+    df.index.name = SHAPE_ID
+
+    with rasterio.open(area_raster) as ds_areas:
+        nblocks = number_blocks(ds_areas.profile, block_shape)
+
+        for _, window in block_window_generator(block_shape, ds_areas.profile['height'], ds_areas.profile['width']):
+            area = ds_areas.read(1, window=window)
+            df_window = pd.DataFrame({SHAPE_ID: area.flatten()})
+            df[COUNT] = df[COUNT].add(df_window[SHAPE_ID].value_counts(), fill_value=0)
+            add_progress(100. / nblocks)
+
+    return df.join(area_names).set_index(GEO_ID)
+
+
 def statistics_byArea(path_data_raster, path_area_raster, area_names,
                       add_progress=lambda p: None, block_shape=(2048, 2048)):
     """Extract sum and count statistics for all areas given in the area_raster for the data_raster.
@@ -1367,7 +1392,7 @@ def statistics_byArea(path_data_raster, path_area_raster, area_names,
     :return: pandas dataframe with area codes as index and columns for raster value sum and raster pixel count
     """
 
-    # convert area_names to Series, in case it was provided as a dict
+    # convert area_names to DataFrame, indexed by SHAPE_ID
     area_names = pd.DataFrame(area_names.items(), columns=[GEO_ID, SHAPE_ID]).set_index(SHAPE_ID)
 
     # ini pandas DataFrame to hold the results
@@ -1425,7 +1450,7 @@ def statistics_byArea_byET(path_data_raster, path_area_raster, area_names, path_
              raster pixel count
     """
 
-    # convert area_names and ET_names to Series, in case they were provided as a dict
+    # convert area_names and ET_names to DataFrame, indexed by SHAPE_ID and ECO_ID
     area_names = pd.DataFrame(area_names.items(), columns=[GEO_ID, SHAPE_ID]).set_index(SHAPE_ID)
     ET_names = pd.DataFrame(ET_names.items(), columns=[ECOTYPE, ECO_ID]).set_index(ECO_ID)
 
