@@ -461,6 +461,11 @@ class Run:
                                                                      raster_type=rasterdir.type, secure_run=True))
                 self._add_progress_prerun(progress_per_raster)
 
+            try:  # If input rasters already have right dimension, tmpdir will be empty -> attempt cleanup.
+                os.rmdir(tmpdir)  # Delete tmpdir if it's empty.
+            except OSError:  # Directory was not empty.
+                pass
+
             entry = self.config
             for key in rasterdir._path:
                 item = entry[key]
