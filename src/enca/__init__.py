@@ -51,6 +51,18 @@ class ENCARun(Run):
 
         self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), self.run_type, self.component,
                                     self.run_name)
+        self.maps = os.path.join(self.run_dir, 'maps')
+        self.reports = os.path.join(self.run_dir, 'reports')
+        self.statistics = os.path.join(self.run_dir, 'statistics')
+
+        logger.debug('Running with config:\n%s', config)
+
+    def _create_dirs(self):
+        super()._create_dirs()
+
+        os.makedirs(self.maps, exist_ok=True)
+        os.makedirs(self.reports, exist_ok=True)
+        os.makedirs(self.statistics, exist_ok=True)
 
     def version_info(self):
         return f'ENCA version {__version__} using '\

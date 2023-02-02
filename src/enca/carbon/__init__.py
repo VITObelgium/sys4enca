@@ -1,6 +1,9 @@
 import logging
+import os
 import re
 
+import geopandas as gpd
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -42,7 +45,14 @@ class Carbon(enca.ENCARun):
         logger.debug('Hello from ENCA Carbon')
         for year in self.years:
             selu_stats = self.selu_statistics(year)
-            self.indices(selu_stats, year)
+            selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
+
+            indices = self.indices(selu_stats, year)
+            stats_shape_selu = self.statistics_shape.join(indices)
+            stats_shape_selu.to_file(
+                os.path.join(self.temp_dir(), f'{self.component}_Indices_SELU_{year}.gpkg'))
+
+            self.write_selu_maps(stats_shape_selu, year)
 
     def selu_statistics(self, year):
 
@@ -74,7 +84,7 @@ class Carbon(enca.ENCARun):
     def indices(self, selu_stats, year):
         # loop over the InputCodes and assign either SELU results or fixed numbers when we do not have the calculations
         logger.debug('*** assign data to input columns')
-        df = selu_stats
+        df = selu_stats.copy()
         area = df.Area_rast
         input_codes = self.config[self.component]['input_codes']
         parameters = self.config[self.component]['parameters']
@@ -315,3 +325,16 @@ class Carbon(enca.ENCARun):
         df['C2_3_ha'] = df.C2_3 / area
 
         logger.debug('Indices for %s:\n%s', year, df)
+        return df
+
+    def write_selu_maps(self, selu_stats: gpd.GeoDataFrame, year):
+        for column in 'SCU', 'C1', 'C2', 'C7', 'C9', 'CEH', 'CIUV':
+            fig, ax = plt.subplots(figsize=(10, 10))
+            selu_stats.plot(column=column, ax=ax, legend=True,
+                            legend_kwds={'label': column, 'orientation': 'horizontal'})
+            plt.axis('equal')
+            ax.set(title=f'NCA carbon map for indicator: {column} \n year: {year}')
+            ax.set_yticklabels([f'{int(x):,}' for x in ax.get_yticks().tolist()])
+            ax.set_xticklabels([f'{int(x):,}' for x in ax.get_xticks().tolist()])
+            fig.savefig(os.path.join(self.maps, f'NCA_carbon_map_year_parameter_{column}_{year}.tif'))
+            plt.close('all')
