@@ -10,7 +10,7 @@ import pandas as pd
 import enca
 from enca.config_check import ConfigRasterDir
 from enca.errors import Error
-from enca.geoprocessing import RasterType, statistics_byArea, statistics_area, SHAPE_ID
+from enca.geoprocessing import RasterType, statistics_byArea, SHAPE_ID
 from .forest import CarbonForest
 from .soil import CarbonSoil
 
@@ -43,8 +43,10 @@ class Carbon(enca.ENCARun):
 
     def _start(self):
         logger.debug('Hello from ENCA Carbon')
+        area_stats = self.area_stats()
         for year in self.years:
             selu_stats = self.selu_statistics(year)
+            selu_stats[AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
             indices = self.indices(selu_stats, year)
@@ -75,7 +77,6 @@ class Carbon(enca.ENCARun):
             stats = statistics_byArea(file, self.statistics_raster, self.statistics_shape[SHAPE_ID])
             result[label] = stats['sum']
 
-        result[AREA_RAST] = statistics_area(self.statistics_raster, self.statistics_shape[SHAPE_ID])
         # TODO add polygon area?
 
         logger.debug('SELU statistics for %s:\n%s', year, result)
