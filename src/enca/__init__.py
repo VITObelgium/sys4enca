@@ -33,7 +33,7 @@ PREPROCESS = 'ENCA_PREPROCESS'
 
 HYBAS_ID = 'HYBAS_ID'
 GID_0 = 'GID_0'
-
+C_CODE = 'C_CODE'
 
 class ENCARun(Run):
     component = None  #: ENCA component, to be set in each subclass.

@@ -1,3 +1,4 @@
+import importlib.resources
 import logging
 import os
 import re
@@ -23,6 +24,18 @@ AREA_RAST = 'Area_rast'
 SOIL = 'Soil'
 
 logger = logging.getLogger(__name__)
+
+_indices_average = ['C10_2ILUP', 'SCU', 'CEH1', 'CEH4', 'CEH6', 'CEH7', 'CEH', 'CIUV', 'Cow_in_Liv',
+                    'fire_ratio', 'fire_inten',
+                    'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']  #: Indices to average in reports
+
+
+def load_lut():  # TODO Can we embed this LUT as a dict in the code?
+    with open(importlib.resources.files('enca.data').joinpath('LUT_CARBON_INDEX_CAL.csv')) as f:
+        return pd.read_csv(f, sep=';').set_index(enca.C_CODE)
+
+
+_lut_index_calculation = load_lut()
 
 
 class Carbon(enca.ENCARun):
@@ -50,11 +63,14 @@ class Carbon(enca.ENCARun):
             selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
             indices = self.indices(selu_stats, year)
+            indices.to_csv(os.path.join(self.statistics, f'CARBON_indices_{year}.csv'))
             stats_shape_selu = self.statistics_shape.join(indices)
             stats_shape_selu.to_file(
                 os.path.join(self.temp_dir(), f'{self.component}_Indices_SELU_{year}.gpkg'))
 
             self.write_selu_maps(stats_shape_selu, year)
+
+            self.write_reports(indices, area_stats, year)  # TODO: add 'DLCT'
 
     def selu_statistics(self, year):
 
@@ -339,3 +355,34 @@ class Carbon(enca.ENCARun):
             ax.set_xticklabels([f'{int(x):,}' for x in ax.get_xticks().tolist()])
             fig.savefig(os.path.join(self.maps, f'NCA_carbon_map_year_parameter_{column}_{year}.tif'))
             plt.close('all')
+
+    def write_reports(self, indices, area_stats, year):
+        # Calculate fraction of pixels of each SELU region within reporting regions:
+        area_ratios = area_stats['count'] / indices[AREA_RAST]
+
+        # indices for which we want to report plain sum:
+        indices_sum = [x for x in indices.columns if x not in _indices_average]
+
+        for area in self.reporting_shape.itertuples():
+            logger.debug('**** Generate report for %s %s', area.Index, year)
+            f_area = area_ratios.loc[area.Index]
+            # Select indices for SELU's from this reporting area
+            df = indices.loc[area_stats.loc[area.Index].index]
+
+            for column in indices_sum:
+                df[column] *= f_area
+
+            for column in _indices_average:
+                df[column] *= df[AREA_RAST]  # TODO shouldn't these also be adjusted by f_area?
+
+            results = df.sum()
+            results['num_SELU'] = len(df)
+
+            # TODO: results_DLCT
+
+            # weighted average for some of the columns:
+            for column in _indices_average:
+                results[column] /= results[AREA_RAST]
+
+            results = pd.merge(results.rename('total'), _lut_index_calculation, left_index=True, right_index=True)
+            results.to_csv(os.path.join(self.reports, f'NCA_carbon_report_{area.Index}_{year}.csv'))
