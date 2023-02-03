@@ -38,6 +38,7 @@ C_CODE = 'C_CODE'
 class ENCARun(Run):
     component = None  #: ENCA component, to be set in each subclass.
     run_type = None  #: One of ENCA, ACCOUNT, or PREPROCESS
+    software_name = 'ENCA Tool'
     id_col_statistics = HYBAS_ID
     id_col_reporting = GID_0
 

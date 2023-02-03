@@ -19,8 +19,8 @@ import rasterio.mask
 import shapely.geometry
 from osgeo import __version__ as GDALversion
 
-from enca.framework.ecosystem import SHAPE_ID, ECOTYPE, ECO_ID
-from enca.framework.errors import Error
+from .ecosystem import ECOTYPE, ECO_ID
+from .errors import Error
 
 if sys.version_info[:2] >= (3, 8):
     from importlib.metadata import version
@@ -31,6 +31,7 @@ else:
 logger = logging.getLogger(__name__)
 
 GEO_ID = 'GEO_ID'  #: Column label for unique region identifier in GeoDataFrames
+SHAPE_ID = 'SHAPE_ID'  # SHAPE_ID: integer identifier used when rasterizing vector data
 
 LIST_UNITS = ['German legal metre', 'm', 'metre', 'Meter']
 DIC_KNOWN_WKT_STRINGS = {'ETRS_1989_LAEA': 3035,
@@ -88,7 +89,7 @@ class Metadata(object):
                                                                                   rasterio.__gdal_version__,
                                                                                   GDALversion),
                             "software_vector_processing": "geopandas {}".format(gpd.__version__),
-                            "ENCA_run_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                             "TIFFTAG_SOFTWARE": 'ENCA version {}'.format(version('sys4enca'))
                             }
         self.raster_tags = {}
@@ -165,8 +166,8 @@ class GeoProcessing(object):
 
     def __init__(self, creator, seaa_model, temp_dir, ProjectExtentTiff=None):
         self.metadata = Metadata(creator, seaa_model)
-        self.ref_profile = None  # in ENCA mainly the profile of the statistical raster processing file
-        self.ref_extent = None  # in ENCA mainly the extent of the statistical raster processing file
+        self.ref_profile = None  # in mainly the profile of the statistical raster processing file
+        self.ref_extent = None  # in mainly the extent of the statistical raster processing file
         if ProjectExtentTiff is not None:
             # get key parameter of input file
             param = self._load_profile(ProjectExtentTiff)
@@ -192,7 +193,7 @@ class GeoProcessing(object):
             self.ref_profile = param['profile']
             self.ref_extent = param['bbox']  # tuple: (lower left x, lower left y, upper right x, upper right y)
 
-        self.reporting_profile = None  # in ENCA mainly the profile of the reporting raster processing file
+        self.reporting_profile = None  #  mainly the profile of the reporting raster processing file
         self.reporting_extent = None
         self.temp_dir = temp_dir
         self.src_parameters = {}  # all the parameters of the raster file which has to be geoprocessed
@@ -218,10 +219,10 @@ class GeoProcessing(object):
     def _check3(self, filename):
         """ checks if we have projected raster AND the projection unit is in the list we accept"""
         if self.src_parameters['projected'] is False:
-            raise Error(f'Currently the ENCA tool only supports raster maps with absolute volume-based data '
+            raise Error(f'Currently the tool only supports raster maps with absolute volume-based data '
                         f' ({filename}) with a projected coordinate system.')
         if self.src_parameters['unit'] not in LIST_UNITS:
-            raise Error(f'Currently the ENCA tool only supports raster maps with absolute volume-based data'
+            raise Error(f'Currently the tool only supports raster maps with absolute volume-based data'
                         f' ({filename}) with the following projection units: ' + ', '.join(LIST_UNITS))
 
     def _epsg_check(self, epsg, filename):
@@ -488,9 +489,9 @@ class GeoProcessing(object):
             if path_out is None:
                 # now we have to prepare a generic output raster file name
                 path_out = os.path.join(self.temp_dir,
-                                        '{}_ENCA_{}m_EPSG{}.tif'.format(splitext(basename(path_in))[0],
-                                                                        int(self.ref_profile['transform'].a),
-                                                                        self.ref_profile['crs'].to_epsg()))
+                                        '{}_{}m_EPSG{}.tif'.format(splitext(basename(path_in))[0],
+                                                                   int(self.ref_profile['transform'].a),
+                                                                   self.ref_profile['crs'].to_epsg()))
             # run the standard Bring2AOI function
             self.Bring2AOI(path_in, path_out, raster_type=raster_type, wOT=wOT)
             return path_out
@@ -530,7 +531,7 @@ class GeoProcessing(object):
             self.VolumeWarp2AOI(path_in, path_out, wOT=wOT, oversampling_factor=10)
         else:
             raise RuntimeError(f'the processing mode {processing_mode} is currently not implemented. '
-                               f'Adapt your input dataset manually to full-fill the ENCA-tool input data '
+                               f'Adapt your input dataset manually to full-fill the tool input data '
                                f'specifications (see manual)')
 
     def _query_raster_processing_table(self, res_case, processing_case, raster_type):
@@ -970,7 +971,7 @@ class GeoProcessing(object):
         # get metadata of input file (adapted ones - not only original)
         self.metadata.read_raster_tags([os.path.normpath(path_in)])
         tags = self.metadata.prepare_raster_tags(
-            'Original file: {}. Warped/translated to EPSG, resolution and extent of ENCA AOI'.format(
+            'Original file: {}. Warped/translated to EPSG, resolution and extent of project AOI'.format(
                 os.path.basename(os.path.normpath(path_in))), '')
 
         with rasterio.open(path_out, 'r+') as dst:
@@ -1017,13 +1018,13 @@ class GeoProcessing(object):
         # check if raster coordinate system is projected or geographic
         if check_projected:
             if self.src_parameters['projected'] is False:
-                raise Error(f'Currently the ENCA tool only supports raster maps ({raster_path}) with a projected ' +
+                raise Error(f'Currently the tool only supports raster maps ({raster_path}) with a projected ' +
                             'coordinate system.')
         # check if linear_units is in list we currently support
         if check_unit:
             if self.src_parameters['unit'] not in LIST_UNITS:
                 raise Error(
-                    f'Raster map ({raster_path}) coordinate system unit is not supported. Currently the ENCA tool' +
+                    f'Raster map ({raster_path}) coordinate system unit is not supported. Currently the tool' +
                     ' only supports projected coordinate systems in the following units: ' + ', '.join(LIST_UNITS))
 
         # bring bbox of raster into a geopandas DataFrame for easier handling

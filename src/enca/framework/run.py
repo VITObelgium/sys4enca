@@ -8,9 +8,9 @@ import geopandas as gpd
 import rasterio
 import yaml
 
-from enca.framework.config_check import ConfigError, ConfigCheck, ConfigRaster, ConfigRasterDir
-from enca.framework.errors import Error
-from enca.framework.geoprocessing import SHAPE_ID, MINIMUM_RESOLUTION, POLY_MIN_SIZE, GeoProcessing
+from .config_check import ConfigError, ConfigCheck, ConfigRaster, ConfigRasterDir
+from .errors import Error
+from .geoprocessing import SHAPE_ID, MINIMUM_RESOLUTION, POLY_MIN_SIZE, GeoProcessing
 
 logger = logging.getLogger(__name__)
 _log_format = logging.Formatter('%(asctime)s %(name)s [%(levelname)s] - %(message)s')
@@ -84,11 +84,13 @@ class Run:
 
     id_col_statistics = None  #: Column name to use as index in input statistics region file.
     id_col_reporting = None  #: Column name to use as index in reporting region file.
+    component = None  #: Name of module / component, to be set in subclasses.
+    software_name = 'NCA Framework'
 
     def __init__(self, config):
         logger.debug('Run.__init__')
         self.config_template = {
-        }  #: Dictionary of :obj:`enca.config_check.ConfigItem` describing the required configuration for this run.
+        }  #: Dictionary of :obj:`.config_check.ConfigItem` describing the required configuration for this run.
 
         # If running from command line, config contains a 'func' attribute used to select the run type (side effect of
         # our use of argparse subparsers).  This attribute must not be written to the final config file.
@@ -114,7 +116,7 @@ class Run:
     def start(self, progress_callback=None):
         """Call this method to start the actual calculation.
 
-        Wraps :meth:`enca.config_check.ConfigCheck.validate` and :meth:`enca.Run._start` with exception handlers."""
+        Wraps :meth:`.config_check.ConfigCheck.validate` and :meth:`.run.Run._start` with exception handlers."""
         self._progress_callback = progress_callback
         assert(0. <= self._progress_weight_run <= 1.0)
         self.add_progress(0.)
@@ -305,7 +307,7 @@ class Run:
         ### 4. now we set up the accord object with the needed extent
         logger.debug('* initialize the global raster AccoRD object')
         # Note: since we do not give a reference raster file to GeoProcessing object we have to fill some info manual
-        self.accord = GeoProcessing("ENCA Tool", self.component, self.temp_dir())
+        self.accord = GeoProcessing(self.software_name, self.component, self.temp_dir())
         # set the extent for the raster files using the statistical domain
         self.accord.ref_extent = AOI_bbox
 
@@ -321,7 +323,7 @@ class Run:
                                                                check_projected=True, check_unit=True,
                                                                stand_alone=True)
         except Error as e:
-            # Catch ENCA.Error exceptions and re-raise as ConfigError linked to the config['landcover'][self.years[0]]:
+            # Catch Error exceptions and re-raise as ConfigError linked to the config['landcover'][self.years[0]]:
             raise ConfigError(e.message, [_LAND_COVER, self.years[0]])
         if not aoi_ok:
             raise ConfigError(
@@ -334,7 +336,7 @@ class Run:
         ### 6. we still have to fill the reference profile in the AccoRD object for GeoProcessing
         logger.debug('** give statistic raster info as reference file to the AccoRD object (profile, extent)')
         # (we use information of the master land cover map for that)
-        # we need a test to check if we fullfill the ENCA minimum resolution
+        # we need a test to check if we fullfill the minimum resolution
         with rasterio.open(land_cover_year0) as src:
             src_profile = src.profile
             src_res = src.res
@@ -433,7 +435,7 @@ class Run:
                 output_filename = '_'.join(str(x) for x in raster._path)
                 output_filename = ''.join(char if char.isalnum() else '_' for char in output_filename)
                 output_path = os.path.join(self.temp_dir(), output_filename +
-                                           '_ENCA_{}m_EPSG{}.tif'.format(
+                                           '_{}m_EPSG{}.tif'.format(
                                                int(self.accord.ref_profile['transform'].a),
                                                self.accord.ref_profile['crs'].to_epsg()))
                 warped_raster = self.accord.AutomaticBring2AOI(raster.value, path_out=output_path,

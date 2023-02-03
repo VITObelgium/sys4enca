@@ -1,7 +1,7 @@
 """Utilities to validate configurations for all service modules in a generic way.
 
-Each :class:`inca.Run` object has an attribute :attr:`inca.Run.config_template`.  This dictionary describes the
-structure and expected content of the configuration for that Run.  The :class:`inca.Run` base class contains a
+Each :class:`.run.Run` object has an attribute :attr:`.run.Run.config_template`.  This dictionary describes the
+structure and expected content of the configuration for that Run.  The :class:`.run.Run` base class contains a
 description of the required configuration common to all services.  Each ecosystem service can extend this dictionary
 with the description of its specific configuration.  For example, a (fictional) ``FisheryService`` might extend
 ``config_template`` as follows::
@@ -32,8 +32,8 @@ from fiona.errors import FionaError
 from pandas.errors import ParserError
 from rasterio.errors import RasterioError, RasterioIOError
 
-from enca.framework.errors import Error
-from enca.framework.geoprocessing import RasterType
+from .errors import Error
+from .geoprocessing import RasterType
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,10 @@ class ConfigError(Error):
 
 
 class ConfigItem:
-    """A ConfigItem tells inca what value to expect at a given position in the config dictionary.
+    """A ConfigItem describes what kind of value is expected at a given position in the config dictionary.
 
         :param check_function: A function ``check(value, **kwargs)`` by which to check the parameter's value. This
-                               function should raise :obj:`inca.common.errors.Error` if the check fails.
+                               function should raise :obj:`.errors.Error` if the check fails.
         :param description: Description of the parameter's meaning.
         :param optional: Whether this config parameter may be omitted.
         :param default: Default value.
@@ -363,7 +363,7 @@ def YEARLY():
 
 
 def check_exists(file):
-    """Check if ``file`` exists, raise :obj:`inca.common.errors.Error` otherwise."""
+    """Check if ``file`` exists, raise :obj:`.errors.Error` otherwise."""
     if not os.path.exists(file):
         raise Error(f'File "{file}" does not exist.')
 
