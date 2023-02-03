@@ -6,9 +6,9 @@ import pandas as pd
 import pyproj
 import rasterio
 
-from .config_check import ConfigError
-from .run import Run
-from .geoprocessing import SHAPE_ID, number_blocks, block_window_generator
+from enca.framework.config_check import ConfigError
+from enca.framework.run import Run
+from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`

@@ -5,7 +5,7 @@ from .carbon.forest import CarbonForest
 from .carbon.livestock import CarbonLivestock
 from .carbon.soil import CarbonSoil
 from .carbon import Carbon
-from .config_check import ConfigError
+from enca.framework.config_check import ConfigError
 
 COMPONENT = 'component'
 

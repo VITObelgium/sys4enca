@@ -6,10 +6,10 @@ import yaml
 
 import enca
 import enca.components
-import enca.geoprocessing
-import enca.run
-from .config_check import ConfigError
-from .errors import Error
+import enca.framework.geoprocessing
+import enca.framework.run
+from enca.framework.config_check import ConfigError
+from enca.framework.errors import Error
 logger = logging.getLogger('enca')
 
 
@@ -31,7 +31,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    enca.run.set_up_console_logging(logger, args.verbose)
+    enca.framework.run.set_up_console_logging(logger, args.verbose)
     if args.config:
         with open(args.config) as f:
             config = yaml.safe_load(f)

@@ -32,8 +32,8 @@ from fiona.errors import FionaError
 from pandas.errors import ParserError
 from rasterio.errors import RasterioError, RasterioIOError
 
-from .errors import Error
-from .geoprocessing import RasterType
+from enca.framework.errors import Error
+from enca.framework.geoprocessing import RasterType
 
 logger = logging.getLogger(__name__)
 

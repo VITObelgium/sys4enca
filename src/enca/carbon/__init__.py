@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 
 import enca
-from enca.config_check import ConfigRasterDir
-from enca.errors import Error
-from enca.geoprocessing import RasterType, statistics_byArea, SHAPE_ID
+from enca.framework.config_check import ConfigRasterDir
+from enca.framework.errors import Error
+from enca.framework.geoprocessing import RasterType, statistics_byArea, SHAPE_ID
 from .forest import CarbonForest
 from .soil import CarbonSoil
 

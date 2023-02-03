@@ -19,8 +19,8 @@ import rasterio.mask
 import shapely.geometry
 from osgeo import __version__ as GDALversion
 
-from .ecosystem import SHAPE_ID, ECOTYPE, ECO_ID
-from .errors import Error
+from enca.framework.ecosystem import SHAPE_ID, ECOTYPE, ECO_ID
+from enca.framework.errors import Error
 
 if sys.version_info[:2] >= (3, 8):
     from importlib.metadata import version

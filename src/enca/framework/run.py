@@ -8,9 +8,9 @@ import geopandas as gpd
 import rasterio
 import yaml
 
-from .config_check import ConfigError, ConfigCheck, ConfigRaster, ConfigRasterDir
-from .errors import Error
-from .geoprocessing import SHAPE_ID, MINIMUM_RESOLUTION, POLY_MIN_SIZE, GeoProcessing
+from enca.framework.config_check import ConfigError, ConfigCheck, ConfigRaster, ConfigRasterDir
+from enca.framework.errors import Error
+from enca.framework.geoprocessing import SHAPE_ID, MINIMUM_RESOLUTION, POLY_MIN_SIZE, GeoProcessing
 
 logger = logging.getLogger(__name__)
 _log_format = logging.Formatter('%(asctime)s %(name)s [%(levelname)s] - %(message)s')
