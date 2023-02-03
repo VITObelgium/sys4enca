@@ -39,3 +39,5 @@ enca = "enca.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools_scm]

@@ -63,16 +63,6 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Land cover map</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QgsFileWidget" name="mQgsFileWidget_2"/>
-         </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_4">
            <property name="text">
@@ -83,15 +73,22 @@
          <item row="1" column="1">
           <widget class="QgsFileWidget" name="mQgsFileWidget_3"/>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_5">
-           <property name="text">
+         <item row="2" column="0" colspan="2">
+          <widget class="RegionPicker" name="widget">
+           <property name="title">
             <string>Reporting areas</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QgsFileWidget" name="mQgsFileWidget_4"/>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Land cover map</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QgsFileWidget" name="mQgsFileWidget_2"/>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="label_6">
@@ -373,6 +370,12 @@
    <class>QgsSpinBox</class>
    <extends>QSpinBox</extends>
    <header>qgsspinbox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>RegionPicker</class>
+   <extends>QGroupBox</extends>
+   <header>enca_plugin/region_picker.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <tabstops>

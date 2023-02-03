@@ -1,0 +1,104 @@
+C_CODE;SHORT_NAME;FULL_NAME
+Area_poly;Area_polygones_ha;area calculated from the polygones [ha]
+Area_rast;Area_raster;area calculated from raster pixels [ha]
+AREA_ha;AREA_ha;Area in hectares
+delta_ha;delta Area_poly to Area_rast;delta between the area calculation of vector and raster [ha]
+num_SELU;number of SELU;number of SELU units combined
+C1_1;C1_1LivingAGB_AGC;Aboveground living biomass carbon
+C1_2;C1_2LitterAGB_AGC; Litter and deadwood carbon
+C1_3_1;C1_3_1Roots_C;Roots carbon
+C1_3_2;C1_3_2SOC;Soil Organic Carbon
+C1_43;C1_43LivestockC;Livestock carbon
+C1;C1OpeningStockTOT;Opening Stocks Total
+C2_3;C2_3NPP;NPP (Net Primary Production)
+C2_53;C2_53NetLivestock;Net increase of livestock
+C2_54;C2_54DecomptoSoil;Decomposition of litter to soil
+C2_5;C2_5IncrSecond;Net increase of secondary biocarbon (incl. livestock, fish stocks, soil...)
+C2_6;C2_6ExternInflo;Inflows of biocarbon from other countries & the sea
+C2_71;C2_71AgriResidual;Agriculture crops residuals (incl. removals and returns)
+C2_72;C2_72Manure;Manure return and application
+C2_73;C2_73ForResidual;Forestry residuals (incl. removals and returns)
+C2_74;C2_74FisheriDiscard;Fishery discards
+C2_751;C2_751Biofuel;Supply of biofuel
+C2_752;C2_752LivFeedNet;Supply of livestock feed (net of grazing)
+C2_753;C2_753OtherNetSupply;Other transfers received from the supply and use system (net)
+C2_75;C2_75TransfSuppUse;Transfers from the supply & use system
+C2_7;C2_7ProdResiduals;Production residuals and transfers (leftovers, manure, discards)
+C2_8;C2_8ConsuReturn;Consumption returns (sludge, wastewater, solid waste)
+C2;C2TOTinflow [gains];Total inflow of biocarbon (gains)
+C3_11;C3_11CEREAL;Cereals
+C3_12;C3_11FIBRE;Fibre crops
+C3_13;C3_13FRUIT;Fuits
+C3_14;C3_14OIL;Oil crops
+C3_15;C3_15PULSE;Pulses
+C3_16;C3_16ROOTUB;Roots and tubers
+C3_17;C3_17COFNUT;Coffe, tea, coconut, tree nuts, tobacco
+C3_18;C3_18VEGET;Vegetables
+C3_19;C3_19SUGAR;Sugar crops
+C3_1;C3_1AgriRemNET;Agriculture crops net removals
+C3_21;C3_21AgriRemovLeft;Removals of agriculture leftovers and byproducts (incl_ straw)
+C3_22;C3_22AgriReturns;Agriculture leftover returns
+C3_2;C3_2AgriResidual;Agriculture crops harvest residuals (incl_leftovers)
+C3_3;C3_3Grazing;Livestock grazing
+C3_4;C3_4WoodRemNET;Roundwood net removals
+C3_51;C3_51ForLeftRem;Removals of forestry leftovers and byproducts
+C3_52;C3_52ForReturn;Returns of forestry leftovers
+C3_5;C3_5ForResidual;Forestry residuals (incl. removals and returns)
+C3_a;C3_aTOTHarvest;Total harvest of agriculture crops, wood & other vegetation
+C3_b;C3_bSecondBiocarb;Withdrawals of secondary biocarbon (incl. fisheries)
+C3;C3_WithdrawBioC;Total withdrawals of biocarbon
+C4_111;C4_111LUNetUrbAGB;Net loss due to land use change [lcf1 Artificial dev_Urban_road_AGB]
+C4_112;C4_112LUNetMiningAGB;Net loss due to land use change [lcf1 Artificial dev_Mining_AGB]
+C4_11a;C4_11a_lcf1LUNetAGB;Net loss due to land use change [lcf1 Artificial dev_Above Ground Biomass]
+C4_113;C4_113LUNetUrbSOC;Net loss due to land use change [lcf1 Artificial dev_Urban_road_SOC]
+C4_114;C4_114LUNetMiningSOC;Net loss due to land use change [lcf1 Artificial dev_Mining_SOC]
+C4_11b;C4_11b_lcf1LUNetSOC;Net loss due to land use change [lcf1 Artificial dev_Soil Organic Carbon]
+C4_1;C4_1LUNetCh_lcf1ArtifTT;Net loss biocarbon due to land use change [lcf1 Artificial development]
+C4_2;C4_2WatCTOT;Dumping and leakage of biocarbon to water bodies (incl_ induced erosion)
+C4_31;C4_31InducFire;Forests and other biomass fires induced by humans
+C4_33;C4_33CombRWoodFuel;Combustion of woodfuel_roundwood
+C4_34;C4_34_CombOther;Combustion of other biocarbon fuel
+C4_3;C4_3Combust_CTOT;Combustion of ecosystem biocarbon
+C4_4;C4_4Other_bio_C_to_air (CH4_C content);Other emissions to the atmosphere (VOC, CH4) of anthropogenic origin (IPCC)
+C4;C4NetIndirLoss;Net indirect anthropogenic losses of biocarbon & biomass combustion
+C5;C5Use&Loss;Total use and induced loss of ecosystem biocarbon
+C6_2;C6_2SoilEros;Soil erosion organic carbon content
+C6_3;C6_3NatFire;Forest and other fires from natural and multiple origin
+C6_41;C6_41HeterResp;Secondary ecosystem respiration (heterotrophic)
+C6_42;C6_42Decomp_to_Soil;Decomposition of litter to soil
+C6_4;C6_4DecomposTOT;Total decomposition of biomass
+C6_5;C6_5 OtherLossNat&Multip;Othe losses due to natural and multiple causes
+C6;C6Nat&Multi;Losses of biocarbon due to natural and multiple causes
+C7;C7TOTOutflow;Total outflow of biocarbon (total losses)
+NECB1;NECB1_flows ;Net Ecosystem Carbon Balance 1 [Flows]
+C9_1;C9_1LivingAGB_AGC;Aboveground living biomass carbon
+C9_2;C9_2LitterAGB_AGC;Litter and deadwood carbon
+C9_3_1;C9_3_1Root_C;Roots carbon
+C9_3_2;C9_3_2SOC;Soil Organic Carbon
+C9_43;C9_43Livestock_C;Livestock carbon
+C9;C9ClosingStockTOT;Closing Stocks Total
+NECB2;NECB2_stocks;Net Ecosystem Carbon Balance 2 [Stocks]
+ADJ;ADJ_[NECB2mNECB1];Adjustment NECB2- NECB1
+C10_1;C10_1NETinflow;Net inflow of biomass carbon
+C10_2ILUP;C10_2ILUP_LimitUse;Index of limitations of use due to nature protection
+C10;C10NEACSAccess_Surplus;NEACS_Net Ecosystem Accessbile Carbon Surplus [SELU based calc]
+C11;C11NECPotential;NECP_Net Ecosystem Carbon Potential
+SCU;SCU_SustUse;SCU_Sustainable intensity of carbon use index [0<SCU<1]
+CEH1;CEH1_Stab;Change in mean forest age / Forest stability index
+CEH6;CEH6_ResitEros;Soil resistance to erosion
+CEH;CEH_CarbHealthIndex;CEH_Ecosystem Carbon Health Index
+CIUV;CIUV_InternalUnitValue;CIUV_Ecosystem Carbon Internal Unit Value
+CO2eq_COMB;CO2eqBioC_Comb[tCO2eq];Combustion of biomass fuel [CO2eq]
+CO2eq_FIRE;CO2eqBioC_HumanFire[tCO2eq];Human induced fires [CO2eq]
+CO2eq_ANIM;CH4_Livestock[tCO2eq];CH4 by livestock [CO2eq]
+CO2eq_Man;BioC_ManMade_emissAir[tCO2eq];ManMade emissions of CO2eq from biomass
+CO2eq_Nat;BioC_Natural_Multi_emissAir [tCO2eq];Natural caused emmissions of CO2eq from biomass
+CO2eq_Tot;BioC_Total_emissAir [tCO2eq];Total human induced emmision of CO2eq from biomass
+Cow_in_Liv;Cow_LivUratio;percentacge of Cows on the ull livestock
+C2_52;C2_52DOM;Formation of dead organic matter
+C4_32;C4_32OthFireInduced;Other biomass fires induced by humans
+C6_43;C6_43DecomptoSoil;Decomposition of litter to soil
+CEH4;CEH4_FireVulnerability;Fire Vulnerability Health indicator
+CEH7;CEH7_MgtPractice;Overall health comensation due to management practice (protection)
+fire_intens;fire_intensity;Intensity of annual fires
+fire_ratio;fire_split_ratio;split between man-made and natural fires
