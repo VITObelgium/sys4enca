@@ -5,6 +5,7 @@ import re
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
@@ -351,8 +352,12 @@ class Carbon(enca.ENCARun):
                             legend_kwds={'label': column, 'orientation': 'horizontal'})
             plt.axis('equal')
             ax.set(title=f'NCA carbon map for indicator: {column} \n year: {year}')
-            ax.set_yticklabels([f'{int(x):,}' for x in ax.get_yticks().tolist()])
-            ax.set_xticklabels([f'{int(x):,}' for x in ax.get_xticks().tolist()])
+            x_ticks = ax.get_xticks().tolist()
+            y_ticks = ax.get_yticks().tolist()
+            ax.xaxis.set_major_locator(ticker.FixedLocator(x_ticks))
+            ax.yaxis.set_major_locator(ticker.FixedLocator(y_ticks))
+            ax.set_xticklabels([f'{int(x):,}' for x in x_ticks])
+            ax.set_yticklabels([f'{int(x):,}' for x in y_ticks])
             fig.savefig(os.path.join(self.maps, f'NCA_carbon_map_year_parameter_{column}_{year}.tif'))
             plt.close('all')
 
