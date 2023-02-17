@@ -257,7 +257,24 @@ class Run:
             self.statistics_shape.to_crs(epsg=self.epsg, inplace=True)
             logger.debug('** statistics vector file had to be warped')
 
-        ### 2. now we generate the "statistics_regions" out of the "reporting_regions"
+        # 2. Get the resolution of the first land cover raster.
+        land_cover_year0 = self.config.get(_LAND_COVER, {}).get(self.years[0])
+        if not land_cover_year0:
+            raise ConfigError(f'Please provide a land cover file for year {self.years[0]}.',
+                              [_LAND_COVER, self.years[0]])
+
+        with rasterio.open(land_cover_year0) as src:
+            src_profile = src.profile
+            src_res = src.res
+        if src_res[0] > MINIMUM_RESOLUTION:
+            logger.warning(
+                f'The provided landcover map has a resolution of {src_res[0]}m, which is coarser than the '
+                f'proposed MINIMUM RESOLUTION of {MINIMUM_RESOLUTION}m.  The land cover map will be '
+                'resampled. Please consider using a higher resolution land cover map if the resampling '
+                'produces non-desired results.')
+            src_res = (MINIMUM_RESOLUTION, MINIMUM_RESOLUTION)
+
+        # 3. Get the "statistics_regions" needed to cover the selected "reporting_regions"
         logger.debug('* get the reporting regions')
         # first we check the given "selected_regions" from  config all exist in reporting_shape
         # mainly needed when tool is run in command line mode
@@ -266,7 +283,7 @@ class Run:
         if not isinstance(selected_regions, list) or not len(selected_regions):
             raise ConfigError('Please select one or more reporting regions.', ['selected_regions'])
         lMismatch = [x for x in selected_regions if x not in self.reporting_shape.index]
-        if len(lMismatch) != 0:
+        if lMismatch:
             raise ConfigError('The following regions are missing from the provided reporting vector file: ' +
                               ', '.join(lMismatch), [_REPORTING_SHAPE])
         self.reporting_shape = self.reporting_shape.reindex(selected_regions).sort_index()
@@ -284,14 +301,15 @@ class Run:
                 [_STATISTICS_SHAPE])
         # check if all reporting polygons are completely covered by a statistical ones (minimum overlap)
         area_delta = self.reporting_shape.area.sum() - df_check.area.sum()
-        if abs(area_delta) > (POLY_MIN_SIZE * len(df_check)):
+        # assume that any area difference less then a third of a pixel will disappear after rasterization
+        if abs(area_delta) > (src_res[0] * src_res[1] / 3.):
             raise ConfigError(
                 'The statistics regions file does not completely cover all selected reporting regions.',
                 [_STATISTICS_SHAPE])
         # extract the identifier to get the reporting_regions
         self.statistics_shape = self.statistics_shape.reindex(df_check.index.unique()).sort_index()
 
-        ### 3. now we generate the bounds for the statistical AOI
+        # 4. Generate the bounds for the statistical AOI
         logger.debug('* calculate the raster statistical AOI')
         # first get total bounds for selected regions in statistical vector file
         # format: minx, miny, maxx, maxy
@@ -304,20 +322,16 @@ class Run:
                                                right=math.ceil(bbox[2]) * MINIMUM_RESOLUTION,
                                                top=math.ceil(bbox[3]) * MINIMUM_RESOLUTION)
 
-        ### 4. now we set up the accord object with the needed extent
+        # 5. Set up the accord object with the needed extent
         logger.debug('* initialize the global raster AccoRD object')
         # Note: since we do not give a reference raster file to GeoProcessing object we have to fill some info manual
         self.accord = GeoProcessing(self.software_name, self.component, self.temp_dir())
         # set the extent for the raster files using the statistical domain
         self.accord.ref_extent = AOI_bbox
 
-        ### 5. check if input land cover map MASTER to get resolution for set up of metadata object
+        # 6. Check if input land cover map covers the required AOI
         logger.debug(
             '** pre-check the provided MASTER land cover raster file if all statistical regions are covered')
-        land_cover_year0 = self.config.get(_LAND_COVER, {}).get(self.years[0])
-        if not land_cover_year0:
-            raise ConfigError(f'Please provide a land cover file for year {self.years[0]}.',
-                              [_LAND_COVER, self.years[0]])
         try:
             aoi_ok = self.accord.vector_in_raster_extent_check(land_cover_year0, self.statistics_shape,
                                                                check_projected=True, check_unit=True,
@@ -333,21 +347,8 @@ class Run:
                                                                                                  self.epsg),
                 [_LAND_COVER, self.years[0]])
 
-        ### 6. we still have to fill the reference profile in the AccoRD object for GeoProcessing
+        # 7. Set the reference profile in the accord GeoProcessing object
         logger.debug('** give statistic raster info as reference file to the AccoRD object (profile, extent)')
-        # (we use information of the master land cover map for that)
-        # we need a test to check if we fullfill the minimum resolution
-        with rasterio.open(land_cover_year0) as src:
-            src_profile = src.profile
-            src_res = src.res
-        if src_res[0] > MINIMUM_RESOLUTION:
-            logger.warning(
-                f'The provided landcover map has a resolution of {src_res[0]}m, which is coarser than the '
-                f'proposed MINIMUM RESOLUTION of {MINIMUM_RESOLUTION}m.  The land cover map will be '
-                'resampled. Please consider using a higher resolution land cover map if the resampling '
-                'produces non-desired results.')
-            src_res = (MINIMUM_RESOLUTION, MINIMUM_RESOLUTION)
-
         # we set up the standard raster profile
         self.accord.ref_profile = {'driver': 'GTiff',
                                    'dtype': src_profile['dtype'],
@@ -368,7 +369,7 @@ class Run:
         logger.debug('** set up the raster profile and extent for the reporting regions')
         self._create_reporting_profile()
 
-        ### 7. also generate a raster version of stats and reporting vector file for future blockprocessing tasks
+        # 8. Generate a raster version of stats and reporting vector file for blockprocessing tasks
         logger.debug('* create raster versions of statistic and reporting vectors for block processing tasks')
         # first, reporting vector file
         # output file name
