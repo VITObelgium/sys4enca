@@ -44,3 +44,10 @@ enca = "enca.__main__:main"
 package-dir = {"" = "src"}
 
 [tool.setuptools_scm]
+
+[tool.autopep8]
+max_line_length = 120
+ignore = "E501,W6"  # or ["E501", "W6"]
+in-place = true
+recursive = true
+aggressive = 3
