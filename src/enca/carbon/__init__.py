@@ -4,6 +4,7 @@ import os
 import re
 
 import geopandas as gpd
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -29,6 +30,10 @@ logger = logging.getLogger(__name__)
 _indices_average = ['C10_2ILUP', 'SCU', 'CEH1', 'CEH4', 'CEH6', 'CEH7', 'CEH', 'CIUV', 'Cow_in_Liv',
                     'fire_ratio', 'fire_inten',
                     'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']  #: Indices to average in reports
+
+
+# Use non-interactive matplotlib backend
+matplotlib.use('Agg')
 
 
 def load_lut():  # TODO Can we embed this LUT as a dict in the code?
