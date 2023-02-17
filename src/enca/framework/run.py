@@ -235,7 +235,7 @@ class Run:
          - Generate raster masks of the reporting_regions and statistics_regions, which can be used for
            block-processing.
         """
-        ### 1. check if reporting and statistic vectors are in corrct EPSG
+        # 1. check if reporting and statistic vectors have the right EPSG
         logger.debug('* check if provided vector files have correct EPSG')
         # reporting vector file
         try:
@@ -258,14 +258,19 @@ class Run:
             logger.debug('** statistics vector file had to be warped')
 
         # 2. Get the resolution of the first land cover raster.
-        land_cover_year0 = self.config.get(_LAND_COVER, {}).get(self.years[0])
-        if not land_cover_year0:
+        try:
+            land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
+        except KeyError:
             raise ConfigError(f'Please provide a land cover file for year {self.years[0]}.',
                               [_LAND_COVER, self.years[0]])
+        try:
+            with rasterio.open(land_cover_year0) as src:
+                src_profile = src.profile
+                src_res = src.res
+        except Exception as e:
+            raise ConfigError(f'Failed to open land cover file for year {self.years[0]}: "{e}"',
+                              [_LAND_COVER, self.years[0]])
 
-        with rasterio.open(land_cover_year0) as src:
-            src_profile = src.profile
-            src_res = src.res
         if src_res[0] > MINIMUM_RESOLUTION:
             logger.warning(
                 f'The provided landcover map has a resolution of {src_res[0]}m, which is coarser than the '
@@ -329,25 +334,7 @@ class Run:
         # set the extent for the raster files using the statistical domain
         self.accord.ref_extent = AOI_bbox
 
-        # 6. Check if input land cover map covers the required AOI
-        logger.debug(
-            '** pre-check the provided MASTER land cover raster file if all statistical regions are covered')
-        try:
-            aoi_ok = self.accord.vector_in_raster_extent_check(land_cover_year0, self.statistics_shape,
-                                                               check_projected=True, check_unit=True,
-                                                               stand_alone=True)
-        except Error as e:
-            # Catch Error exceptions and re-raise as ConfigError linked to the config['landcover'][self.years[0]]:
-            raise ConfigError(e.message, [_LAND_COVER, self.years[0]])
-        if not aoi_ok:
-            raise ConfigError(
-                'Not all needed statistical_regions specified by the reporting_regions are included in the ' +
-                'provided land cover map ({}). '.format(land_cover_year0) +
-                'Please provide a land cover map with a minimum extent of {} in EPSG:{}.'.format(AOI_bbox,
-                                                                                                 self.epsg),
-                [_LAND_COVER, self.years[0]])
-
-        # 7. Set the reference profile in the accord GeoProcessing object
+        # 6. Set the reference profile in the accord GeoProcessing object
         logger.debug('** give statistic raster info as reference file to the AccoRD object (profile, extent)')
         # we set up the standard raster profile
         self.accord.ref_profile = {'driver': 'GTiff',
@@ -369,7 +356,7 @@ class Run:
         logger.debug('** set up the raster profile and extent for the reporting regions')
         self._create_reporting_profile()
 
-        # 8. Generate a raster version of stats and reporting vector file for blockprocessing tasks
+        # 7. Generate a raster version of stats and reporting vector file for blockprocessing tasks
         logger.debug('* create raster versions of statistic and reporting vectors for block processing tasks')
         # first, reporting vector file
         # output file name
@@ -385,12 +372,28 @@ class Run:
         self.accord.rasterize(self.statistics_shape, SHAPE_ID, self.statistics_raster,
                               guess_dtype=True, mode='statistical')
 
-    def _create_reporting_profile(self):
-        """ function to generate the rasterio profile for the reporting regions out of the
-            rasterio profile of the statistical regions
+        # 8. Check if input land cover map covers the required AOI
+        logger.debug(
+            '** pre-check the provided MASTER land cover raster file if all statistical regions are covered')
+        try:
+            aoi_ok = self.accord.vector_in_raster_extent_check(land_cover_year0, self.statistics_shape,
+                                                               check_projected=True, check_unit=True,
+                                                               stand_alone=True)
+        except Error as e:
+            # Catch Error exceptions and re-raise as ConfigError linked to the config['landcover'][self.years[0]]:
+            raise ConfigError(e.message, [_LAND_COVER, self.years[0]])
+        if not aoi_ok:
+            raise ConfigError(
+                'Not all needed statistical_regions specified by the reporting_regions are included in the ' +
+                'provided land cover map ({}). '.format(land_cover_year0) +
+                'Please provide a land cover map with a minimum extent of {} in EPSG:{}.'.format(AOI_bbox,
+                                                                                                 self.epsg),
+                [_LAND_COVER, self.years[0]])
 
-        :return:
-        """
+
+
+    def _create_reporting_profile(self):
+        """Generate the reporting regions rasterio profile out of the profile of the statistical regions."""
         # first get total bounds for selected regions in reporting vector file
         # format: minx, miny, maxx, maxy
         bbox = self.reporting_shape.total_bounds
@@ -418,14 +421,15 @@ class Run:
     def adjust_rasters(self, config_check):
         """If needed, warp or clip input raster data so it matches the current calculation's extent and projection.
 
-        This function can only be called after calling :meth:`validate`."""
+        This function can only be called after calling :meth:`validate`.
+        """
         if not config_check._validated:  # Must validate and check all configitems before we can run this method
             raise RuntimeError('adjust_rasters() called on ConfigCheck before validation.  This is an error.')
         config_rasters = config_check.get_configitems(ConfigRaster)
         config_rasterdirs = config_check.get_configitems(ConfigRasterDir)
         rasterlists = {rasterdir: glob.glob(os.path.join(rasterdir.value, '*.tif'))
                        for rasterdir in config_rasterdirs if rasterdir.value}
-        num_rasters = len(config_rasters) + sum(len(l) for l in rasterlists.values())
+        num_rasters = len(config_rasters) + sum(len(lst) for lst in rasterlists.values())
         if num_rasters == 0:
             return
 
@@ -479,6 +483,10 @@ class Run:
                     entry = item
 
     def add_progress(self, p):
+        """Increment total progress and pass on to progress bar callback function.
+
+        The sum of all increments `p` during an entire run should equal 100.
+        """
         if self._progress_callback is not None:
             self._progress += p
             self._progress_callback(p)
@@ -487,7 +495,8 @@ class Run:
         """Update progress bar outside of the main run phase.
 
         This method should be used to update the progress bar for calculations in during initialization and raster
-        checks, outside of the specific ecosystem service run itself."""
+        checks, outside of the specific ecosystem service run itself.
+        """
         self._progress += p * (1 - self._progress_weight_run)
         if self._progress_callback:
             self._progress_callback(self._progress)
