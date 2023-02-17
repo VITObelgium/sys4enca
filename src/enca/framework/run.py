@@ -284,7 +284,7 @@ class Run:
                 [_STATISTICS_SHAPE])
         # check if all reporting polygons are completely covered by a statistical ones (minimum overlap)
         area_delta = self.reporting_shape.area.sum() - df_check.area.sum()
-        if abs(area_delta) > POLY_MIN_SIZE:
+        if abs(area_delta) > (POLY_MIN_SIZE * len(df_check)):
             raise ConfigError(
                 'The statistics regions file does not completely cover all selected reporting regions.',
                 [_STATISTICS_SHAPE])
