@@ -39,6 +39,7 @@ dynamic = ["version"]
 
 [project.scripts]
 enca = "enca.__main__:main"
+bring2aoi = "enca.tools.bring2aoi:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

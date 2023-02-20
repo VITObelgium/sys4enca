@@ -507,7 +507,9 @@ class GeoProcessing(object):
         self._full_pre_check(path_in, clean_src=secure_run)
 
         # make sure the output folder is existing
-        os.makedirs(os.path.dirname(path_out), exist_ok=True)
+        dir_out = os.path.dirname(path_out)
+        if dir_out:  # if path_out is just a filename without directory, dirname() returns ''.
+            os.makedirs(dir_out, exist_ok=True)
 
         # overwrite the output dataformat if not given
         if wOT is None:
