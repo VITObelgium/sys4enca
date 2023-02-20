@@ -1,3 +1,5 @@
+"""Carbon reporting."""
+
 import importlib.resources
 import logging
 import os
@@ -27,9 +29,10 @@ SOIL = 'Soil'
 
 logger = logging.getLogger(__name__)
 
+#: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.
 _indices_average = ['C10_2ILUP', 'SCU', 'CEH1', 'CEH4', 'CEH6', 'CEH7', 'CEH', 'CIUV', 'Cow_in_Liv',
                     'fire_ratio', 'fire_inten',
-                    'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']  #: Indices to average in reports
+                    'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']
 
 
 # Use non-interactive matplotlib backend
@@ -76,7 +79,7 @@ class Carbon(enca.ENCARun):
 
             self.write_selu_maps(stats_shape_selu, year)
 
-            self.write_reports(indices, area_stats, year)  # TODO: add 'DLCT'
+            self.write_reports(indices, area_stats, year)
 
     def selu_statistics(self, year):
 
@@ -383,16 +386,22 @@ class Carbon(enca.ENCARun):
                 df[column] *= f_area
 
             for column in _indices_average:
-                df[column] *= df[AREA_RAST]  # TODO shouldn't these also be adjusted by f_area?
+                df[column] *= df[AREA_RAST]
 
-            results = df.sum()
+            results = df.sum().rename('total')
             results['num_SELU'] = len(df)
 
-            # TODO: results_DLCT
+            # Also collect indicators per dominant landcover type
+            col_dlct = f'DLCT_{year}'
+            df_dlct = df.join(self.statistics_shape[col_dlct])
+            df_dlct['num_SELU'] = 1
+            results_dlct = df_dlct.groupby(col_dlct).sum()
+            results = pd.concat([results, results_dlct.T], axis=1)
 
             # weighted average for some of the columns:
             for column in _indices_average:
                 results[column] /= results[AREA_RAST]
 
-            results = pd.merge(results.rename('total'), _lut_index_calculation, left_index=True, right_index=True)
+            results = pd.merge(results, _lut_index_calculation, left_index=True, right_index=True)
             results.to_csv(os.path.join(self.reports, f'NCA_carbon_report_{area.Index}_{year}.csv'))
+
