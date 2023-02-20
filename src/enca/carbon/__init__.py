@@ -3,7 +3,6 @@
 import importlib.resources
 import logging
 import os
-import re
 
 import geopandas as gpd
 import matplotlib
@@ -13,11 +12,8 @@ import numpy as np
 import pandas as pd
 
 import enca
-from enca.framework.config_check import ConfigRasterDir
-from enca.framework.errors import Error
+from enca.framework.config_check import ConfigRaster
 from enca.framework.geoprocessing import RasterType, statistics_byArea, SHAPE_ID
-from .forest import CarbonForest
-from .soil import CarbonSoil
 
 FOREST_AGB = 'ForestAGB'
 FOREST_BGB = 'ForestBGB'
@@ -26,6 +22,29 @@ FOREST_LITTER = 'ForestLitter'
 AREA_RAST = 'Area_rast'
 
 SOIL = 'Soil'
+
+LIVESTOCK = 'Livestock'
+NPP = 'NPP'
+AGRICULTURE_CEREALS = 'Agriculture-cereals'
+AGRICULTURE_FIBER = 'Agriculture-fiber'
+AGRICULTURE_FRUIT = 'Agriculture-fruit'
+AGRICULTURE_OILCROP = 'Agriculture-oilcrop'
+AGRICULTURE_PULSES = 'Agriculture-pulses'
+AGRICULTURE_ROOTS = 'Agriculture-roots'
+AGRICULTURE_CAFE = 'Agriculture-cafe'
+AGRICULTURE_VEGETABLES = 'Agriculture-vegetables'
+AGRICULTURE_SUGAR = 'Agriculture-sugar'
+WOODREMOVAL = 'WoodRemoval'
+SOIL_EROSION = 'SoilErosion'
+ILUP = 'ILUP'
+CEH1 = 'CEH1'
+CEH4 = 'CEH4'
+CEH6 = 'CEH6'
+CEH7 = 'CEH7'
+COW = 'Cow'
+FIRE = 'Fire'
+FIRE_SPLIT = 'FireSplit'
+FIRE_INTEN = 'FireInten'
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +57,39 @@ _indices_average = ['C10_2ILUP', 'SCU', 'CEH1', 'CEH4', 'CEH6', 'CEH7', 'CEH', '
 # Use non-interactive matplotlib backend
 matplotlib.use('Agg')
 
+
+input_codes = dict(
+    C1_1=FOREST_AGB,
+    C1_2=FOREST_LITTER,
+    C1_3_1=FOREST_BGB,
+    C1_3_2=SOIL,
+    C1_43=LIVESTOCK,
+    C2_3=NPP,
+    C3_11=AGRICULTURE_CEREALS,
+    C3_12=AGRICULTURE_FIBER,
+    C3_13=AGRICULTURE_FRUIT,
+    C3_14=AGRICULTURE_OILCROP,
+    C3_15=AGRICULTURE_PULSES,
+    C3_16=AGRICULTURE_ROOTS,
+    C3_17=AGRICULTURE_CAFE,
+    C3_18=AGRICULTURE_VEGETABLES,
+    C3_19=AGRICULTURE_SUGAR,
+    C3_4=WOODREMOVAL,
+    C4_111=0,
+    C4_112=0,
+    C4_11b=0,
+    C4_33=0,
+    C6_2=SOIL_EROSION,
+    C10_2ILUP=ILUP,
+    CEH1=(CEH1, 1),
+    CEH4=CEH4,
+    CEH6=(CEH6, 1),
+    CEH7=CEH7,
+    Cow_in_Liv=COW,
+    fire=FIRE,
+    fire_ratio=FIRE_SPLIT,
+    fire_inten=(FIRE_INTEN, 1)
+)  #: Mapping of index column names to config values.
 
 def load_lut():  # TODO Can we embed this LUT as a dict in the code?
     with open(importlib.resources.files('enca.data').joinpath('LUT_CARBON_INDEX_CAL.csv')) as f:
@@ -56,9 +108,11 @@ class Carbon(enca.ENCARun):
         super().__init__(config)
 
         self.config_template.update({
-          self.component: {  # TODO: choice of input components is configurable (e.g. FireIntensity depending on availability)
-              CarbonForest.component: ConfigRasterDir(raster_type=RasterType.ABSOLUTE_VOLUME),
-              CarbonSoil.component: ConfigRasterDir(raster_type=RasterType.ABSOLUTE_VOLUME)
+          self.component: {
+              FOREST_LITTER: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FOREST_AGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FOREST_BGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              SOIL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)
           }
 
         })
@@ -82,47 +136,40 @@ class Carbon(enca.ENCARun):
             self.write_reports(indices, area_stats, year)
 
     def selu_statistics(self, year):
-
-        # look up required input files with correct column label
-        input_files = {CarbonForest.component: [FOREST_AGB, FOREST_BGB, FOREST_LITTER],
-                       CarbonSoil.component: [SOIL]}
-
-        labeled_files = {}
-
+        """Calculate totals per SELU region for every input raster."""
         carbon_config = self.config[self.component]
-        for rasterdir, labels in input_files.items():
-            for label in labels:
-                # Following will extract exactly one match, or raise ValueError if 0 or more than one match found:
-                file, = [x for x in carbon_config[rasterdir] if re.match(f'.*{label}_tons_{year}.tif', x)]
-                labeled_files[label] = file
-        logger.debug('Found following files:\n%s', labeled_files)
-
+        input_files = [FOREST_AGB, FOREST_BGB, FOREST_LITTER, SOIL]
         result = pd.DataFrame(index=self.statistics_shape.index)
-        for label, file in labeled_files.items():
-            stats = statistics_byArea(file, self.statistics_raster, self.statistics_shape[SHAPE_ID])
-            result[label] = stats['sum']
-
-        # TODO add polygon area?
+        for item in input_files:
+            file = carbon_config.get(item)
+            if file:
+                stats = statistics_byArea(file, self.statistics_raster, self.statistics_shape[SHAPE_ID])
+                result[item] = stats['sum']
 
         logger.debug('SELU statistics for %s:\n%s', year, result)
         return result
 
     def indices(self, selu_stats, year):
+        """Calculate indicators out of statistics."""
         # loop over the InputCodes and assign either SELU results or fixed numbers when we do not have the calculations
         logger.debug('*** assign data to input columns')
         df = selu_stats.copy()
         area = df.Area_rast
-        input_codes = self.config[self.component]['input_codes']
-        parameters = self.config[self.component]['parameters']
+        carbon_config = self.config[self.component]
+        parameters = carbon_config['parameters']
         for code, value in input_codes.items():
-            # run check if column exits and has to be renamed or if we have to create it with set value
-            if (isinstance(value, str)):
-                if value in df.columns:  # rename the column to the code
-                    df.rename({value: code}, axis='columns', inplace=True)
-                else:  # missing input data
-                    raise Error(f'Missing SELU raster column "{value}", to be assigned to code "{code}".')
+            if isinstance(value, tuple):
+                value, default = value  # input_codes may contain (value, default) pair, or plain value
             else:
-                # we have a factor in the SELU raster result assignment, just generate the column new
+                default = 0
+
+            if (isinstance(value, str)):  # Value is a column name -> use data from that column
+                if value in df.columns:
+                    df.rename({value: code}, axis='columns', inplace=True)
+                else:  # missing input data -> assign default
+                    logger.warning('No input data for %s, assigning default value %s.', value, default)
+                    df[code] = float(default)
+            else:  # Assign a fixed value.
                 df[code] = float(value)
 
         # convert Cow carbon to Cow_in_Liv ratio
@@ -398,9 +445,9 @@ class Carbon(enca.ENCARun):
             results_dlct = df_dlct.groupby(col_dlct).sum()
             results = pd.concat([results, results_dlct.T], axis=1)
 
-            # weighted average for some of the columns:
-            for column in _indices_average:
-                results[column] /= results[AREA_RAST]
+            # weighted average for some of the indicators:
+            for index in _indices_average:
+                results.loc[index] /= results.loc[AREA_RAST]
 
             results = pd.merge(results, _lut_index_calculation, left_index=True, right_index=True)
             results.to_csv(os.path.join(self.reports, f'NCA_carbon_report_{area.Index}_{year}.csv'))
