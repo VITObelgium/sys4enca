@@ -91,7 +91,27 @@ input_codes = dict(
     fire_inten=(FIRE_INTEN, 1)
 )  #: Mapping of index column names to config values.
 
+
+parameters = dict(
+    C1_2=0.12,
+    C1_3_1=0.25,
+    C2_752=0.04,
+    C3_2=0.4,
+    C3_21=0.5,
+    C3_3=25,
+    C3_51=0.2,
+    C3_52=0.8,
+    C3_5=1.5,
+    C4_4=0.05,
+    C6_41=0.15,
+    C6_42=0.02,
+    C6_43=0.2,
+    C6_5=0.9
+)  #: Default parameters.
+
+
 def load_lut():  # TODO Can we embed this LUT as a dict in the code?
+    """Read lookup table of output parameter clear names."""
     with open(importlib.resources.files('enca.data').joinpath('LUT_CARBON_INDEX_CAL.csv')) as f:
         return pd.read_csv(f, sep=';').set_index(enca.C_CODE)
 
@@ -117,8 +137,14 @@ class Carbon(enca.ENCARun):
 
         })
 
+        self.parameters = parameters.copy()
+
     def _start(self):
         logger.debug('Hello from ENCA Carbon')
+
+        # Possible override of default parameters:
+        self.parameters.update(self.config[self.component].get('parameters', {}))
+
         area_stats = self.area_stats()
         for year in self.years:
             selu_stats = self.selu_statistics(year)
@@ -155,8 +181,7 @@ class Carbon(enca.ENCARun):
         logger.debug('*** assign data to input columns')
         df = selu_stats.copy()
         area = df.Area_rast
-        carbon_config = self.config[self.component]
-        parameters = carbon_config['parameters']
+        parameters = self.parameters
         for code, value in input_codes.items():
             if isinstance(value, tuple):
                 value, default = value  # input_codes may contain (value, default) pair, or plain value
