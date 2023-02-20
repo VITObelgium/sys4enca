@@ -120,11 +120,13 @@ _lut_index_calculation = load_lut()
 
 
 class Carbon(enca.ENCARun):
+    """Carbon accounting class."""
 
     run_type = enca.ENCA
     component = 'CARBON'
 
     def __init__(self, config):
+        """Initialize config template and default carbon run parameters."""
         super().__init__(config)
 
         self.config_template.update({
@@ -215,15 +217,17 @@ class Carbon(enca.ENCARun):
         df['fire'] = df.fire * df.fire_inten
 
         # generae the carbon input for man-made and natural fires
-        ##first man-made fires with parameter
+        # first man-made fires with parameter
         df['C4_31'] = df.fire * df.fire_ratio
-        ##now natural
+        # now natural
         df['C6_3'] = df.fire - df.C4_31
         # drop the un-needed input column
         df.drop('fire', axis=1, inplace=True)
 
-        # now we run a check for litter and root_carbon since we have data and do not want to use factors (only when there is no data available)
-        # check if we have a a litter value where we have a AGB value and if this value is OK ELSE take formula to generate
+        # now we run a check for litter and root_carbon since we have data and do not want to use factors (only when
+        # there is no data available).
+        # check if we have a a litter value where we have a AGB value and if this value is
+        # OK ELSE take formula to generate
         df['C1_2'] = np.where(((df['C1_2'] == 0) & (df['C1_1'] != 0)) | (df['C1_2'] < (df['C1_1'] * 0.07)),
                               df['C1_1'] * parameters['C1_2'], df['C1_2'])
         # check if our read out BGB makes sense
@@ -237,7 +241,7 @@ class Carbon(enca.ENCARun):
         df['C1'] = df.C1_1 + df.C1_2 + df.C1_3_1 + df.C1_3_2 + df.C1_43
 
         logger.debug('**** Total inflow of biocarbon (inflow)')
-        ##calculation of net increase of secondary biocarbon
+        # calculation of net increase of secondary biocarbon
         # cal formation of dead organic matter (DOM) = C6_5
         df['C6_5'] = df['C2_52'] = df.C2_3 * parameters['C6_5']
         # cal net increase of livestock
@@ -250,14 +254,14 @@ class Carbon(enca.ENCARun):
         # cal inflow of carbon from other countries
         df['C2_6'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ##cal Production residuals and transfer
+        # cal Production residuals and transfer
         # first calculate the total agriculture crop net removals
         # cal the total of agriculture crop net removals
         df['C3_1'] = df.C3_11 + df.C3_12 + df.C3_13 + df.C3_14 + df.C3_15 + df.C3_16 + df.C3_17 + df.C3_18 + df.C3_19
 
         # cal agriculture crop residuals (incl. removals and returns) which is also C3_2
         df['C2_71'] = df['C3_2'] = df.C3_1 * parameters['C3_2']
-        ##cal C2_72 (manure return and application) is longer and circle ((C3_3 + C2_752)/2)
+        # cal C2_72 (manure return and application) is longer and circle ((C3_3 + C2_752)/2)
         # carbon of biomas used by grazing livestock
 
         df['C3_3'] = df.C2_3 / area * (df.C1_43 / 24.)
@@ -271,8 +275,9 @@ class Carbon(enca.ENCARun):
         # cal fishery discharge
         df['C2_74'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ##cal C2_751(supply of biofuel)
-        # first calculate combustion of other biogenic fuel - which is also C3_51 (removals of forestry leftovers and byproducts)
+        # cal C2_751(supply of biofuel)
+        # first calculate combustion of other biogenic fuel - which is also C3_51 (removals of forestry leftovers and
+        # byproducts)
         df['C4_34'] = df['C3_51'] = df.C3_5 * parameters['C3_51']
         df['C2_751'] = df.C4_33 + df.C4_34
 
@@ -287,12 +292,12 @@ class Carbon(enca.ENCARun):
         # cal consumption residuals
         df['C2_8'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ## here we can now calculate the total of carbon inflow
+        #  here we can now calculate the total of carbon inflow
         df['C2'] = df.C2_3 + df.C2_5 + df.C2_6 + df.C2_7 + df.C2_8
 
         logger.debug('**** Total withdrawla of biocarbon')
 
-        ##cal some split ups of agriculture crop residuals
+        # cal some split ups of agriculture crop residuals
         # removals of agriculture leftovers and byproducts
         df['C3_21'] = df.C3_2 * parameters['C3_21']
         # returns of agriculture leftovers
@@ -304,7 +309,7 @@ class Carbon(enca.ENCARun):
         # withdrawals of secondary carbon
         df['C3_b'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ## here we have now the total withdrawal of bio-carbon
+        #  here we have now the total withdrawal of bio-carbon
         df['C3'] = df.C3_a + df.C3_b
 
         logger.debug('**** Net indirect anthropogenic losses of biocarbon & biomass combustion')
@@ -321,7 +326,7 @@ class Carbon(enca.ENCARun):
         # dumping and leaking of biocarbon to water bodies
         df['C4_2'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ##combusion of ecosystem biocarbon
+        # combusion of ecosystem biocarbon
         # other biomass fires induced by humans
         df['C4_32'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
@@ -331,7 +336,7 @@ class Carbon(enca.ENCARun):
         # other emmission to atmosphere of antropogeneic origin (in this case farthing of cows )
         df['C4_4'] = (df.C1_43 / 24.) * parameters['C4_4'] * (12. / 16.) * df.Cow_in_Liv
 
-        ##sum up the net indirect losses of bio carbon and biomass combution
+        # sum up the net indirect losses of bio carbon and biomass combution
         df['C4'] = df.C4_1 + df.C4_2 + df.C4_3 + df.C4_4
 
         logger.debug('**** Total use and induced loss of ecosystem carbon')
@@ -339,7 +344,7 @@ class Carbon(enca.ENCARun):
         df['C5'] = df.C3 + df.C4
 
         logger.debug('**** Losses of biocarbon due to natural and multiple causes')
-        ##total composing of biomass
+        # total composing of biomass
         # first we need second ecosystem respiration_AGB
         df['C6_41'] = (df.C1_2 + df.C6_5) * parameters['C6_41']
         # secondary ecosystem respiration_BGB
@@ -366,7 +371,7 @@ class Carbon(enca.ENCARun):
         # livestock carbon
         df['C9_43'] = df.C1_43 + df.C2_53 - df.C3_b
 
-        ##sum it up to closing stock
+        # sum it up to closing stock
         df['C9'] = df.C9_1 + df.C9_2 + df.C9_3_1 + df.C9_3_2 + df.C9_43
 
         logger.debug('**** calculate balance')
@@ -426,6 +431,7 @@ class Carbon(enca.ENCARun):
         return df
 
     def write_selu_maps(self, selu_stats: gpd.GeoDataFrame, year):
+        """Plot some columns of the SELU + statistics GeoDataFrame."""
         for column in 'SCU', 'C1', 'C2', 'C7', 'C9', 'CEH', 'CIUV':
             fig, ax = plt.subplots(figsize=(10, 10))
             selu_stats.plot(column=column, ax=ax, legend=True,
@@ -442,6 +448,7 @@ class Carbon(enca.ENCARun):
             plt.close('all')
 
     def write_reports(self, indices, area_stats, year):
+        """Write final reporting CSV per reporting area."""
         # Calculate fraction of pixels of each SELU region within reporting regions:
         area_ratios = area_stats['count'] / indices[AREA_RAST]
 
@@ -476,4 +483,3 @@ class Carbon(enca.ENCARun):
 
             results = pd.merge(results, _lut_index_calculation, left_index=True, right_index=True)
             results.to_csv(os.path.join(self.reports, f'NCA_carbon_report_{area.Index}_{year}.csv'))
-
