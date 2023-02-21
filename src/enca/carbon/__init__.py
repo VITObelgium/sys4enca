@@ -134,9 +134,30 @@ class Carbon(enca.ENCARun):
               FOREST_LITTER: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
               FOREST_AGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
               FOREST_BGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              SOIL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)
+              SOIL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              LIVESTOCK: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              NPP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_CEREALS: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_FIBER: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_FRUIT: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_OILCROP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_PULSES: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_ROOTS: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_CAFE: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_VEGETABLES: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_SUGAR: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              WOODREMOVAL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              SOIL_EROSION: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              ILUP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH1: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH4: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH6: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH7: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              COW: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FIRE: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FIRE_SPLIT: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FIRE_INTEN: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)
           }
-
         })
 
         self.parameters = parameters.copy()
