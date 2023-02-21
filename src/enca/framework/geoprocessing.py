@@ -86,7 +86,7 @@ class Metadata(object):
                                                                                   rasterio.__gdal_version__,
                                                                                   GDALversion),
                             "software_vector_processing": "geopandas {}".format(gpd.__version__),
-                            "inca-tool_run_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+                            "creation_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         self.raster_tags = {}
 
     def read_raster_tags(self, path_list):
