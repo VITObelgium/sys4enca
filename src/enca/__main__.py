@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument('--continue', action='store_true', help='Continue from an existing run directory.')
     parser.add_argument('--years', type=int, nargs='+',
                                metavar='YEAR', help='Years for which to run the calculation.')
-    parser.add_argument('config', nargs='?', help='yaml configuration file for the account calculation.')
+    parser.add_argument('config', help='yaml configuration file for the account calculation.')
 
     return parser.parse_args()
 
