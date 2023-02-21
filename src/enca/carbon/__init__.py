@@ -1,7 +1,8 @@
+"""Carbon reporting."""
+
 import importlib.resources
 import logging
 import os
-import re
 
 import geopandas as gpd
 import matplotlib
@@ -11,11 +12,8 @@ import numpy as np
 import pandas as pd
 
 import enca
-from enca.framework.config_check import ConfigRasterDir
-from enca.framework.errors import Error
-from enca.framework.geoprocessing import RasterType, statistics_byArea, SHAPE_ID
-from .forest import CarbonForest
-from .soil import CarbonSoil
+from enca.framework.config_check import ConfigRaster
+from enca.framework.geoprocessing import RasterType
 
 FOREST_AGB = 'ForestAGB'
 FOREST_BGB = 'ForestBGB'
@@ -25,18 +23,95 @@ AREA_RAST = 'Area_rast'
 
 SOIL = 'Soil'
 
+LIVESTOCK = 'Livestock'
+NPP = 'NPP'
+AGRICULTURE_CEREALS = 'Agriculture-cereals'
+AGRICULTURE_FIBER = 'Agriculture-fiber'
+AGRICULTURE_FRUIT = 'Agriculture-fruit'
+AGRICULTURE_OILCROP = 'Agriculture-oilcrop'
+AGRICULTURE_PULSES = 'Agriculture-pulses'
+AGRICULTURE_ROOTS = 'Agriculture-roots'
+AGRICULTURE_CAFE = 'Agriculture-cafe'
+AGRICULTURE_VEGETABLES = 'Agriculture-vegetables'
+AGRICULTURE_SUGAR = 'Agriculture-sugar'
+WOODREMOVAL = 'WoodRemoval'
+SOIL_EROSION = 'SoilErosion'
+ILUP = 'ILUP'
+CEH1 = 'CEH1'
+CEH4 = 'CEH4'
+CEH6 = 'CEH6'
+CEH7 = 'CEH7'
+COW = 'Cow'
+FIRE = 'Fire'
+FIRE_SPLIT = 'FireSplit'
+FIRE_INTEN = 'FireInten'
+
 logger = logging.getLogger(__name__)
 
+#: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.
 _indices_average = ['C10_2ILUP', 'SCU', 'CEH1', 'CEH4', 'CEH6', 'CEH7', 'CEH', 'CIUV', 'Cow_in_Liv',
                     'fire_ratio', 'fire_inten',
-                    'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']  #: Indices to average in reports
+                    'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']
 
 
 # Use non-interactive matplotlib backend
 matplotlib.use('Agg')
 
 
+input_codes = dict(
+    C1_1=FOREST_AGB,
+    C1_2=FOREST_LITTER,
+    C1_3_1=FOREST_BGB,
+    C1_3_2=SOIL,
+    C1_43=LIVESTOCK,
+    C2_3=NPP,
+    C3_11=AGRICULTURE_CEREALS,
+    C3_12=AGRICULTURE_FIBER,
+    C3_13=AGRICULTURE_FRUIT,
+    C3_14=AGRICULTURE_OILCROP,
+    C3_15=AGRICULTURE_PULSES,
+    C3_16=AGRICULTURE_ROOTS,
+    C3_17=AGRICULTURE_CAFE,
+    C3_18=AGRICULTURE_VEGETABLES,
+    C3_19=AGRICULTURE_SUGAR,
+    C3_4=WOODREMOVAL,
+    C4_111=0,
+    C4_112=0,
+    C4_11b=0,
+    C4_33=0,
+    C6_2=SOIL_EROSION,
+    C10_2ILUP=ILUP,
+    CEH1=(CEH1, 1),
+    CEH4=CEH4,
+    CEH6=(CEH6, 1),
+    CEH7=CEH7,
+    Cow_in_Liv=COW,
+    fire=FIRE,
+    fire_ratio=FIRE_SPLIT,
+    fire_inten=(FIRE_INTEN, 1)
+)  #: Mapping of index column names to config values.
+
+
+parameters = dict(
+    C1_2=0.12,
+    C1_3_1=0.25,
+    C2_752=0.04,
+    C3_2=0.4,
+    C3_21=0.5,
+    C3_3=25,
+    C3_51=0.2,
+    C3_52=0.8,
+    C3_5=1.5,
+    C4_4=0.05,
+    C6_41=0.15,
+    C6_42=0.02,
+    C6_43=0.2,
+    C6_5=0.9
+)  #: Default parameters.
+
+
 def load_lut():  # TODO Can we embed this LUT as a dict in the code?
+    """Read lookup table of output parameter clear names."""
     with open(importlib.resources.files('enca.data').joinpath('LUT_CARBON_INDEX_CAL.csv')) as f:
         return pd.read_csv(f, sep=';').set_index(enca.C_CODE)
 
@@ -45,26 +120,67 @@ _lut_index_calculation = load_lut()
 
 
 class Carbon(enca.ENCARun):
+    """Carbon accounting class."""
 
     run_type = enca.ENCA
     component = 'CARBON'
 
     def __init__(self, config):
+        """Initialize config template and default carbon run parameters."""
         super().__init__(config)
 
         self.config_template.update({
-          self.component: {  # TODO: choice of input components is configurable (e.g. FireIntensity depending on availability)
-              CarbonForest.component: ConfigRasterDir(raster_type=RasterType.ABSOLUTE_VOLUME),
-              CarbonSoil.component: ConfigRasterDir(raster_type=RasterType.ABSOLUTE_VOLUME)
+          self.component: {
+              FOREST_LITTER: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FOREST_AGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FOREST_BGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              SOIL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              LIVESTOCK: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              NPP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_CEREALS: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_FIBER: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_FRUIT: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_OILCROP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_PULSES: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_ROOTS: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_CAFE: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_VEGETABLES: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              AGRICULTURE_SUGAR: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              WOODREMOVAL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              SOIL_EROSION: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              ILUP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH1: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH4: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH6: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              CEH7: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              COW: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FIRE: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FIRE_SPLIT: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+              FIRE_INTEN: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)
           }
-
         })
+
+        self.parameters = parameters.copy()
+
+        #: List of input rasters for SELU statistics
+        self.input_rasters = [FOREST_AGB, FOREST_BGB, FOREST_LITTER, SOIL, LIVESTOCK, COW, NPP,
+                              AGRICULTURE_CEREALS, AGRICULTURE_FIBER, AGRICULTURE_FRUIT, AGRICULTURE_OILCROP,
+                              AGRICULTURE_PULSES,  AGRICULTURE_ROOTS, AGRICULTURE_CAFE,  AGRICULTURE_VEGETABLES,
+                              AGRICULTURE_SUGAR,
+                              WOODREMOVAL, SOIL_EROSION, ILUP,
+                              CEH1, CEH4, CEH6, CEH7,
+                              FIRE, FIRE_SPLIT, FIRE_INTEN]
 
     def _start(self):
         logger.debug('Hello from ENCA Carbon')
+
+        # Possible override of default parameters:
+        self.parameters.update(self.config[self.component].get('parameters', {}))
+        carbon_config = self.config[self.component]
+
         area_stats = self.area_stats()
         for year in self.years:
-            selu_stats = self.selu_statistics(year)
+            selu_stats = self.selu_stats({key: carbon_config[key] for key in self.input_rasters if carbon_config[key]})
             selu_stats[AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
@@ -76,50 +192,28 @@ class Carbon(enca.ENCARun):
 
             self.write_selu_maps(stats_shape_selu, year)
 
-            self.write_reports(indices, area_stats, year)  # TODO: add 'DLCT'
-
-    def selu_statistics(self, year):
-
-        # look up required input files with correct column label
-        input_files = {CarbonForest.component: [FOREST_AGB, FOREST_BGB, FOREST_LITTER],
-                       CarbonSoil.component: [SOIL]}
-
-        labeled_files = {}
-
-        carbon_config = self.config[self.component]
-        for rasterdir, labels in input_files.items():
-            for label in labels:
-                # Following will extract exactly one match, or raise ValueError if 0 or more than one match found:
-                file, = [x for x in carbon_config[rasterdir] if re.match(f'.*{label}_tons_{year}.tif', x)]
-                labeled_files[label] = file
-        logger.debug('Found following files:\n%s', labeled_files)
-
-        result = pd.DataFrame(index=self.statistics_shape.index)
-        for label, file in labeled_files.items():
-            stats = statistics_byArea(file, self.statistics_raster, self.statistics_shape[SHAPE_ID])
-            result[label] = stats['sum']
-
-        # TODO add polygon area?
-
-        logger.debug('SELU statistics for %s:\n%s', year, result)
-        return result
+            self.write_reports(indices, area_stats, year)
 
     def indices(self, selu_stats, year):
+        """Calculate indicators out of statistics."""
         # loop over the InputCodes and assign either SELU results or fixed numbers when we do not have the calculations
         logger.debug('*** assign data to input columns')
         df = selu_stats.copy()
         area = df.Area_rast
-        input_codes = self.config[self.component]['input_codes']
-        parameters = self.config[self.component]['parameters']
+        parameters = self.parameters
         for code, value in input_codes.items():
-            # run check if column exits and has to be renamed or if we have to create it with set value
-            if (isinstance(value, str)):
-                if value in df.columns:  # rename the column to the code
-                    df.rename({value: code}, axis='columns', inplace=True)
-                else:  # missing input data
-                    raise Error(f'Missing SELU raster column "{value}", to be assigned to code "{code}".')
+            if isinstance(value, tuple):
+                value, default = value  # input_codes may contain (value, default) pair, or plain value
             else:
-                # we have a factor in the SELU raster result assignment, just generate the column new
+                default = 0
+
+            if (isinstance(value, str)):  # Value is a column name -> use data from that column
+                if value in df.columns:
+                    df.rename({value: code}, axis='columns', inplace=True)
+                else:  # missing input data -> assign default
+                    logger.warning('No input data for %s, assigning default value %s.', value, default)
+                    df[code] = float(default)
+            else:  # Assign a fixed value.
                 df[code] = float(value)
 
         # convert Cow carbon to Cow_in_Liv ratio
@@ -140,15 +234,17 @@ class Carbon(enca.ENCARun):
         df['fire'] = df.fire * df.fire_inten
 
         # generae the carbon input for man-made and natural fires
-        ##first man-made fires with parameter
+        # first man-made fires with parameter
         df['C4_31'] = df.fire * df.fire_ratio
-        ##now natural
+        # now natural
         df['C6_3'] = df.fire - df.C4_31
         # drop the un-needed input column
         df.drop('fire', axis=1, inplace=True)
 
-        # now we run a check for litter and root_carbon since we have data and do not want to use factors (only when there is no data available)
-        # check if we have a a litter value where we have a AGB value and if this value is OK ELSE take formula to generate
+        # now we run a check for litter and root_carbon since we have data and do not want to use factors (only when
+        # there is no data available).
+        # check if we have a a litter value where we have a AGB value and if this value is
+        # OK ELSE take formula to generate
         df['C1_2'] = np.where(((df['C1_2'] == 0) & (df['C1_1'] != 0)) | (df['C1_2'] < (df['C1_1'] * 0.07)),
                               df['C1_1'] * parameters['C1_2'], df['C1_2'])
         # check if our read out BGB makes sense
@@ -162,7 +258,7 @@ class Carbon(enca.ENCARun):
         df['C1'] = df.C1_1 + df.C1_2 + df.C1_3_1 + df.C1_3_2 + df.C1_43
 
         logger.debug('**** Total inflow of biocarbon (inflow)')
-        ##calculation of net increase of secondary biocarbon
+        # calculation of net increase of secondary biocarbon
         # cal formation of dead organic matter (DOM) = C6_5
         df['C6_5'] = df['C2_52'] = df.C2_3 * parameters['C6_5']
         # cal net increase of livestock
@@ -175,14 +271,14 @@ class Carbon(enca.ENCARun):
         # cal inflow of carbon from other countries
         df['C2_6'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ##cal Production residuals and transfer
+        # cal Production residuals and transfer
         # first calculate the total agriculture crop net removals
         # cal the total of agriculture crop net removals
         df['C3_1'] = df.C3_11 + df.C3_12 + df.C3_13 + df.C3_14 + df.C3_15 + df.C3_16 + df.C3_17 + df.C3_18 + df.C3_19
 
         # cal agriculture crop residuals (incl. removals and returns) which is also C3_2
         df['C2_71'] = df['C3_2'] = df.C3_1 * parameters['C3_2']
-        ##cal C2_72 (manure return and application) is longer and circle ((C3_3 + C2_752)/2)
+        # cal C2_72 (manure return and application) is longer and circle ((C3_3 + C2_752)/2)
         # carbon of biomas used by grazing livestock
 
         df['C3_3'] = df.C2_3 / area * (df.C1_43 / 24.)
@@ -196,8 +292,9 @@ class Carbon(enca.ENCARun):
         # cal fishery discharge
         df['C2_74'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ##cal C2_751(supply of biofuel)
-        # first calculate combustion of other biogenic fuel - which is also C3_51 (removals of forestry leftovers and byproducts)
+        # cal C2_751(supply of biofuel)
+        # first calculate combustion of other biogenic fuel - which is also C3_51 (removals of forestry leftovers and
+        # byproducts)
         df['C4_34'] = df['C3_51'] = df.C3_5 * parameters['C3_51']
         df['C2_751'] = df.C4_33 + df.C4_34
 
@@ -212,12 +309,12 @@ class Carbon(enca.ENCARun):
         # cal consumption residuals
         df['C2_8'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ## here we can now calculate the total of carbon inflow
+        #  here we can now calculate the total of carbon inflow
         df['C2'] = df.C2_3 + df.C2_5 + df.C2_6 + df.C2_7 + df.C2_8
 
         logger.debug('**** Total withdrawla of biocarbon')
 
-        ##cal some split ups of agriculture crop residuals
+        # cal some split ups of agriculture crop residuals
         # removals of agriculture leftovers and byproducts
         df['C3_21'] = df.C3_2 * parameters['C3_21']
         # returns of agriculture leftovers
@@ -229,7 +326,7 @@ class Carbon(enca.ENCARun):
         # withdrawals of secondary carbon
         df['C3_b'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ## here we have now the total withdrawal of bio-carbon
+        #  here we have now the total withdrawal of bio-carbon
         df['C3'] = df.C3_a + df.C3_b
 
         logger.debug('**** Net indirect anthropogenic losses of biocarbon & biomass combustion')
@@ -246,7 +343,7 @@ class Carbon(enca.ENCARun):
         # dumping and leaking of biocarbon to water bodies
         df['C4_2'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
-        ##combusion of ecosystem biocarbon
+        # combusion of ecosystem biocarbon
         # other biomass fires induced by humans
         df['C4_32'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
@@ -256,7 +353,7 @@ class Carbon(enca.ENCARun):
         # other emmission to atmosphere of antropogeneic origin (in this case farthing of cows )
         df['C4_4'] = (df.C1_43 / 24.) * parameters['C4_4'] * (12. / 16.) * df.Cow_in_Liv
 
-        ##sum up the net indirect losses of bio carbon and biomass combution
+        # sum up the net indirect losses of bio carbon and biomass combution
         df['C4'] = df.C4_1 + df.C4_2 + df.C4_3 + df.C4_4
 
         logger.debug('**** Total use and induced loss of ecosystem carbon')
@@ -264,7 +361,7 @@ class Carbon(enca.ENCARun):
         df['C5'] = df.C3 + df.C4
 
         logger.debug('**** Losses of biocarbon due to natural and multiple causes')
-        ##total composing of biomass
+        # total composing of biomass
         # first we need second ecosystem respiration_AGB
         df['C6_41'] = (df.C1_2 + df.C6_5) * parameters['C6_41']
         # secondary ecosystem respiration_BGB
@@ -291,7 +388,7 @@ class Carbon(enca.ENCARun):
         # livestock carbon
         df['C9_43'] = df.C1_43 + df.C2_53 - df.C3_b
 
-        ##sum it up to closing stock
+        # sum it up to closing stock
         df['C9'] = df.C9_1 + df.C9_2 + df.C9_3_1 + df.C9_3_2 + df.C9_43
 
         logger.debug('**** calculate balance')
@@ -351,6 +448,7 @@ class Carbon(enca.ENCARun):
         return df
 
     def write_selu_maps(self, selu_stats: gpd.GeoDataFrame, year):
+        """Plot some columns of the SELU + statistics GeoDataFrame."""
         for column in 'SCU', 'C1', 'C2', 'C7', 'C9', 'CEH', 'CIUV':
             fig, ax = plt.subplots(figsize=(10, 10))
             selu_stats.plot(column=column, ax=ax, legend=True,
@@ -367,6 +465,7 @@ class Carbon(enca.ENCARun):
             plt.close('all')
 
     def write_reports(self, indices, area_stats, year):
+        """Write final reporting CSV per reporting area."""
         # Calculate fraction of pixels of each SELU region within reporting regions:
         area_ratios = area_stats['count'] / indices[AREA_RAST]
 
@@ -383,16 +482,21 @@ class Carbon(enca.ENCARun):
                 df[column] *= f_area
 
             for column in _indices_average:
-                df[column] *= df[AREA_RAST]  # TODO shouldn't these also be adjusted by f_area?
+                df[column] *= df[AREA_RAST]
 
-            results = df.sum()
+            results = df.sum().rename('total')
             results['num_SELU'] = len(df)
 
-            # TODO: results_DLCT
+            # Also collect indicators per dominant landcover type
+            col_dlct = f'DLCT_{year}'
+            df_dlct = df.join(self.statistics_shape[col_dlct])
+            df_dlct['num_SELU'] = 1
+            results_dlct = df_dlct.groupby(col_dlct).sum()
+            results = pd.concat([results, results_dlct.T], axis=1)
 
-            # weighted average for some of the columns:
-            for column in _indices_average:
-                results[column] /= results[AREA_RAST]
+            # weighted average for some of the indicators:
+            for index in _indices_average:
+                results.loc[index] /= results.loc[AREA_RAST]
 
-            results = pd.merge(results.rename('total'), _lut_index_calculation, left_index=True, right_index=True)
+            results = pd.merge(results, _lut_index_calculation, left_index=True, right_index=True)
             results.to_csv(os.path.join(self.reports, f'NCA_carbon_report_{area.Index}_{year}.csv'))

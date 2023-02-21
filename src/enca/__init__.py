@@ -8,7 +8,7 @@ import rasterio
 
 from enca.framework.config_check import ConfigError
 from enca.framework.run import Run
-from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator
+from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
@@ -112,3 +112,19 @@ class ENCARun(Run):
         )
 
         return df_overlap
+
+    def selu_stats(self, raster_files):
+        """Calculate sum of raster values per SELU region for a dict of input rasters.
+
+        The keys of the input dictionary are used as column labels in the resulting `pd.DataFrame`.
+
+        :param raster_files: Dictionary of labeled input rasters.
+        :returns: `pd.DataFrame` with the sum of each raster per SELU region.
+
+        """
+        result = pd.DataFrame(index=self.statistics_shape.index)
+        for key, filename in raster_files.items():
+            stats = statistics_byArea(filename, self.statistics_raster, self.statistics_shape[SHAPE_ID])
+            result[key] = stats['sum']
+
+        return result
