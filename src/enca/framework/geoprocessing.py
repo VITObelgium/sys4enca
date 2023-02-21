@@ -6,8 +6,8 @@ import math
 import os
 import re
 import subprocess
-import sys
 from enum import Enum
+from importlib.metadata import version
 from os.path import splitext, basename, normpath
 
 import affine
@@ -21,12 +21,6 @@ from osgeo import __version__ as GDALversion
 
 from .ecosystem import ECOTYPE, ECO_ID
 from .errors import Error
-
-if sys.version_info[:2] >= (3, 8):
-    from importlib.metadata import version
-    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-else:
-    from importlib_metadata import version
 
 logger = logging.getLogger(__name__)
 

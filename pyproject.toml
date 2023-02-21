@@ -12,7 +12,7 @@ authors = [
 ]
 description = "Natural Capital Accounting package"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 keywords = ["ecosystem", "accounting", "SEEA"]
 license = {text = "BSD-3-Clause"}
 classifiers = [
@@ -20,8 +20,6 @@ classifiers = [
 ]
 dependencies = [
     "requests",
-    'importlib-metadata; python_version<"3.8"',
-    'importlib-resources; python_version<"3.9"',
     'GDAL>=3.1.0',
     'pandas',
     'matplotlib',

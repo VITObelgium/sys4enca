@@ -1,6 +1,6 @@
 import logging
 import os
-import sys
+from importlib.metadata import PackageNotFoundError, version
 
 import pandas as pd
 import pyproj
@@ -10,11 +10,6 @@ from enca.framework.config_check import ConfigError
 from enca.framework.run import Run
 from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
 
-if sys.version_info[:2] >= (3, 8):
-    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-    from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
-else:
-    from importlib_metadata import PackageNotFoundError, version  # pragma: no cover
 
 try:
     dist_name = 'sys4enca'
@@ -35,7 +30,10 @@ HYBAS_ID = 'HYBAS_ID'
 GID_0 = 'GID_0'
 C_CODE = 'C_CODE'
 
+
 class ENCARun(Run):
+    """Run class with extra properties for ENCA."""
+
     component = None  #: ENCA component, to be set in each subclass.
     run_type = None  #: One of ENCA, ACCOUNT, or PREPROCESS
     software_name = 'ENCA Tool'
@@ -45,6 +43,7 @@ class ENCARun(Run):
     epsg = 3857
 
     def __init__(self, config):
+        """Initialize an ENCA run."""
         super().__init__(config)
         self.root_logger = logger
         try:
@@ -69,6 +68,7 @@ class ENCARun(Run):
         os.makedirs(self.statistics, exist_ok=True)
 
     def version_info(self):
+        """Return string with describing version of ENCA and its main dependencies."""
         return f'ENCA version {__version__} using ' \
                f'GDAL (osgeo) {version("GDAL")}, rasterio {version("rasterio")}, geopandas {version("geopandas")} ' \
                f'numpy {version("numpy")}, pandas {version("pandas")}, ' \
