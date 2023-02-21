@@ -13,7 +13,7 @@ import pandas as pd
 
 import enca
 from enca.framework.config_check import ConfigRaster
-from enca.framework.geoprocessing import RasterType, statistics_byArea, SHAPE_ID
+from enca.framework.geoprocessing import RasterType
 
 FOREST_AGB = 'ForestAGB'
 FOREST_BGB = 'ForestBGB'
@@ -162,15 +162,25 @@ class Carbon(enca.ENCARun):
 
         self.parameters = parameters.copy()
 
+        #: List of input rasters for SELU statistics
+        self.input_rasters = [FOREST_AGB, FOREST_BGB, FOREST_LITTER, SOIL, LIVESTOCK, COW, NPP,
+                              AGRICULTURE_CEREALS, AGRICULTURE_FIBER, AGRICULTURE_FRUIT, AGRICULTURE_OILCROP,
+                              AGRICULTURE_PULSES,  AGRICULTURE_ROOTS, AGRICULTURE_CAFE,  AGRICULTURE_VEGETABLES,
+                              AGRICULTURE_SUGAR,
+                              WOODREMOVAL, SOIL_EROSION, ILUP,
+                              CEH1, CEH4, CEH6, CEH7,
+                              FIRE, FIRE_SPLIT, FIRE_INTEN]
+
     def _start(self):
         logger.debug('Hello from ENCA Carbon')
 
         # Possible override of default parameters:
         self.parameters.update(self.config[self.component].get('parameters', {}))
+        carbon_config = self.config[self.component]
 
         area_stats = self.area_stats()
         for year in self.years:
-            selu_stats = self.selu_statistics(year)
+            selu_stats = self.selu_stats({key: carbon_config[key] for key in self.input_rasters if carbon_config[key]})
             selu_stats[AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
@@ -183,20 +193,6 @@ class Carbon(enca.ENCARun):
             self.write_selu_maps(stats_shape_selu, year)
 
             self.write_reports(indices, area_stats, year)
-
-    def selu_statistics(self, year):
-        """Calculate totals per SELU region for every input raster."""
-        carbon_config = self.config[self.component]
-        input_files = [FOREST_AGB, FOREST_BGB, FOREST_LITTER, SOIL]
-        result = pd.DataFrame(index=self.statistics_shape.index)
-        for item in input_files:
-            file = carbon_config.get(item)
-            if file:
-                stats = statistics_byArea(file, self.statistics_raster, self.statistics_shape[SHAPE_ID])
-                result[item] = stats['sum']
-
-        logger.debug('SELU statistics for %s:\n%s', year, result)
-        return result
 
     def indices(self, selu_stats, year):
         """Calculate indicators out of statistics."""
