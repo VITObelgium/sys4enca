@@ -1,8 +1,9 @@
+"""Base implementation of a run."""
+
 import glob
 import logging
 import math
 import os
-from enum import Enum
 
 import geopandas as gpd
 import rasterio
@@ -24,6 +25,7 @@ _LAND_COVER = 'land_cover'
 _STATISTICS_SHAPE = 'statistics_shape'
 _REPORTING_SHAPE = 'reporting_shape'
 _DEFLATOR = 'deflator'
+
 
 def set_up_console_logging(root_logger, verbose=False):
     """Install a log handler that prints to the terminal."""
@@ -52,7 +54,8 @@ def remove_logfile_handler():
     """Remove the log file handler.
 
     Required to clean up when we reload the plugin.  Otherwise, an extra log handler starts writing to the same
-    file every time we reload the plugin."""
+    file every time we reload the plugin.
+    """
     global _logfile_handler
     if _logfile_handler is not None:
         logger.removeHandler(_logfile_handler)
@@ -63,16 +66,13 @@ def get_logfile():
     return _logfile
 
 
-class ShapeType(Enum):
-    STATISTICS = 0
-    REPORTING = 1
-
-
 class Cancelled(Exception):
     """Custom Exception to signal cancellation of a Run.
 
     This Exception not raised by the package itself.  Rather, it is "injected" into the thread of a running calculation
-    by the QGIS plugin when the user clicks the cancel button."""
+    by the QGIS plugin when the user clicks the cancel button.
+    """
+
     pass
 
 
@@ -88,6 +88,11 @@ class Run:
     software_name = 'NCA Framework'
 
     def __init__(self, config):
+        """Initialize a run from a config dict.
+
+        :param config: Dictionary describing run settings and input.
+
+        """
         logger.debug('Run.__init__')
         self.config_template = {
         }  #: Dictionary of :obj:`.config_check.ConfigItem` describing the required configuration for this run.
@@ -110,15 +115,16 @@ class Run:
 
         self._progress = 0.
         self._progress_callback = None  #: Callback function to report progress to QGIS.
-        self._progress_weight_run = 0.85  #: default contribution of run itself to progress bar, remaining part is for raster check.
+        self._progress_weight_run = 0.85  #: Proportion of the progress bar used for the run itself.
         self.root_logger = logger  #: root logger for Run log file.  Can be overridden in subclass
 
     def start(self, progress_callback=None):
         """Call this method to start the actual calculation.
 
-        Wraps :meth:`.config_check.ConfigCheck.validate` and :meth:`.run.Run._start` with exception handlers."""
+        Wraps :meth:`.config_check.ConfigCheck.validate` and :meth:`.run.Run._start` with exception handlers.
+        """
         self._progress_callback = progress_callback
-        assert(0. <= self._progress_weight_run <= 1.0)
+        assert (0. <= self._progress_weight_run <= 1.0)
         self.add_progress(0.)
 
         self._create_dirs()
@@ -147,15 +153,21 @@ class Run:
         logger.info('Run complete.')
 
     def _start(self):
-        """This method should be implemented in each subclass.  It is the starting point of the actual calculation."""
+        """Start the actual calculation.
+
+        This method should be implemented in each subclass.
+        """
         raise NotImplementedError
 
     def version_info(self):
-        """This method should be implemented in a subclass.  It can be used to print a string describing package
-         versions."""
+        """Return a string describing package and dependency versions.
+
+        This method should be implemented in each subclass.
+        """
         raise NotImplementedError
 
     def temp_dir(self):
+        """Return the temporary directory for this run (subdirectory of `self.run_dir`)."""
         return os.path.join(self.run_dir, 'temp')
 
     def _create_dirs(self):
@@ -188,8 +200,7 @@ class Run:
             f.write(yaml.dump(self.config))
 
     def _load_region_shapes(self):
-        """Load the shapes used for statistics (input) and shapes for reporting (output) into a
-        :class:`geopandas.GeoDataFrame`.
+        """Load shapes for statistics (input) and shapes for reporting (output) into a :class:`geopandas.GeoDataFrame`.
 
         The resulting :class:`geopandas.GeoDataFrame` is indexed by NUTS_ID, and has an additional column SHAPE_ID,
         which contains an integer identifier for each shape.  This column can be used when rasterizing shapefiles.
@@ -227,13 +238,13 @@ class Run:
     def _StudyScopeCheck(self):
         """Set up statistical and reporting region vector files, project extent, resolution, raster metadata.
 
-         - Establish the list of statistics regions needed to cover the chosen reporting regions.
+        - Establish the list of statistics regions needed to cover the chosen reporting regions.
 
-         - Initialize the metadata object to handle raster tags and standard output profiles for rasterio.  The
-           landcover map provided for the first reference year is used as a master.
+        - Initialize the metadata object to handle raster tags and standard output profiles for rasterio.  The
+          landcover map provided for the first reference year is used as a master.
 
-         - Generate raster masks of the reporting_regions and statistics_regions, which can be used for
-           block-processing.
+        - Generate raster masks of the reporting_regions and statistics_regions, which can be used for
+          block-processing.
         """
         # 1. check if reporting and statistic vectors have the right EPSG
         logger.debug('* check if provided vector files have correct EPSG')
@@ -389,8 +400,6 @@ class Run:
                 'Please provide a land cover map with a minimum extent of {} in EPSG:{}.'.format(AOI_bbox,
                                                                                                  self.epsg),
                 [_LAND_COVER, self.years[0]])
-
-
 
     def _create_reporting_profile(self):
         """Generate the reporting regions rasterio profile out of the profile of the statistical regions."""
