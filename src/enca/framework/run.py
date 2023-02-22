@@ -182,7 +182,7 @@ class Run:
         if os.sep in self.run_name or (os.altsep is not None and os.altsep in self.run_name):
             raise Error(f'Run name "{self.run_name}" contains directory separator.')
 
-        logger.debug('Create run_dir %s', self.run_dir)
+        logger.debug(_('Create run_dir %s'), self.run_dir)
         try:
             os.makedirs(self.run_dir)
         except FileExistsError:

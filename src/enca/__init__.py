@@ -1,3 +1,5 @@
+import gettext
+import importlib.resources
 import logging
 import os
 from importlib.metadata import PackageNotFoundError, version
@@ -72,6 +74,13 @@ class ENCARun(Run):
         self.statistics = os.path.join(self.run_dir, 'statistics')
 
         logger.debug('Running with config:\n%s', config)
+
+    def start(self, progress_callback=None):
+        """Set up gettext and start run."""
+        with importlib.resources.as_file(importlib.resources.files('enca').joinpath('locale')) as localedir:
+            gettext.install('sys4enca', localedir)
+
+            super().start(progress_callback)
 
     def _create_dirs(self):
         super()._create_dirs()
