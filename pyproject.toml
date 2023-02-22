@@ -42,6 +42,9 @@ bring2aoi = "enca.tools.bring2aoi:main"
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+enca = ["*.mo"]
+
 [tool.setuptools_scm]
 
 [tool.autopep8]
