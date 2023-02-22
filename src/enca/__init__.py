@@ -1,5 +1,4 @@
 import gettext
-import importlib.resources
 import logging
 import os
 from importlib.metadata import PackageNotFoundError, version
@@ -25,6 +24,11 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 finally:
     del PackageNotFoundError
+
+# The following will not work when running our package from a zip file, or egg, but currently there seems to be no
+# clean method to install gettext translation files with a Python package.
+# (see https://setuptools.pypa.io/en/latest/userguide/datafiles.html#accessing-data-files-at-runtime)
+gettext.install('sys4enca', os.path.join(os.path.dirname(__file__), 'locale'))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -74,13 +78,6 @@ class ENCARun(Run):
         self.statistics = os.path.join(self.run_dir, 'statistics')
 
         logger.debug('Running with config:\n%s', config)
-
-    def start(self, progress_callback=None):
-        """Set up gettext and start run."""
-        with importlib.resources.as_file(importlib.resources.files('enca').joinpath('locale')) as localedir:
-            gettext.install('sys4enca', localedir)
-
-            super().start(progress_callback)
 
     def _create_dirs(self):
         super()._create_dirs()
