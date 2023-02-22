@@ -30,6 +30,7 @@ HYBAS_ID = 'HYBAS_ID'
 GID_0 = 'GID_0'
 C_CODE = 'C_CODE'
 
+AREA_RAST = 'Area_rast'
 
 class ENCARun(Run):
     """Run class with extra properties for ENCA."""

@@ -14,12 +14,11 @@ import pandas as pd
 import enca
 from enca.framework.config_check import ConfigRaster
 from enca.framework.geoprocessing import RasterType
+from enca import AREA_RAST
 
 FOREST_AGB = 'ForestAGB'
 FOREST_BGB = 'ForestBGB'
 FOREST_LITTER = 'ForestLitter'
-
-AREA_RAST = 'Area_rast'
 
 SOIL = 'Soil'
 
@@ -181,7 +180,7 @@ class Carbon(enca.ENCARun):
         area_stats = self.area_stats()
         for year in self.years:
             selu_stats = self.selu_stats({key: carbon_config[key] for key in self.input_rasters if carbon_config[key]})
-            selu_stats[AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
+            selu_stats[enca.AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
             indices = self.indices(selu_stats, year)

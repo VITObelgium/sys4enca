@@ -46,6 +46,9 @@ class Water(enca.ENCARun):
 
     def _start(self):
         water_config = self.config[self.component]
+
+        area_stats = self.area_stats()
         for year in self.years:
             stats = self.selu_stats({key: water_config[key] for key in self.input_rasters if water_config[key]})
+            stats[enca.AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
