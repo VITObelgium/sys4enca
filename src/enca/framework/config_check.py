@@ -23,9 +23,8 @@ import glob
 import logging
 import os
 from functools import reduce
-from typing import Optional, Union
 
-import geopandas as gpd
+import fiona
 import pandas as pd
 import rasterio
 from fiona.errors import FionaError
@@ -165,32 +164,17 @@ class ConfigChoice(ConfigItem):
 
 class ConfigShape(ConfigItem):
 
-    def check_value(self, shapes: Union[str, gpd.GeoDataFrame], id_list: Optional[ConfigRef] = None) -> None:
-        """Check if ``shapes`` can be opened using :func:`geopandas.read_file`.
+    def check_value(self, shape: str) -> None:
+        """Check if ``shapes`` can be opened using :func:`fiona.open`.
 
-        :param shapes: Path to a shapefile, or a :class:`geopandas.GeoDataFrame`.
-        :param id_list: If provided, check these id's are present in the shapefile.
+        :param shape: Path to a shapefile.
         """
-        if isinstance(shapes, str):  # File name provided  # TODO clean up Default NUTS handling...
-            check_exists(shapes)
-            try:
-                df = gpd.read_file(shapes)
-            except FionaError as e:
-                raise Error(f'Failed to open shape file {shapes}: {e}.')
-        elif isinstance(shapes, gpd.GeoDataFrame):
-            df = shapes
-            shapes = f'[Default shape for {": ".join(str(x) for x in self._path)}]'
-
-        if id_list is not None:
-            id_lists = (self._configcheck.look_up_item(id_list, year) for year in self._years)
-            df = df.set_index('NUTS_ID')
-            for ids in id_lists:
-                geometries = df['geometry'].reindex(ids)
-                missing_geometry = geometries.isna()
-                if missing_geometry.any():
-                    missing_ids = list(missing_geometry[missing_geometry].index)
-                    raise Error(f'File {shapes} does not contain geometry for selected region(s) {missing_ids}.',
-                                self._path)
+        check_exists(shape)
+        try:
+            with fiona.open(shape):
+                pass
+        except FionaError as e:
+            raise Error(f'Failed to open shape file {shape}: {e}.')
 
 
 class RasterMixin:
