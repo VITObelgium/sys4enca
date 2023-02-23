@@ -41,11 +41,9 @@ class ENCAPlugin:
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&ENCA')
-        # TODO: We are going to let the user set this up in a future iteration
+
         self.toolbar = self.iface.addToolBar(u'ENCAPlugin')
         self.toolbar.setObjectName(u'ENCAPlugin')
-
-        #print "** INITIALIZING ENCAPlugin"
 
         self.pluginIsActive = False
         self.dockwidget = None
@@ -191,8 +189,6 @@ class ENCAPlugin:
         if not self.pluginIsActive:
             self.pluginIsActive = True
 
-            #print "** STARTING ENCAPlugin"
-
             # dockwidget may not exist if:
             #    first run of plugin
             #    removed on close (see self.onClosePlugin method)
@@ -204,6 +200,5 @@ class ENCAPlugin:
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
             # show the dockwidget
-            # TODO: fix to allow choice of dock location
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
             self.dockwidget.show()
