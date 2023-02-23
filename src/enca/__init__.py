@@ -123,6 +123,7 @@ class ENCARun(Run):
         :returns: `pd.DataFrame` with the sum of each raster per SELU region.
 
         """
+        logger.debug('Calculate SELU stats %s', ', '.join(raster_files))
         result = pd.DataFrame(index=self.statistics_shape.index)
         for key, filename in raster_files.items():
             stats = statistics_byArea(filename, self.statistics_raster, self.statistics_shape[SHAPE_ID])

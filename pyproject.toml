@@ -24,7 +24,7 @@ dependencies = [
     'pandas',
     'matplotlib',
     'numpy',
-    'geopandas',
+    'geopandas>=0.9',
     'rasterio',
     'richdem',
     'scikit-learn',

@@ -1164,6 +1164,23 @@ class GeoProcessing(object):
                     ds_out.write(aData.filled(ds_out.nodata), window=dst_window, indexes=1)
                     add_progress(100. / nblocks)
 
+    def vector_2_AOI(self, infile, outfile, mode='statistical'):
+        """Reproject and cut a vector file to the desired reference extent."""
+        if mode == 'statistical':
+            pextent = self.ref_extent
+            out_crs = self.ref_profile['crs']
+        elif mode == 'reporting':
+            self._check2()
+            pextent = self.reporting_extent
+            out_crs = self.reporting_profile['crs']
+
+        cmd = ['ogr2ogr', '-overwrite',
+               '-t_srs', str(out_crs).replace('"', '\\"'),
+               '-clipdst',  str(pextent.left), str(pextent.bottom), str(pextent.right), str(pextent.top),
+               outfile, infile]
+
+        subprocess.run(cmd, check=True)
+
     def merge_raster(self, lPathIn, path_out, mode=None):
         """Merge several GeoTiff files into one.
 
