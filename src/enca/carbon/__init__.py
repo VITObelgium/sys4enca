@@ -111,7 +111,7 @@ parameters = dict(
 
 def load_lut():  # TODO Can we embed this LUT as a dict in the code?
     """Read lookup table of output parameter clear names."""
-    with open(importlib.resources.files('enca.data').joinpath('LUT_CARBON_INDEX_CAL.csv')) as f:
+    with importlib.resources.files(enca).joinpath('data/LUT_CARBON_INDEX_CAL.csv').open() as f:
         return pd.read_csv(f, sep=';').set_index(enca.C_CODE)
 
 
