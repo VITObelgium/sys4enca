@@ -6,6 +6,7 @@ import os
 import numpy as np
 
 import enca
+from enca import _
 from enca.framework.config_check import ConfigRaster
 from enca.framework.geoprocessing import RasterType
 

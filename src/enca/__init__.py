@@ -2,7 +2,7 @@ import gettext
 import logging
 import os
 from importlib.metadata import PackageNotFoundError, version
-from importlib.resources import files
+from importlib.resources import as_file, files
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -25,10 +25,10 @@ except PackageNotFoundError:  # pragma: no cover
 finally:
     del PackageNotFoundError
 
-# The following will not work when running our package from a zip file, or egg, but currently there seems to be no
-# clean method to install gettext translation files with a Python package.
-# (see https://setuptools.pypa.io/en/latest/userguide/datafiles.html#accessing-data-files-at-runtime)
-gettext.install('sys4enca', os.path.join(os.path.dirname(__file__), 'locale'))
+
+with as_file(files(__name__).joinpath('locale')) as path:
+    t = gettext.translation(dist_name, path, fallback=True)
+    _ = t.gettext
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
