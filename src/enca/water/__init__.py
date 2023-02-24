@@ -5,6 +5,7 @@ import os
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 
 import enca
 from enca.framework.config_check import ConfigRaster, ConfigShape
@@ -248,8 +249,10 @@ class Water(enca.ENCARun):
         return df[[COAST, OUTFLOW]].join(inflow).fillna(0)
 
     def indices(self, selu_stats):
-        logger.debug('*** assign data to input columns')
-        df = selu_stats.copy()
+        """Calculate water indicators."""
+        indices = {}
+
+        area = selu_stats[enca.AREA_RAST]
 
         parameters = self.parameters
         for code, value in input_codes.items():
@@ -259,335 +262,343 @@ class Water(enca.ENCARun):
                 default = 0
 
             if (isinstance(value, str)):  # Value is a column name -> use data from that column
-                if value in df.columns:
-                    df.rename({value: code}, axis='columns', inplace=True)
+                if value in selu_stats:
+                    indices[code] = selu_stats[value]
                 else:  # missing input data -> assign default
                     logger.warning('No input data for %s, assigning default value %s.', value, default)
-                    df[code] = float(default)
+                    indices[code] = float(default)
             else:  # Assign a fixed value.
-                df[code] = float(value)
+                indices[code] = float(value)
 
         # calculate correct value for  W13_23 - soil and vegetation vulnerability to natural water stress index
         # zonal statistic gave sum
-        df['W13_23'] = np.where((df.W13_23 / df.Area_rast) > 1.0, 1.0, df.W13_23 / df.Area_rast)
+        indices['W13_23'] = np.where((indices['W13_23'] / area) > 1.0, 1.0, indices['W13_23'] / area)
         # df['W13_23'] = np.where(df.W13_23 > 1.0, 1.0, df.W13_23)
-
-        # re-assign some input columns
-        df['a'] = df.Area_rast
 
         logger.debug('*** run Ecosystem Water Basic Balance...')
         logger.debug('**** Opening Stock descriptors')
         # indicators
-        df['i0'] = df.a
-        df['i1'] = df.W1_12
-        df['i4'] = df.W1_22
-        df['i6'] = df.W1_21
+        indices['i0'] = area
+        indices['i1'] = indices['W1_12']
+        indices['i4'] = indices['W1_22']
+        indices['i6'] = indices['W1_21']
 
         # cal Glacier, Ice and snow (1000 m3)
-        df['W1_3'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W1_3'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # cal Soil and Veg water (net AET)
         # for that we need the Soil and vegetation potential which is half the AET
-        df['W8_5'] = df.W3_1 * parameters['W8_5']
-        df['W1_5'] = df.W8_5
+        indices['W8_5'] = indices['W3_1'] * parameters['W8_5']
+        indices['W1_5'] = indices['W8_5']
 
         logger.debug('**** Total inflows of Water')
         # internal spontaneous water transfer received
         # surface runoff to rivers
-        df['W2_21'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_21'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # infiltration to soil
-        df['W2_22'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_22'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # Groundwater drainage into rivers
-        df['W2_23'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_23'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # other transfers received
-        df['W2_24'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_24'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # sum up
-        df['W2_2'] = df.W2_21 + df.W2_22 + df.W2_23 + df.W2_24
+        indices['W2_2'] = indices['W2_21'] + indices['W2_22'] + indices['W2_23'] + indices['W2_24']
         # a spin off - Groundwater drainage to river minus percolation
         # first we need available effictive rainfall
-        df['W4a'] = df.W2_1 - df.W3_1
+        indices['W4a'] = indices['W2_1'] - indices['W3_1']
         # now calculate groundwater drainage to rivers
-        df['W2_2a'] = df.W3_3 - df.W2_31 - df.W4a
+        indices['W2_2a'] = indices['W3_3'] - indices['W2_31'] - indices['W4a']
 
         # Natural inflows from upstream terrotories
         # cal natural inflow of groundwater from upstream terrotories
-        df['W2_32'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_32'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # now sum up
-        df['W2_3'] = df.W2_31 + df.W2_32
+        indices['W2_3'] = indices['W2_31'] + indices['W2_32']
 
         # Artificial inflows of water from other territories and the sea
         # Articitial inflow of water from other territories
         # -> first abstraction of water for disturbanse
-        df['W3_41'] = ((df.W3_4a * parameters['W3_41a']) + (df.W3_4b * parameters['W3_41b'])) * parameters['W3_41c']
-        df['W2_41'] = df.W3_41 * parameters['W2_41']
+        indices['W3_41'] = ((indices['W3_4a'] * parameters['W3_41a'])
+                            + (indices['W3_4b'] * parameters['W3_41b'])) * parameters['W3_41c']
+        indices['W2_41'] = indices['W3_41'] * parameters['W2_41']
         # abstraction of water from sea
-        df['W2_42'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_42'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # sum up
-        df['W2_4'] = df.W2_41 + df.W2_42
+        indices['W2_4'] = indices['W2_41'] + indices['W2_42']
 
         # Waste water returns/discharge to inland water assets
         # returns/discharge of untreated urban waste water
-        df['W2_51'] = (df.W3_4b * parameters['W2_51a']) - (df.W3_4b * parameters['W2_51b'] * df.CoastID)
+        indices['W2_51'] = (indices['W3_4b'] * parameters['W2_51a'])\
+            - (indices['W3_4b'] * parameters['W2_51b'] * indices['CoastID'])
         # split in treated waste water (W2_51a) and untreated (W2_51b)
-        df['W2_51b'] = df.W2_51 - df.W2_51a
+        indices['W2_51b'] = indices['W2_51'] - indices['W2_51a']
         # returns/discharge water_urban runoff
-        df['W2_52'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_52'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # sum up
-        df['W2_5'] = df.W2_51 + df.W2_52
+        indices['W2_5'] = indices['W2_51'] + indices['W2_52']
 
         # other returns of abstracted water to inland water bodies
         # losses of water in transport and storage
-        df['W2_61'] = df.W3_41 * parameters['W2_61']
+        indices['W2_61'] = indices['W3_41'] * parameters['W2_61']
         # irrigation water
-        df['W2_62'] = df.W3_4a
+        indices['W2_62'] = indices['W3_4a']
         # return of water from hydroelectric production
-        df['W2_63'] = df.W3_43
+        indices['W2_63'] = indices['W3_43']
         # return of cooling water
-        df['W2_64'] = df.W3_44
+        indices['W2_64'] = indices['W3_44']
         # return of mine water
-        df['W2_65'] = df['W3_45'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_65'] = indices['W3_45'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # return of water from other productions
-        df['W2_66'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_66'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # other return of water
-        df['W2_67'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W2_67'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # sum up
-        df['W2_6'] = df.W2_61 + df.W2_62 + df.W2_63 + df.W2_64 + df.W2_65 + df.W2_66 + df.W2_67
+        indices['W2_6'] = indices['W2_61'] + indices['W2_62'] + indices['W2_63']\
+            + indices['W2_64'] + indices['W2_65'] + indices['W2_66'] + indices['W2_67']
 
         # now sum up the inflow
-        df['W2'] = df.W2_1 + df.W2_2 + df.W2_3 + df.W2_4 + df.W2_5 + df.W2_6
+        indices['W2'] = indices['W2_1'] + indices['W2_2'] + indices['W2_3']\
+            + indices['W2_4'] + indices['W2_5'] + indices['W2_6']
 
         logger.debug('**** Total outflows of Water')
         # the W3_2 (internal sponteaneous water transfer supplied) is the same as the received ones (W2_2)
         # surface runoff to rivers
-        df['W3_21'] = df.W2_21
+        indices['W3_21'] = indices['W2_21']
         # infiltration from soil
-        df['W3_22'] = df.W2_22
+        indices['W3_22'] = indices['W2_22']
         # Groundwater drainage to rivers
-        df['W3_23'] = df.W2_23
+        indices['W3_23'] = indices['W2_23']
         # other transfers supplied
-        df['W3_24'] = df.W2_24
+        indices['W3_24'] = indices['W2_24']
         # sum up
-        df['W3_2'] = df.W3_21 + df.W3_22 + df.W3_23 + df.W3_24
+        indices['W3_2'] = indices['W3_21'] + indices['W3_22'] + indices['W3_23'] + indices['W3_24']
 
         # split up of Natural outflows to downstream territories and the sea
         # to sea
-        df['W3_32'] = df.W3_3 * df.CoastID
+        indices['W3_32'] = indices['W3_3'] * indices['CoastID']
         # of surface waters to downstream territories
-        df['W3_31'] = df.W3_3 - df.W3_32
+        indices['W3_31'] = indices['W3_3'] - indices['W3_32']
         # natural outflow of groundwater to downstream territories
-        df['W3_33'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W3_33'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
         # Abstraction from inland water bodies
         # own-account abstraction by agriculture (incl. irrigation)
-        df['W3_42'] = df.W3_4a * parameters['W3_42']
+        indices['W3_42'] = indices['W3_4a'] * parameters['W3_42']
         # own-account abstraction for municipal and household use
-        df['W3_46'] = df.W3_4b * parameters['W3_46']
+        indices['W3_46'] = indices['W3_4b'] * parameters['W3_46']
         # sum up
-        df['W3_4'] = df.W3_41 + df.W3_42 + df.W3_43 + df.W3_44 + df.W3_45 + df.W3_46
+        indices['W3_4'] = indices['W3_41'] + indices['W3_42'] + indices['W3_43']\
+            + indices['W3_44'] + indices['W3_45'] + indices['W3_46']
         # adding some split-ups of W3_4
         # of which water abstraction from surface water
-        df['W3_4c'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W3_4c'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # of which water abstraction from groundwater
-        df['W3_4d'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W3_4d'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
         # Collection of precipittion water and urban runoff
-        df['W3_5'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W3_5'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
         # Actual evapo-transpiration induced by irrigation
-        df['W3_6'] = df.W3_4a * parameters['W3_6']
+        indices['W3_6'] = indices['W3_4a'] * parameters['W3_6']
 
         # Evaporation from industry and other uses
-        df['W3_7'] = df.W3_44 * parameters['W3_7']
+        indices['W3_7'] = indices['W3_44'] * parameters['W3_7']
 
         # artificial outflow of water to other territories and the sea
         # direct discharche of wastewater to the sea
-        df['W3_81'] = (df.W3_4b * parameters['W3_81'] * df.CoastID) - df.W3_82
+        indices['W3_81'] = (indices['W3_4b'] * parameters['W3_81'] * indices['CoastID']) - indices['W3_82']
         # of which untreated waste water
-        df['W3_81b'] = df.W3_81 - df.W3_81a
+        indices['W3_81b'] = indices['W3_81'] - indices['W3_81a']
         # sum up
-        df['W3_8'] = df.W3_81 + df.W3_82
+        indices['W3_8'] = indices['W3_81'] + indices['W3_82']
 
         # other chnage in volume of stocks and adjustments
-        df['W3_9'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W3_9'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
         # now we sum up the total outflow
-        df['W3'] = df.W3_1 + df.W3_2 + df.W3_3 + df.W3_4 + df.W3_5 + df.W3_6 + df.W3_7 + df.W3_8 + df.W3_9
+        indices['W3'] = indices['W3_1'] + indices['W3_2'] + indices['W3_3'] + indices['W3_4'] + indices['W3_5']\
+            + indices['W3_6'] + indices['W3_7'] + indices['W3_8'] + indices['W3_9']
 
         logger.debug('**** calculate Net Ecosystem Water Balance')
         # groundwater net surface recharge
-        df['W4b'] = -(df.W2_2a + df.W3_4d)
+        indices['W4b'] = -(indices['W2_2a'] + indices['W3_4d'])
         # now full balance
-        df['W4'] = df.W2 - df.W3
+        indices['W4'] = indices['W2'] - indices['W3']
 
         logger.debug('**** Closing Stocks descriptors')
-        df['W5_11'] = df.W1_11
-        df['W5_12'] = df.i1
-        df['W5_21'] = df.W1_21
-        df['W5_22'] = df.i4
-        df['W5_3'] = df.W1_3
-        df['W5_41'] = df.W1_41
-        df['W5_42'] = df.W1_42
-        df['W5_5'] = df.W8_5
+        indices['W5_11'] = indices['W1_11']
+        indices['W5_12'] = indices['i1']
+        indices['W5_21'] = indices['W1_21']
+        indices['W5_22'] = indices['i4']
+        indices['W5_3'] = indices['W1_3']
+        indices['W5_41'] = indices['W1_41']
+        indices['W5_42'] = indices['W1_42']
+        indices['W5_5'] = indices['W8_5']
 
         logger.debug('*** run Accessible Water Resource estimations...')
         logger.debug('**** Net primary and secondary water resources')
         # first some other split-ups of W2
-        df['W2a'] = df.W2_1 + df.W2_2 + df.W2_3
-        df['W2b'] = df.W2_4 + df.W2_5 + df.W2_6
+        indices['W2a'] = indices['W2_1'] + indices['W2_2'] + indices['W2_3']
+        indices['W2b'] = indices['W2_4'] + indices['W2_5'] + indices['W2_6']
         # now cal the net
-        df['W6'] = df.W2a + df.W2b - df.W3_2 - df.W3_3
+        indices['W6'] = indices['W2a'] + indices['W2b'] - indices['W3_2'] - indices['W3_3']
 
         logger.debug('**** Net ecosystem Water surplus')
         # first total adjustment of natural renewable water resources
         # regular renewable water resources
-        df['W7_11'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_11'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # legally reserved runoff
-        df['W7_12'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_12'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # inflow not garantueed trough law
-        df['W7_13'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_13'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # outflow garantueed by law
-        df['W7_14'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_14'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # water natural resources unuseable due to quality
-        df['W7_15'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_15'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # remote inaccessable water resources
-        df['W7_16'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_16'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # Exploitable irrugular renewable water resources
-        df['W7_17'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_17'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # previous net accumulation in water stocks
-        df['W7_18'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_18'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # other accessable adjustments of natural water
-        df['W7_19'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_19'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # summ up
-        df['W7_1'] = df.W7_11 + df.W7_12 + df.W7_13 + df.W7_14 + df.W7_15 + df.W7_16 + df.W7_17 + df.W7_18 + df.W7_19
+        indices['W7_1'] = indices['W7_11'] + indices['W7_12'] + indices['W7_13'] + indices['W7_14'] + indices['W7_15']\
+            + indices['W7_16'] + indices['W7_17'] + indices['W7_18'] + indices['W7_19']
 
         # Total adjustment of secondary renewable water resources
         # secondary water resources unusable due to quality
-        df['W7_21'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W7_21'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # other adjustments of secondary resources
-        df['W7_22'] = -df.W2_63
-        df['W7_2'] = df.W7_21 + df.W7_22
+        indices['W7_22'] = -indices['W2_63']
+        indices['W7_2'] = indices['W7_21'] + indices['W7_22']
 
         # cal exploitable natural water resources ENWR
-        df['W7a'] = df.W2a + df.W7_1 + df.W3_9
+        indices['W7a'] = indices['W2a'] + indices['W7_1'] + indices['W3_9']
         # exploitable secondary water resources (ESWR)
-        df['W7b'] = df.W2b + df.W7_2
+        indices['W7b'] = indices['W2b'] + indices['W7_2']
         # sum up
-        df['W7'] = df.W7a + df.W7b
+        indices['W7'] = indices['W7a'] + indices['W7b']
 
         logger.debug('**** Net Ecosystem Accessible Water Potential')
         # lakes and reservoirs runoff potential
-        df['W8_1'] = (df.i2 * df.i1 / (df.i12 + 1.)) + (df.W1_11 / parameters['W8_1'])
+        indices['W8_1'] = (indices['i2'] * indices['i1'] / (indices['i12'] + 1.)) + (indices['W1_11'] / parameters['W8_1'])
         # river runoff land potential
-        df['W8_2'] = df.W3_3 * df.i4 / df.a
+        indices['W8_2'] = indices['W3_3'] * indices['i4'] / area
         # snow and ice discharge potential
-        df['W8_3'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W8_3'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # groundwater accessible recharge potential
         # -first we need i8 = aquifer accessible area
-        df['i8'] = np.where((df.W1_41 + df.W1_42) > df.a, 1, (df.W1_41 + df.W1_42)/df.a)
-        df['W8_4'] = np.where((df.W4b * df.i8) > 0, df.W4b * df.i8, 0)
+        indices['i8'] = np.where((indices['W1_41'] + indices['W1_42']) > area, 1, (indices['W1_41'] + indices['W1_42'])/area)
+        indices['W8_4'] = np.where((indices['W4b'] * indices['i8']) > 0, indices['W4b'] * indices['i8'], 0)
 
         # sum up
-        df['W8'] = np.where((df.W8_1 + df.W8_2 + df.W8_3 + df.W8_4 + df.W8_5) >=
-                            0,  df.W8_1 + df.W8_2 + df.W8_3 + df.W8_4 + df.W8_5, 0)
+        indices['W8'] = np.where(
+            (indices['W8_1'] + indices['W8_2'] + indices['W8_3'] + indices['W8_4'] + indices['W8_5']) >= 0,
+            indices['W8_1'] + indices['W8_2'] + indices['W8_3'] + indices['W8_4'] + indices['W8_5'], 0)
 
         logger.debug('*** run Total Water Uses...')
         logger.debug('**** Total use of ecosystem water')
         # abstraction of inland water
-        df['W9_1'] = df.W3_4
+        indices['W9_1'] = indices['W3_4']
         # green water use
         # first spontaneous actual evao-transpiration from managed forest
-        df['W9_22'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
-        df['W9_2'] = df.W9_21 + df.W9_22
+        indices['W9_22'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W9_2'] = indices['W9_21'] + indices['W9_22']
 
         # collection of precipitation water and urban run off
-        df['W9_3'] = df.W3_5
+        indices['W9_3'] = indices['W3_5']
         # split up in
         # collection of precipitation water
-        df['W9_32'] = df['W3_52'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W9_32'] = indices['W3_52'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # collection of urban run off
-        df['W9_31'] = df['W3_51'] = df.W9_3 - df.W9_32
+        indices['W9_31'] = indices['W3_51'] = indices['W9_3'] - indices['W9_32']
 
         # sum up
-        df['W9'] = df.W9_1 + df.W9_2 + df.W9_3
+        indices['W9'] = indices['W9_1'] + indices['W9_2'] + indices['W9_3']
 
         logger.debug('**** Direct use of water and domestic consumption')
         # imports of water from other territories (part of W2_4)
-        df['W10_1'] = df.W2_4
+        indices['W10_1'] = indices['W2_4']
         # export of water to other territories
-        df['W10_2'] = df.W3_8
+        indices['W10_2'] = indices['W3_8']
         # withdrawal of water from the sea
-        df['W10_3'] = df.W2_42
+        indices['W10_3'] = indices['W2_42']
         # re-use of water within economic units
-        df['W10_4'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W10_4'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # imports of water/commodities & residuals content
-        df['W10_5'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W10_5'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # Exports of water/commodities & residuals content
-        df['W10_6'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W10_6'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # sum for direct use
-        df['W10a'] = df.W9 + df.W10_1 + df.W10_3 + df.W10_4 + df.W10_5
+        indices['W10a'] = indices['W9'] + indices['W10_1'] + indices['W10_3'] + indices['W10_4'] + indices['W10_5']
         # cal dometic consumption
-        df['W10b'] = df.W10a - df.W10_2 - df.W10_4 - df.W10_6
+        indices['W10b'] = indices['W10a'] - indices['W10_2'] - indices['W10_4'] - indices['W10_6']
 
         logger.debug('**** Virtual Water embedded into imported commodities')
-        df['W11'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
+        indices['W11'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
 
         logger.debug('**** Total Water Requirement')
-        df['W12'] = df.W10a + df.W11
+        indices['W12'] = indices['W10a'] + indices['W11']
 
         logger.debug('*** Table of indices of intensity of use and ecosystem health...')
         logger.debug('**** Sustainable Intensity of water use overall index (SIWU)')
         # intensity of water use
-        df['W13_1'] = np.where(((df.W7 + 1) / (df.W9 + 1)) <= 1, (df.W7 + 1) / (df.W9 + 1), 1)
+        indices['W13_1'] = np.where(((indices['W7'] + 1) / (indices['W9'] + 1)) <= 1,
+                                    (indices['W7'] + 1) / (indices['W9'] + 1), 1)
 
         # Water bodies quantitative status
         # quantitative state of lanke&reservoir index
-        df['W13_21'] = 1  # TODO: why is that one - Excel table says 'per memory'
+        indices['W13_21'] = 1  # TODO: why is that one - Excel table says 'per memory'
         # quantitative state accessible goundwater index
-        df['W13_22'] = 1. - ((1. - df.i9) * df.i8)
+        indices['W13_22'] = 1. - ((1. - indices['i9']) * indices['i8'])
         # dependency from artificial inflows from other territories and the sea
-        df['W13_24'] = np.where(((df.W9 + 1) / ((df.W9 + df.W10_1) + 1)) >= 1, 1, df.W9 / ((df.W9 + df.W10_1) + 1))
+        indices['W13_24'] = np.where(((indices['W9'] + 1) / ((indices['W9'] + indices['W10_1']) + 1)) >= 1,
+                                     1, indices['W9'] / ((indices['W9'] + indices['W10_1']) + 1))
         # now do the geometric average
-        df['W13_2'] = np.power(df.W13_21 * df.W13_22 * df.W13_23 * df.W13_24, 1./4)
+        indices['W13_2'] = np.power(indices['W13_21'] * indices['W13_22'] * indices['W13_23'] * indices['W13_24'], 1./4)
         # now the geometric mean of W13_1 and W13_2 for the SIWU
-        df['W13'] = np.power(df.W13_1 * df.W13_2, 1./2)
+        indices['W13'] = np.power(indices['W13_1'] * indices['W13_2'], 1./2)
 
         logger.debug('**** composite index of ecosystem water health (EWH)')
         # water assests bio-chmical diagnosis / SELU composite index
         # first lakes & reservoir index
         # df['W14_11'] = 1. - ((1. - df.i3) * (df.i1 / df.i0) )
-        df['W14_11'] = np.where(1. - ((1. - df.i3) * (df.i1 / df.i0)) >= 0, 1. - ((1. - df.i3) * (df.i1 / df.i0)), 0)
+        indices['W14_11'] = np.where(1. - ((1. - indices['i3']) * (indices['i1'] / indices['i0'])) >= 0,
+                                     1. - ((1. - indices['i3']) * (indices['i1'] / indices['i0'])), 0)
 
         # rivers and other streams
         # for that we also need i7 = SELU quality weighted SRMUs
-        df['i7'] = df.i6 * df.i5
-        df['W14_12'] = df.i7 / df.W1_21
+        indices['i7'] = indices['i6'] * indices['i5']
+        indices['W14_12'] = indices['i7'] / indices['W1_21']
         # glacier, snow & ice
-        df['W14_13'] = 1  # TODO: why is that one - Excel table says 'per memory'
+        indices['W14_13'] = 1  # TODO: why is that one - Excel table says 'per memory'
         # accessible ground water
-        df['W14_14'] = 1. - ((1. - df.i11) * (df.i10 / df.i0))
+        indices['W14_14'] = 1. - ((1. - indices['i11']) * (indices['i10'] / indices['i0']))
         # cal geometric mean
-        df['W14_1'] = df.W14_11 * df.W14_12 * df.W14_13 * df.W14_14
+        indices['W14_1'] = indices['W14_11'] * indices['W14_12'] * indices['W14_13'] * indices['W14_14']
 
         # index based on indirect water quality indicators
         # vulnerability to urban, industrail & agriculture polution
-        df['W14_21'] = 1  # TODO: why is that one - Excel table says 'per memory'
+        indices['W14_21'] = 1  # TODO: why is that one - Excel table says 'per memory'
         # water born diseases to humans
-        df['W14_22'] = 1  # TODO: why is that one - Excel table says 'per memory'
+        indices['W14_22'] = 1  # TODO: why is that one - Excel table says 'per memory'
         # water borne diseases to flora and fauna
-        df['W14_23'] = 1  # TODO: why is that one - Excel table says 'per memory'
+        indices['W14_23'] = 1  # TODO: why is that one - Excel table says 'per memory'
         # other indirect indicators of water polution
-        df['W14_24'] = 1  # TODO: why is that one - Excel table says 'per memory'
+        indices['W14_24'] = 1  # TODO: why is that one - Excel table says 'per memory'
         # now calculate the product (TODo: why... why not the geometric mean)
-        df['W14_2'] = df.W14_21 * df.W14_22 * df.W14_23 * df.W14_24
+        indices['W14_2'] = indices['W14_21'] * indices['W14_22'] * indices['W14_23'] * indices['W14_24']
 
         # cal the composite index
-        df['W14'] = df.W14_1 * df.W14_2
+        indices['W14'] = indices['W14_1'] * indices['W14_2']
 
         logger.debug('**** Water ecological internal unit value (WEIUV)')
-        df['W15'] = (df.W13 + df.W14) / 2.
+        indices['W15'] = (indices['W13'] + indices['W14']) / 2.
 
         logger.debug('*** calculate area-specific values')
-        df['W8_ha'] = df.W8 / df.a
-        df['W7_ha'] = df.W7 / df.a
-        df['W9_ha'] = df.W9 / df.a
+        indices['W8_ha'] = indices['W8'] / area
+        indices['W7_ha'] = indices['W7'] / area
+        indices['W9_ha'] = indices['W9'] / area
 
-        return df.drop('a', axis=1)
+        return pd.DataFrame(indices)
