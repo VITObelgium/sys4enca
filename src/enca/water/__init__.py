@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 import enca
+from enca import AREA_RAST
 from enca.framework.config_check import ConfigRaster, ConfigShape
 from enca.framework.geoprocessing import RasterType
 
@@ -50,7 +51,6 @@ HYBAS_LAKE_AREA = 'hybas_lake_area'
 HYBAS_LAKE_VOL = 'hybas_lake_vol'
 MAJOR_AQUIFER = 'Major-aquifer'
 LOCAL_AQUIFER = 'Local-aquifer'
-
 
 input_codes = dict(
     CoastID=COAST,
@@ -105,6 +105,11 @@ class Water(enca.ENCARun):
     run_type = enca.ENCA
     component = 'WATER'
 
+    #: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.
+    _indices_average = ['CoastID', 'W13_1', 'W13_21', 'W13_22', 'W13_23', 'W13_24', 'W13_2', 'W13', 'W14_11', 'W14_12',
+                        'W14_13', 'W14_14', 'W14_1', 'W14_21', 'W14_22', 'W14_23', 'W14_24', 'W14_2', 'W14', 'W15',
+                        'i3', 'i5', 'i8', 'i9', 'i11', 'W8_ha', 'W7_ha', 'W9_ha']
+
     def __init__(self, config):
         """Initialize config template and default water run parameters."""
         super().__init__(config)
@@ -149,7 +154,15 @@ class Water(enca.ENCARun):
             flow_results.to_csv(os.path.join(self.statistics, f'SELU_flow-results_{year}.csv'))
 
             indices = self.indices(water_stats.join(stats).join(flow_results))
-            indices.to_csv(os.path.join(self.statistics, f'WATER_indices_{year}.csv'))
+            indices.to_csv(os.path.join(self.statistics, f'{self.component}_indices_{year}.csv'))
+
+            stats_shape_selu = self.statistics_shape.join(indices)
+            stats_shape_selu.to_file(os.path.join(self.temp_dir(), f'{self.component}_Indices_SELU_{year}.gpkg'))
+
+            self.write_selu_maps(['W15', 'W2', 'W3', 'W4', 'W6', 'W7', 'W8', 'W9', 'W13', 'W14'],
+                                 stats_shape_selu, year)
+
+            self.write_reports(indices, area_stats, year)
 
     def additional_water_stats(self):
         """Calculate additional water statistics per SELU.
@@ -250,9 +263,9 @@ class Water(enca.ENCARun):
 
     def indices(self, selu_stats):
         """Calculate water indicators."""
-        indices = {}
+        indices = {AREA_RAST: selu_stats[AREA_RAST]}
 
-        area = selu_stats[enca.AREA_RAST]
+        area = selu_stats[AREA_RAST]
 
         parameters = self.parameters
         for code, value in input_codes.items():
@@ -482,14 +495,16 @@ class Water(enca.ENCARun):
 
         logger.debug('**** Net Ecosystem Accessible Water Potential')
         # lakes and reservoirs runoff potential
-        indices['W8_1'] = (indices['i2'] * indices['i1'] / (indices['i12'] + 1.)) + (indices['W1_11'] / parameters['W8_1'])
+        indices['W8_1'] = (indices['i2'] * indices['i1'] / (indices['i12'] + 1.))\
+            + (indices['W1_11'] / parameters['W8_1'])
         # river runoff land potential
         indices['W8_2'] = indices['W3_3'] * indices['i4'] / area
         # snow and ice discharge potential
         indices['W8_3'] = 0  # TODO: why is that Zero - Excel table says 'per memory'
         # groundwater accessible recharge potential
         # -first we need i8 = aquifer accessible area
-        indices['i8'] = np.where((indices['W1_41'] + indices['W1_42']) > area, 1, (indices['W1_41'] + indices['W1_42'])/area)
+        indices['i8'] = np.where((indices['W1_41'] + indices['W1_42']) > area,
+                                 1, (indices['W1_41'] + indices['W1_42'])/area)
         indices['W8_4'] = np.where((indices['W4b'] * indices['i8']) > 0, indices['W4b'] * indices['i8'], 0)
 
         # sum up

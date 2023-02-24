@@ -1,20 +1,13 @@
 """Carbon reporting."""
 
-import importlib.resources
 import logging
 import os
 
-import geopandas as gpd
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
-import pandas as pd
 
 import enca
 from enca.framework.config_check import ConfigRaster
 from enca.framework.geoprocessing import RasterType
-from enca import AREA_RAST
 
 FOREST_AGB = 'ForestAGB'
 FOREST_BGB = 'ForestBGB'
@@ -46,16 +39,6 @@ FIRE_SPLIT = 'FireSplit'
 FIRE_INTEN = 'FireInten'
 
 logger = logging.getLogger(__name__)
-
-#: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.
-_indices_average = ['C10_2ILUP', 'SCU', 'CEH1', 'CEH4', 'CEH6', 'CEH7', 'CEH', 'CIUV', 'Cow_in_Liv',
-                    'fire_ratio', 'fire_inten',
-                    'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']
-
-
-# Use non-interactive matplotlib backend
-matplotlib.use('Agg')
-
 
 input_codes = dict(
     C1_1=FOREST_AGB,
@@ -111,11 +94,6 @@ parameters = dict(
 
 def load_lut():  # TODO Can we embed this LUT as a dict in the code?
     """Read lookup table of output parameter clear names."""
-    with importlib.resources.files(enca).joinpath('data/LUT_CARBON_INDEX_CAL.csv').open() as f:
-        return pd.read_csv(f, sep=';').set_index(enca.C_CODE)
-
-
-_lut_index_calculation = load_lut()
 
 
 class Carbon(enca.ENCARun):
@@ -123,6 +101,11 @@ class Carbon(enca.ENCARun):
 
     run_type = enca.ENCA
     component = 'CARBON'
+
+    #: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.
+    _indices_average = ['C10_2ILUP', 'SCU', 'CEH1', 'CEH4', 'CEH6', 'CEH7', 'CEH', 'CIUV', 'Cow_in_Liv',
+                        'fire_ratio', 'fire_inten',
+                        'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']
 
     def __init__(self, config):
         """Initialize config template and default carbon run parameters."""
@@ -189,7 +172,8 @@ class Carbon(enca.ENCARun):
             stats_shape_selu.to_file(
                 os.path.join(self.temp_dir(), f'{self.component}_Indices_SELU_{year}.gpkg'))
 
-            self.write_selu_maps(stats_shape_selu, year)
+            self.write_selu_maps(['SCU', 'C1', 'C2', 'C7', 'C9', 'CEH', 'CIUV'],
+                                 stats_shape_selu, year)
 
             self.write_reports(indices, area_stats, year)
 
@@ -445,57 +429,3 @@ class Carbon(enca.ENCARun):
 
         logger.debug('Indices for %s:\n%s', year, df)
         return df
-
-    def write_selu_maps(self, selu_stats: gpd.GeoDataFrame, year):
-        """Plot some columns of the SELU + statistics GeoDataFrame."""
-        for column in 'SCU', 'C1', 'C2', 'C7', 'C9', 'CEH', 'CIUV':
-            fig, ax = plt.subplots(figsize=(10, 10))
-            selu_stats.plot(column=column, ax=ax, legend=True,
-                            legend_kwds={'label': column, 'orientation': 'horizontal'})
-            plt.axis('equal')
-            ax.set(title=f'NCA carbon map for indicator: {column} \n year: {year}')
-            x_ticks = ax.get_xticks().tolist()
-            y_ticks = ax.get_yticks().tolist()
-            ax.xaxis.set_major_locator(ticker.FixedLocator(x_ticks))
-            ax.yaxis.set_major_locator(ticker.FixedLocator(y_ticks))
-            ax.set_xticklabels([f'{int(x):,}' for x in x_ticks])
-            ax.set_yticklabels([f'{int(x):,}' for x in y_ticks])
-            fig.savefig(os.path.join(self.maps, f'NCA_carbon_map_year_parameter_{column}_{year}.tif'))
-            plt.close('all')
-
-    def write_reports(self, indices, area_stats, year):
-        """Write final reporting CSV per reporting area."""
-        # Calculate fraction of pixels of each SELU region within reporting regions:
-        area_ratios = area_stats['count'] / indices[AREA_RAST]
-
-        # indices for which we want to report plain sum:
-        indices_sum = [x for x in indices.columns if x not in _indices_average]
-
-        for area in self.reporting_shape.itertuples():
-            logger.debug('**** Generate report for %s %s', area.Index, year)
-            f_area = area_ratios.loc[area.Index]
-            # Select indices for SELU's from this reporting area
-            df = indices.loc[area_stats.loc[area.Index].index]
-
-            for column in indices_sum:
-                df[column] *= f_area
-
-            for column in _indices_average:
-                df[column] *= df[AREA_RAST]
-
-            results = df.sum().rename('total')
-            results['num_SELU'] = len(df)
-
-            # Also collect indicators per dominant landcover type
-            col_dlct = f'DLCT_{year}'
-            df_dlct = df.join(self.statistics_shape[col_dlct])
-            df_dlct['num_SELU'] = 1
-            results_dlct = df_dlct.groupby(col_dlct).sum()
-            results = pd.concat([results, results_dlct.T], axis=1)
-
-            # weighted average for some of the indicators:
-            for index in _indices_average:
-                results.loc[index] /= results.loc[AREA_RAST]
-
-            results = pd.merge(results, _lut_index_calculation, left_index=True, right_index=True)
-            results.to_csv(os.path.join(self.reports, f'NCA_carbon_report_{area.Index}_{year}.csv'))

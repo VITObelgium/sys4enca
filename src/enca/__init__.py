@@ -1,11 +1,16 @@
 import logging
 import os
 from importlib.metadata import PackageNotFoundError, version
+from importlib.resources import files
 
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import pandas as pd
 import pyproj
 import rasterio
 
+import enca
 from enca.framework.config_check import ConfigError
 from enca.framework.run import Run
 from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
@@ -28,9 +33,14 @@ PREPROCESS = 'ENCA_PREPROCESS'
 
 HYBAS_ID = 'HYBAS_ID'
 GID_0 = 'GID_0'
-C_CODE = 'C_CODE'
+CODE = 'CODE'
 
 AREA_RAST = 'Area_rast'
+
+
+# Use non-interactive matplotlib backend
+matplotlib.use('Agg')
+
 
 class ENCARun(Run):
     """Run class with extra properties for ENCA."""
@@ -42,6 +52,8 @@ class ENCARun(Run):
     id_col_reporting = GID_0
 
     epsg = 3857
+
+    _indices_avarage = None  #: List of SELU-wide indicators, to be defined in each subclass
 
     def __init__(self, config):
         """Initialize an ENCA run."""
@@ -130,3 +142,63 @@ class ENCARun(Run):
             result[key] = stats['sum']
 
         return result
+
+    def write_selu_maps(self, parameters, selu_stats, year):
+        """Plot some columns of the SELU + statistics GeoDataFrame."""
+        for column in parameters:
+            fig, ax = plt.subplots(figsize=(10, 10))
+            selu_stats.plot(column=column, ax=ax, legend=True,
+                            legend_kwds={'label': column, 'orientation': 'horizontal'})
+            plt.axis('equal')
+            ax.set(title=f'NCA carbon map for indicator: {column} \n year: {year}')
+            x_ticks = ax.get_xticks().tolist()
+            y_ticks = ax.get_yticks().tolist()
+            ax.xaxis.set_major_locator(ticker.FixedLocator(x_ticks))
+            ax.yaxis.set_major_locator(ticker.FixedLocator(y_ticks))
+            ax.set_xticklabels([f'{int(x):,}' for x in x_ticks])
+            ax.set_yticklabels([f'{int(x):,}' for x in y_ticks])
+            fig.savefig(os.path.join(self.maps, f'NCA_{self.component}_map_year_parameter_{column}_{year}.tif'))
+            plt.close('all')
+
+    def write_reports(self, indices, area_stats, year):
+        """Write final reporting CSV per reporting area."""
+        # Calculate fraction of pixels of each SELU region within reporting regions:
+        area_ratios = area_stats['count'] / indices[AREA_RAST]
+
+        # indices for which we want to report plain sum:
+        indices_sum = [x for x in indices.columns if x not in self._indices_average]
+
+        for area in self.reporting_shape.itertuples():
+            logger.debug('**** Generate report for %s %s', area.Index, year)
+            f_area = area_ratios.loc[area.Index]
+            # Select indices for SELU's from this reporting area
+            df = indices.loc[area_stats.loc[area.Index].index]
+
+            for column in indices_sum:
+                df[column] *= f_area
+
+            for column in self._indices_average:
+                df[column] *= df[AREA_RAST]
+
+            results = df.sum().rename('total')
+            results['num_SELU'] = len(df)
+
+            # Also collect indicators per dominant landcover type
+            col_dlct = f'DLCT_{year}'
+            df_dlct = df.join(self.statistics_shape[col_dlct])
+            df_dlct['num_SELU'] = 1
+            results_dlct = df_dlct.groupby(col_dlct).sum()
+            results = pd.concat([results, results_dlct.T], axis=1)
+
+            # weighted average for some of the indicators:
+            for index in self._indices_average:
+                results.loc[index] /= results.loc[AREA_RAST]
+
+            results = pd.merge(results, self.load_lut(), left_index=True, right_index=True)
+            results.to_csv(os.path.join(self.reports, f'NCA_{self.component}_report_{area.Index}_{year}.csv'))
+
+    @classmethod
+    def load_lut(cls):
+        """Return a `pd.DataFrame` with the index codes and their descriptions."""
+        with files(enca).joinpath(f'data/LUT_{cls.component}_INDEX_CAL.csv').open() as f:
+            return pd.read_csv(f, sep=';').set_index(CODE)
