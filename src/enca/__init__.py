@@ -185,9 +185,9 @@ class ENCARun(Run):
 
             # Also collect indicators per dominant landcover type
             col_dlct = f'DLCT_{year}'
-            df_dlct = df.join(self.statistics_shape[col_dlct])
-            df_dlct['num_SELU'] = 1
-            results_dlct = df_dlct.groupby(col_dlct).sum()
+            grp_dlct = df.join(self.statistics_shape[col_dlct]).groupby(col_dlct)
+            # Aggregate sum per DLCT for all columns, plus count of a single column to get 'num_SELU':
+            results_dlct = grp_dlct.sum().join(grp_dlct[AREA_RAST].count().rename('num_SELU'))
             results = pd.concat([results, results_dlct.T], axis=1)
 
             # weighted average for some of the indicators:
