@@ -1,4 +1,3 @@
-import argparse
 import logging
 import sys
 
@@ -11,6 +10,17 @@ import enca.framework.run
 from enca import _
 from enca.framework.config_check import ConfigError
 from enca.framework.errors import Error
+
+# Localization of argparse using gettext.  We *must* set up the gettext domain before importing argparse.
+import gettext
+from importlib.resources import as_file, files
+
+with as_file(files(enca).joinpath('locale')) as localedir:
+    gettext.bindtextdomain('argparse', localedir)
+    gettext.textdomain('argparse')
+
+import argparse
+
 logger = logging.getLogger('enca')
 
 
