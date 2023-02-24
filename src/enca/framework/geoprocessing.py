@@ -6,8 +6,8 @@ import math
 import os
 import re
 import subprocess
-import sys
 from enum import Enum
+from importlib.metadata import version
 from os.path import splitext, basename, normpath
 
 import affine
@@ -21,12 +21,6 @@ from osgeo import __version__ as GDALversion
 
 from .ecosystem import ECOTYPE, ECO_ID
 from .errors import Error
-
-if sys.version_info[:2] >= (3, 8):
-    from importlib.metadata import version
-    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-else:
-    from importlib_metadata import version
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +86,7 @@ class Metadata(object):
                                                                                   rasterio.__gdal_version__,
                                                                                   GDALversion),
                             "software_vector_processing": "geopandas {}".format(gpd.__version__),
-                            "inca-tool_run_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+                            "creation_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         self.raster_tags = {}
 
     def read_raster_tags(self, path_list):
@@ -1169,6 +1163,23 @@ class GeoProcessing(object):
                     aData[aMask == ds_mask.nodata] = ds_out.nodata
                     ds_out.write(aData.filled(ds_out.nodata), window=dst_window, indexes=1)
                     add_progress(100. / nblocks)
+
+    def vector_2_AOI(self, infile, outfile, mode='statistical'):
+        """Reproject and cut a vector file to the desired reference extent."""
+        if mode == 'statistical':
+            pextent = self.ref_extent
+            out_crs = self.ref_profile['crs']
+        elif mode == 'reporting':
+            self._check2()
+            pextent = self.reporting_extent
+            out_crs = self.reporting_profile['crs']
+
+        cmd = ['ogr2ogr', '-overwrite',
+               '-t_srs', str(out_crs).replace('"', '\\"'),
+               '-clipdst',  str(pextent.left), str(pextent.bottom), str(pextent.right), str(pextent.top),
+               outfile, infile]
+
+        subprocess.run(cmd, check=True)
 
     def merge_raster(self, lPathIn, path_out, mode=None):
         """Merge several GeoTiff files into one.

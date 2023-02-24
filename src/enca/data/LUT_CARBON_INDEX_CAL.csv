@@ -1,4 +1,4 @@
-C_CODE;SHORT_NAME;FULL_NAME
+CODE;SHORT_NAME;FULL_NAME
 Area_poly;Area_polygones_ha;area calculated from the polygones [ha]
 Area_rast;Area_raster;area calculated from raster pixels [ha]
 AREA_ha;AREA_ha;Area in hectares

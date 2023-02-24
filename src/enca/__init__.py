@@ -1,20 +1,20 @@
 import logging
 import os
-import sys
+from importlib.metadata import PackageNotFoundError, version
+from importlib.resources import files
 
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import pandas as pd
 import pyproj
 import rasterio
 
+import enca
 from enca.framework.config_check import ConfigError
 from enca.framework.run import Run
 from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
 
-if sys.version_info[:2] >= (3, 8):
-    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-    from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
-else:
-    from importlib_metadata import PackageNotFoundError, version  # pragma: no cover
 
 try:
     dist_name = 'sys4enca'
@@ -33,9 +33,18 @@ PREPROCESS = 'ENCA_PREPROCESS'
 
 HYBAS_ID = 'HYBAS_ID'
 GID_0 = 'GID_0'
-C_CODE = 'C_CODE'
+CODE = 'CODE'
+
+AREA_RAST = 'Area_rast'
+
+
+# Use non-interactive matplotlib backend
+matplotlib.use('Agg')
+
 
 class ENCARun(Run):
+    """Run class with extra properties for ENCA."""
+
     component = None  #: ENCA component, to be set in each subclass.
     run_type = None  #: One of ENCA, ACCOUNT, or PREPROCESS
     software_name = 'ENCA Tool'
@@ -44,7 +53,10 @@ class ENCARun(Run):
 
     epsg = 3857
 
+    _indices_avarage = None  #: List of SELU-wide indicators, to be defined in each subclass
+
     def __init__(self, config):
+        """Initialize an ENCA run."""
         super().__init__(config)
         self.root_logger = logger
         try:
@@ -69,6 +81,7 @@ class ENCARun(Run):
         os.makedirs(self.statistics, exist_ok=True)
 
     def version_info(self):
+        """Return string with describing version of ENCA and its main dependencies."""
         return f'ENCA version {__version__} using ' \
                f'GDAL (osgeo) {version("GDAL")}, rasterio {version("rasterio")}, geopandas {version("geopandas")} ' \
                f'numpy {version("numpy")}, pandas {version("pandas")}, ' \
@@ -122,9 +135,70 @@ class ENCARun(Run):
         :returns: `pd.DataFrame` with the sum of each raster per SELU region.
 
         """
+        logger.debug('Calculate SELU stats %s', ', '.join(raster_files))
         result = pd.DataFrame(index=self.statistics_shape.index)
         for key, filename in raster_files.items():
             stats = statistics_byArea(filename, self.statistics_raster, self.statistics_shape[SHAPE_ID])
             result[key] = stats['sum']
 
         return result
+
+    def write_selu_maps(self, parameters, selu_stats, year):
+        """Plot some columns of the SELU + statistics GeoDataFrame."""
+        for column in parameters:
+            fig, ax = plt.subplots(figsize=(10, 10))
+            selu_stats.plot(column=column, ax=ax, legend=True,
+                            legend_kwds={'label': column, 'orientation': 'horizontal'})
+            plt.axis('equal')
+            ax.set(title=f'NCA carbon map for indicator: {column} \n year: {year}')
+            x_ticks = ax.get_xticks().tolist()
+            y_ticks = ax.get_yticks().tolist()
+            ax.xaxis.set_major_locator(ticker.FixedLocator(x_ticks))
+            ax.yaxis.set_major_locator(ticker.FixedLocator(y_ticks))
+            ax.set_xticklabels([f'{int(x):,}' for x in x_ticks])
+            ax.set_yticklabels([f'{int(x):,}' for x in y_ticks])
+            fig.savefig(os.path.join(self.maps, f'NCA_{self.component}_map_year_parameter_{column}_{year}.tif'))
+            plt.close('all')
+
+    def write_reports(self, indices, area_stats, year):
+        """Write final reporting CSV per reporting area."""
+        # Calculate fraction of pixels of each SELU region within reporting regions:
+        area_ratios = area_stats['count'] / indices[AREA_RAST]
+
+        # indices for which we want to report plain sum:
+        indices_sum = [x for x in indices.columns if x not in self._indices_average]
+
+        for area in self.reporting_shape.itertuples():
+            logger.debug('**** Generate report for %s %s', area.Index, year)
+            f_area = area_ratios.loc[area.Index]
+            # Select indices for SELU's from this reporting area
+            df = indices.loc[area_stats.loc[area.Index].index]
+
+            for column in indices_sum:
+                df[column] *= f_area
+
+            for column in self._indices_average:
+                df[column] *= df[AREA_RAST]
+
+            results = df.sum().rename('total')
+            results['num_SELU'] = len(df)
+
+            # Also collect indicators per dominant landcover type
+            col_dlct = f'DLCT_{year}'
+            grp_dlct = df.join(self.statistics_shape[col_dlct]).groupby(col_dlct)
+            # Aggregate sum per DLCT for all columns, plus count of a single column to get 'num_SELU':
+            results_dlct = grp_dlct.sum().join(grp_dlct[AREA_RAST].count().rename('num_SELU'))
+            results = pd.concat([results, results_dlct.T], axis=1)
+
+            # weighted average for some of the indicators:
+            for index in self._indices_average:
+                results.loc[index] /= results.loc[AREA_RAST]
+
+            results = pd.merge(results, self.load_lut(), left_index=True, right_index=True)
+            results.to_csv(os.path.join(self.reports, f'NCA_{self.component}_report_{area.Index}_{year}.csv'))
+
+    @classmethod
+    def load_lut(cls):
+        """Return a `pd.DataFrame` with the index codes and their descriptions."""
+        with files(enca).joinpath(f'data/LUT_{cls.component}_INDEX_CAL.csv').open() as f:
+            return pd.read_csv(f, sep=';').set_index(CODE)
