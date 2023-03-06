@@ -4,6 +4,8 @@ from qgis.PyQt import QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.utils import iface
 
+from .help import show_help
+
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'enca_plugin_dockwidget_base.ui'))
 
@@ -40,6 +42,11 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             'Run', self)
         self.runact.triggered.connect(self.run)
         self.toolbar.addAction(self.runact)
+        self.toolbar.addSeparator()
+
+        self.helpact = QtWidgets.QAction('Help', self)
+        self.helpact.triggered.connect(show_help)
+        self.toolbar.addAction(self.helpact)
 
         self.toolbarLayout.addWidget(self.toolbar)
 
