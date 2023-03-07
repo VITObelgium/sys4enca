@@ -1,12 +1,23 @@
+import ctypes
+import operator
 import os
+import threading
+from functools import reduce
 
-import enca.carbon as carbon
-import enca.water as water
 import yaml
 from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal
-from qgis.core import Qgis, QgsMessageLog
+from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsTask
+from qgis.gui import QgsFileWidget
 from qgis.utils import iface
+
+import enca.carbon as carbon
+import enca.components
+import enca.framework
+import enca.water as water
+from enca.framework.errors import Error
+from enca.framework.config_check import ConfigError
+from enca.framework.run import Cancelled
 
 from .help import show_help
 from .qt_tools import writeWidget, expand_template
@@ -14,6 +25,9 @@ from .qt_tools import writeWidget, expand_template
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'enca_plugin_dockwidget_base.ui'))
 
+
+# We need to keep a reference to our tasks prevent tasks from "disappearing" when we pass them on to the taskmanager.
+_tasks = []  #: global reference to currently launched tasks.
 
 #:  names of input widgets per component.
 # Note: names must match the name of the corresponding ui widget *and* the config key to which they refer.
@@ -191,8 +205,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             # handle run name:
             findChild(component_widget, 'run_name').setText(config['run_name'])
             # read other config values using the template
-            self.load_template(config, {key: findChild(component_widget, key)
-                                        for key in component_input_widgets[component_name]})
+            self.load_template(config, {component_name:
+                                            {key: findChild(component_widget, key)
+                                             for key in component_input_widgets[component_name]}})
 
         except BaseException as e:
             QtWidgets.QMessageBox.critical(self, 'Error loading config', f'Could not load config {filename}: {e}.')
@@ -246,7 +261,12 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             raise RuntimeError(f'Failed to process template {template}.')
 
     def run(self):
-        pass
+        template = self.make_template()
+        taskname = f'{self.component.currentText()} run {template["run_name"].text()}'
+        task = Task(taskname, template)
+        _tasks.append(task)
+        QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
+        QgsApplication.taskManager().addTask(task)
 
     def closeEvent(self, event):
         self.closingPlugin.emit()
@@ -254,11 +274,89 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def make_config(self):
         """Generate a config from current settings."""
+        return expand_template(self.make_template())
+
+    def make_template(self):
         component = self.component.currentText()
         component_widget = self.component_pages[component]
-        return expand_template({**self.config_template,
-                                'run_name': findChild(component_widget, 'run_name'),
-                                component: {key: findChild(component_widget, key)
-                                            for key in component_input_widgets[component]}})
+        return {**self.config_template,
+                'run_name': findChild(component_widget, 'run_name'),
+                component: {key: findChild(component_widget, key)
+                            for key in component_input_widgets[component]}}
 
 
+class Task(QgsTask):
+
+    def __init__(self, description, template, output_rasters=[]):
+        super().__init__(description)
+        self.config = expand_template(template)
+        self.widget_dict = expand_year(template)
+        self.output_rasters = output_rasters
+        self.run = None
+        self.run_thread = None
+        self.exception = None
+
+    def cancel(self):
+        """If the task is canceled, raise an inca.Cancelled exception in the run thread to stop it."""
+        super().cancel()
+        if self.run_thread is not None:
+            # Use the Python C API to raise an exception in another thread:
+            ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_ulong(self.run_thread.ident),
+                                                             ctypes.py_object(Cancelled))
+            # ref: http://docs.python.org/c-api/init.html#PyThreadState_SetAsyncExc
+            if ret == 0:
+                QgsMessageLog.logMessage('Failed to cancel run thread.', level=Qgis.Critical)
+
+    def run(self):
+        try:
+            self.run_thread = threading.current_thread()  # save current thread so we can stop it if task is canceled.
+            self.run = enca.components.make_run(self.config)
+            self.run.start(progress_callback=self.setProgress)
+            return True
+        except Exception as e:
+            self.exception = e
+            return False
+
+    def finished(self, result):
+        if result:
+            QgsMessageLog.logMessage('Task completed', level=Qgis.Info)
+            for raster in self.output_rasters:
+                path = os.path.join(self.run.run_dir, raster)
+                iface.addRasterLayer(path)
+        else:
+            if self.exception is None:
+                QgsMessageLog.logMessage('Task failed for unknown reason')
+            elif isinstance(self.exception, Cancelled):
+                QtWidgets.QMessageBox.information(iface.mainWindow(), 'Cancelled', 'Run was cancelled by user.')
+            elif isinstance(self.exception, ConfigError):
+                widget = reduce(operator.getitem, self.exception.path, self.widget_dict)
+                if isinstance(widget, QgsFileWidget):  # TODO clean up!
+                    widget = widget.lineEdit()
+                widget.setStyleSheet('border: 1px solid red')
+                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'INCA configuration error', self.exception.message)
+                widget.setStyleSheet('')
+            elif isinstance(self.exception, Error):
+                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'INCA error', str(self.exception.message))
+            else:
+                QtWidgets.QMessageBox.critical(iface.mainWindow(), 'INCA unexpected error',
+                                               f'Something went wrong: "{self.exception}".  Please refer to the '
+                                               f'log file at {enca.framework.run.get_logfile()} for more details.')
+        _tasks.remove(self)
+
+
+def expand_year(template):
+    """Recursively replace all occurrences of the self.year widget as a dict key by the year value.
+
+    This is needed so we can look up widgets by their config path when we catch a
+    ConfigError."""
+    if type(template) == dict:  # nested dictionary
+        result = {}
+        for key, value in template.items():
+            result_val = expand_year(value)
+            if isinstance(key, QtWidgets.QSpinBox):
+                result[key.value()] = result_val
+            else:
+                result[key] = result_val
+        return result
+    else:
+        return template
