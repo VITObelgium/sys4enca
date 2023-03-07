@@ -1,0 +1,3 @@
+[submodule "qgis_tools"]
+	path = qgis_tools
+	url = https://github.com/VITObelgium/qgis_tools.git
