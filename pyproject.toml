@@ -19,7 +19,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "requests",
     'GDAL>=3.1.0',
     'pandas',
     'matplotlib',
@@ -41,6 +40,9 @@ bring2aoi = "enca.tools.bring2aoi:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+enca = ["*.mo"]
 
 [tool.setuptools_scm]
 

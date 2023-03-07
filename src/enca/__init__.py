@@ -1,7 +1,8 @@
+import gettext
 import logging
 import os
 from importlib.metadata import PackageNotFoundError, version
-from importlib.resources import files
+from importlib.resources import as_file, files
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -23,6 +24,11 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 finally:
     del PackageNotFoundError
+
+
+with as_file(files(__name__).joinpath('locale')) as path:
+    t = gettext.translation(dist_name, path, fallback=True)
+    _ = t.gettext
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

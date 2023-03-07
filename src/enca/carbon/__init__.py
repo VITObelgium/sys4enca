@@ -6,6 +6,7 @@ import os
 import numpy as np
 
 import enca
+from enca import _
 from enca.framework.config_check import ConfigRaster
 from enca.framework.geoprocessing import RasterType
 
@@ -154,7 +155,7 @@ class Carbon(enca.ENCARun):
                               FIRE, FIRE_SPLIT, FIRE_INTEN]
 
     def _start(self):
-        logger.debug('Hello from ENCA Carbon')
+        logger.debug(_('Hello from ENCA Carbon'))
 
         # Possible override of default parameters:
         self.parameters.update(self.config[self.component].get('parameters', {}))

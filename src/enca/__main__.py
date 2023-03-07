@@ -1,4 +1,3 @@
-import argparse
 import logging
 import sys
 
@@ -8,23 +7,35 @@ import enca
 import enca.components
 import enca.framework.geoprocessing
 import enca.framework.run
+from enca import _
 from enca.framework.config_check import ConfigError
 from enca.framework.errors import Error
+
+# Localization of argparse using gettext.  We *must* set up the gettext domain before importing argparse.
+import gettext
+from importlib.resources import as_file, files
+
+with as_file(files(enca).joinpath('locale')) as localedir:
+    gettext.bindtextdomain('argparse', localedir)
+    gettext.textdomain('argparse')
+
+import argparse
+
 logger = logging.getLogger('enca')
 
 
 def parse_args():
     parser = argparse.ArgumentParser(prog=enca.__name__)
     parser.add_argument('--verbose', action='store_true')
-    parser.add_argument('--output-dir', help='Default OUTPUT-DIR is current working directory.', metavar='DIR')
-    parser.add_argument('--component', help='ENCA component to run', choices=enca.components.list_components())
-    parser.add_argument('--tier', help='Tier level', type=int)
-    parser.add_argument('--aoi-name', help='Area of interest name')
-    parser.add_argument('--run-name', help='Output is written to OUTPUT-DIR/RUN-NAME.', metavar='NAME')
-    parser.add_argument('--continue', action='store_true', help='Continue from an existing run directory.')
+    parser.add_argument('--output-dir', help=_('Default OUTPUT-DIR is current working directory.'), metavar='DIR')
+    parser.add_argument('--component', help=_('ENCA component to run'), choices=enca.components.list_components())
+    parser.add_argument('--tier', help=_('Tier level'), type=int)
+    parser.add_argument('--aoi-name', help=_('Area of interest name'))
+    parser.add_argument('--run-name', help=_('Output is written to OUTPUT-DIR/RUN-NAME.'), metavar='NAME')
+    parser.add_argument('--continue', action='store_true', help=_('Continue from an existing run directory.'))
     parser.add_argument('--years', type=int, nargs='+',
-                               metavar='YEAR', help='Years for which to run the calculation.')
-    parser.add_argument('config', help='yaml configuration file for the account calculation.')
+                        metavar='YEAR', help=_('Years for which to run the calculation.'))
+    parser.add_argument('config', help=_('yaml configuration file for the account calculation.'))
 
     return parser.parse_args()
 
