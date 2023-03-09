@@ -21,6 +21,7 @@ from enca.framework.run import Cancelled
 
 from .help import show_help
 from .qt_tools import writeWidget, expand_template
+from .qgis_tools import load_vector_layer
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'enca_plugin_dockwidget_base.ui'))
@@ -76,6 +77,16 @@ component_input_widgets = {
     'LEAC': ['base_year']
 }
 
+#: vector output files to be loaded after a run, with visualization parameters (keyword arguments for
+component_vector_layers = {
+    carbon.Carbon.component: [(os.path.join('temp', 'CARBON_Indices_SELU_{year}.gpkg'), dict(
+        layer_name='NEACS [ha]',
+        attribute_name='C10_ha'))],
+    water.Water.component: [(os.path.join('temp', 'WATER_Indices_SELU_{year}.gpkg'), dict(
+        layer_name='TOTuseEW',
+        attribute_name='W9_ha',
+        color_ramp='Blues'))]
+}
 
 def findChild(widget: QtWidgets.QWidget, name: str):
     """Helper function to deal with the fact that .ui compilation does not allow duplicate widget names.
@@ -263,7 +274,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def run(self):
         template = self.make_template()
         taskname = f'{self.component.currentText()} run {template["run_name"].text()}'
-        task = Task(taskname, template)
+        task = Task(taskname, template, output_vectors=component_vector_layers[self.component.currentText()])
         _tasks.append(task)
         QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
         QgsApplication.taskManager().addTask(task)
@@ -287,11 +298,12 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
 class Task(QgsTask):
 
-    def __init__(self, description, template, output_rasters=[]):
+    def __init__(self, description, template, output_rasters=None, output_vectors=None):
         super().__init__(description)
         self.config = expand_template(template)
         self.widget_dict = expand_year(template)
-        self.output_rasters = output_rasters
+        self.output_rasters = output_rasters or []
+        self.output_vectors = output_vectors or []
         self.run = None
         self.run_thread = None
         self.exception = None
@@ -323,6 +335,11 @@ class Task(QgsTask):
             for raster in self.output_rasters:
                 path = os.path.join(self.run.run_dir, raster)
                 iface.addRasterLayer(path)
+
+            for filename, kwargs in self.output_vectors:
+                path = os.path.join(self.run.run_dir, filename).format(year=self.run.config['years'][0])
+                load_vector_layer(path, **kwargs)
+
         else:
             if self.exception is None:
                 QgsMessageLog.logMessage('Task failed for unknown reason')
