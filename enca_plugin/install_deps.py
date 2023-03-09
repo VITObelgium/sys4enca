@@ -109,7 +109,7 @@ def check_dependencies():
                                                            'work correctly.')
             return False
 
-    # Check if we can import the right version:  If a previous version of inca was already loaded before installation,
+    # Check if we can import the right version:  If a previous version of enca was already loaded before installation,
     # we have to restart QGIS in order to import the new version.
     import enca
     if parse_version(enca.__version__) < parse_version(_min_version):

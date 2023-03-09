@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>INCA Installation</string>
+   <string>ENCA Installation</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>

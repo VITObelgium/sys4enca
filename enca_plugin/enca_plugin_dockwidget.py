@@ -297,7 +297,7 @@ class Task(QgsTask):
         self.exception = None
 
     def cancel(self):
-        """If the task is canceled, raise an inca.Cancelled exception in the run thread to stop it."""
+        """If the task is canceled, raise a Cancelled exception in the run thread to stop it."""
         super().cancel()
         if self.run_thread is not None:
             # Use the Python C API to raise an exception in another thread:
@@ -333,12 +333,12 @@ class Task(QgsTask):
                 if isinstance(widget, QgsFileWidget):  # TODO clean up!
                     widget = widget.lineEdit()
                 widget.setStyleSheet('border: 1px solid red')
-                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'INCA configuration error', self.exception.message)
+                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'Configuration error', self.exception.message)
                 widget.setStyleSheet('')
             elif isinstance(self.exception, Error):
-                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'INCA error', str(self.exception.message))
+                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'Error', str(self.exception.message))
             else:
-                QtWidgets.QMessageBox.critical(iface.mainWindow(), 'INCA unexpected error',
+                QtWidgets.QMessageBox.critical(iface.mainWindow(), 'Unexpected error',
                                                f'Something went wrong: "{self.exception}".  Please refer to the '
                                                f'log file at {enca.framework.run.get_logfile()} for more details.')
         _tasks.remove(self)
