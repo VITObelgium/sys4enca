@@ -8,6 +8,8 @@ from .resources import *
 from .enca_plugin_dockwidget import ENCAPluginDockWidget
 import os.path
 
+_revision = '$Format:%h$'  # Use git archive with export-subst attributes to insert short hash here.
+
 
 class ENCAPlugin:
     """QGIS Plugin Implementation."""
