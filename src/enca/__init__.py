@@ -156,7 +156,7 @@ class ENCARun(Run):
             selu_stats.plot(column=column, ax=ax, legend=True,
                             legend_kwds={'label': column, 'orientation': 'horizontal'})
             plt.axis('equal')
-            ax.set(title=f'NCA carbon map for indicator: {column} \n year: {year}')
+            ax.set(title=f'NCA {self.component} map for indicator: {column} \n year: {year}')
             x_ticks = ax.get_xticks().tolist()
             y_ticks = ax.get_yticks().tolist()
             ax.xaxis.set_major_locator(ticker.FixedLocator(x_ticks))
