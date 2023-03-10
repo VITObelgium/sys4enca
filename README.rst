@@ -11,7 +11,7 @@ To build a plugin zip for distribution, I recommend using the following two step
    into the plugin metadata.txt file.  Take extra care to include the symlinked files from marvin_qgis_tools ::
 
      git archive -o enca_plugin.zip HEAD enca_plugin \
-         --prefix enca_plugin/marvin_qgis_tools/ --add-file qgis_tools/src/marvin_qgis_tools/osgeo4w.py
+         --prefix enca_plugin/marvin_qgis_tools/ --add-file qgis_tools/src/marvin_qgis_tools/osgeo4w.py --prefix ""
 
    (Replace `HEAD` by another tree or commit to build a plugin zip for that version)
 
