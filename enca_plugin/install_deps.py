@@ -4,6 +4,7 @@ On a Windows installation based on OSGeo4W, we run the OSGeo4W installer to inst
 On other systems, we present a warning message and expect the user to take care of this installation.
 """
 import os
+import importlib
 import subprocess
 from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
 
@@ -109,8 +110,13 @@ def check_dependencies():
                                                            'work correctly.')
             return False
 
-    # Check if we can import the right version:  If a previous version of enca was already loaded before installation,
-    # we have to restart QGIS in order to import the new version.
+    # Check if we can import the right version:
+    # If a previous version of enca was already loaded before installation we have to restart QGIS in order to
+    # import the new version.
+    #
+    # If enca wasn't installed previously, 'import enca' might still fail due to the importlib cache.  Invalidate the
+    # caches so we are sure that we can import the newly installed enca:
+    importlib.invalidate_caches()
     import enca
     if parse_version(enca.__version__) < parse_version(_min_version):
         QMessageBox.warning(None, 'Restart QGIS', f'The {_package_dist_name} package was updated.  Please restart '
