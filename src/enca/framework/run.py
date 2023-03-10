@@ -137,11 +137,7 @@ class Run:
         self._dump_config()
 
         try:
-            self._load_region_shapes()
-            self._StudyScopeCheck()
-            config_check = ConfigCheck(self.config_template, self.config, self.accord)
-            config_check.validate()
-            self.adjust_rasters(config_check)
+            self._configure()
             self._progress = 100. * (1. - self._progress_weight_run)
             self._start()
         except Cancelled:
@@ -151,6 +147,14 @@ class Run:
             logger.exception('Error:')
             raise
         logger.info('Run complete.')
+
+    def _configure(self):
+        """Set up reference CRS and AOI, check configuration, and adjust input rasters."""
+        self._load_region_shapes()
+        self._StudyScopeCheck()
+        config_check = ConfigCheck(self.config_template, self.config, self.accord)
+        config_check.validate()
+        self.adjust_rasters(config_check)
 
     def _start(self):
         """Start the actual calculation.

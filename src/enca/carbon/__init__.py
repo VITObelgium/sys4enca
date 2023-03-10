@@ -75,24 +75,6 @@ input_codes = dict(
 )  #: Mapping of index column names to config values.
 
 
-parameters = dict(
-    C1_2=0.12,
-    C1_3_1=0.25,
-    C2_752=0.04,
-    C3_2=0.4,
-    C3_21=0.5,
-    C3_3=25,
-    C3_51=0.2,
-    C3_52=0.8,
-    C3_5=1.5,
-    C4_4=0.05,
-    C6_41=0.15,
-    C6_42=0.02,
-    C6_43=0.2,
-    C6_5=0.9
-)  #: Default parameters.
-
-
 def load_lut():  # TODO Can we embed this LUT as a dict in the code?
     """Read lookup table of output parameter clear names."""
 
@@ -142,8 +124,6 @@ class Carbon(enca.ENCARun):
               FIRE_INTEN: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)
           }
         })
-
-        self.parameters = parameters.copy()
 
         #: List of input rasters for SELU statistics
         self.input_rasters = [FOREST_AGB, FOREST_BGB, FOREST_LITTER, SOIL, LIVESTOCK, COW, NPP,

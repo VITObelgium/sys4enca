@@ -12,7 +12,8 @@ import pyproj
 import rasterio
 
 import enca
-from enca.framework.config_check import ConfigError
+import enca.parameters
+from enca.framework.config_check import ConfigError, ConfigItem, check_csv
 from enca.framework.run import Run
 from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
 
@@ -71,11 +72,14 @@ class ENCARun(Run):
         except KeyError as e:
             raise ConfigError(f'Missing config key {str(e)}', [str(e)])
 
+        self.config_template.update(parameters_csv=ConfigItem(check_csv, optional=True))
+
         self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), self.run_type, self.component,
                                     self.run_name)
         self.maps = os.path.join(self.run_dir, 'maps')
         self.reports = os.path.join(self.run_dir, 'reports')
         self.statistics = os.path.join(self.run_dir, 'statistics')
+        self.parameters = enca.parameters.defaults
 
         logger.debug('Running with config:\n%s', config)
 
@@ -85,6 +89,23 @@ class ENCARun(Run):
         os.makedirs(self.maps, exist_ok=True)
         os.makedirs(self.reports, exist_ok=True)
         os.makedirs(self.statistics, exist_ok=True)
+
+    def _configure(self):
+        """Add extra configure steps for ENCA.
+
+        - Update default paramters with custom parameters provided by the user.
+        """
+        super()._configure()
+
+        if self.config['parameters_csv']:
+            custom_params = enca.parameters.read(self.config['parameters_csv'])
+            logger.debug('Custom parameters:\n%s', custom_params)
+            # Check parameters_csv contains no typos / wrong parameter names
+            unknown_params = [param for param in custom_params if param not in self.parameters]
+            if unknown_params:
+                raise ConfigError(f'Unknown parameter(-s) in custom parameters csv file: {", ".join(unknown_params)}.',
+                                  ['parameters_csv'])
+            self.parameters.update(custom_params)
 
     def version_info(self):
         """Return string with describing version of ENCA and its main dependencies."""

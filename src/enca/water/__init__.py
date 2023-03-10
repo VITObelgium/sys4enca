@@ -82,23 +82,6 @@ input_codes = dict(
     W13_23=DROUGHT_VULN)
 
 
-parameters = dict(
-    W2_41=0.5,
-    W2_51a=0.8,
-    W2_51b=0.8,
-    W2_61=1.3,
-    W3_41a=0.8,
-    W3_41b=0.8,
-    W3_41c=1.5,
-    W3_42=0.2,
-    W3_46=0.2,
-    W3_6=0.7,
-    W3_7=0.7,
-    W3_81=0.8,
-    W8_1=10.,
-    W8_5=0.5)
-
-
 class Water(enca.ENCARun):
     """Water accounting class."""
 
@@ -132,8 +115,6 @@ class Water(enca.ENCARun):
                 GLORIC_ADAPTED: ConfigShape(),
                 }
             })
-
-        self.parameters = parameters.copy()
 
         self.input_rasters = [PRECIPITATION, EVAPO, USE_MUNI, USE_AGRI, DROUGHT_VULN, EVAPO_RAINFED,
                               RIVER_LENGTH, LT_PRECIPITATION, LT_EVAPO]
