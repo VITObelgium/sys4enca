@@ -21,6 +21,7 @@ from enca.framework.run import Cancelled
 
 from .help import show_help
 from .qt_tools import writeWidget, expand_template
+from .qgis_tools import load_vector_layer
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'enca_plugin_dockwidget_base.ui'))
@@ -76,6 +77,16 @@ component_input_widgets = {
     'LEAC': ['base_year']
 }
 
+#: vector output files to be loaded after a run, with visualization parameters (keyword arguments for
+component_vector_layers = {
+    carbon.Carbon.component: [(os.path.join('temp', 'CARBON_Indices_SELU_{year}.gpkg'), dict(
+        layer_name='NEACS [ha]',
+        attribute_name='C10_ha'))],
+    water.Water.component: [(os.path.join('temp', 'WATER_Indices_SELU_{year}.gpkg'), dict(
+        layer_name='TOTuseEW',
+        attribute_name='W9_ha',
+        color_ramp='Blues'))]
+}
 
 def findChild(widget: QtWidgets.QWidget, name: str):
     """Helper function to deal with the fact that .ui compilation does not allow duplicate widget names.
@@ -189,14 +200,14 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             for widget in self.list_config_widgets():
                 writeWidget(widget, None)
 
-            # Handle year selection:
+            # Handle year selection and reporting regions manually:
             self.year.setValue(config['years'][0])
+            self.reporting_areas.setShapefile(config.get('reporting_shape'))
 
             # remaining config values can be read automatically using the config templates
             main_template = {key: value for key, value in self.config_template.items()
-                             if key not in ('years', )}
+                             if key not in ('years', 'reporting_regions')}
             self.load_template(config, main_template)
-            self.reporting_areas.updateRegions()
 
             component_name = config['component']
             # TODO: later we need to select preprocessing/component/account tab first, and select component in that tab.
@@ -263,7 +274,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def run(self):
         template = self.make_template()
         taskname = f'{self.component.currentText()} run {template["run_name"].text()}'
-        task = Task(taskname, template)
+        task = Task(taskname, template, output_vectors=component_vector_layers[self.component.currentText()])
         _tasks.append(task)
         QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
         QgsApplication.taskManager().addTask(task)
@@ -287,17 +298,18 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
 class Task(QgsTask):
 
-    def __init__(self, description, template, output_rasters=[]):
+    def __init__(self, description, template, output_rasters=None, output_vectors=None):
         super().__init__(description)
         self.config = expand_template(template)
         self.widget_dict = expand_year(template)
-        self.output_rasters = output_rasters
+        self.output_rasters = output_rasters or []
+        self.output_vectors = output_vectors or []
         self.run = None
         self.run_thread = None
         self.exception = None
 
     def cancel(self):
-        """If the task is canceled, raise an inca.Cancelled exception in the run thread to stop it."""
+        """If the task is canceled, raise a Cancelled exception in the run thread to stop it."""
         super().cancel()
         if self.run_thread is not None:
             # Use the Python C API to raise an exception in another thread:
@@ -323,6 +335,11 @@ class Task(QgsTask):
             for raster in self.output_rasters:
                 path = os.path.join(self.run.run_dir, raster)
                 iface.addRasterLayer(path)
+
+            for filename, kwargs in self.output_vectors:
+                path = os.path.join(self.run.run_dir, filename).format(year=self.run.config['years'][0])
+                load_vector_layer(path, **kwargs)
+
         else:
             if self.exception is None:
                 QgsMessageLog.logMessage('Task failed for unknown reason')
@@ -333,12 +350,12 @@ class Task(QgsTask):
                 if isinstance(widget, QgsFileWidget):  # TODO clean up!
                     widget = widget.lineEdit()
                 widget.setStyleSheet('border: 1px solid red')
-                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'INCA configuration error', self.exception.message)
+                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'Configuration error', self.exception.message)
                 widget.setStyleSheet('')
             elif isinstance(self.exception, Error):
-                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'INCA error', str(self.exception.message))
+                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'Error', str(self.exception.message))
             else:
-                QtWidgets.QMessageBox.critical(iface.mainWindow(), 'INCA unexpected error',
+                QtWidgets.QMessageBox.critical(iface.mainWindow(), 'Unexpected error',
                                                f'Something went wrong: "{self.exception}".  Please refer to the '
                                                f'log file at {enca.framework.run.get_logfile()} for more details.')
         _tasks.remove(self)

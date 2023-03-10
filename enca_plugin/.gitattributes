@@ -1,1 +1,3 @@
 metadata.txt export-subst
+enca_plugin.py export-subst
+marvin_qgis_tools export-ignore
