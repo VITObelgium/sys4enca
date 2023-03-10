@@ -200,14 +200,14 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             for widget in self.list_config_widgets():
                 writeWidget(widget, None)
 
-            # Handle year selection:
+            # Handle year selection and reporting regions manually:
             self.year.setValue(config['years'][0])
+            self.reporting_areas.setShapefile(config.get('reporting_shape'))
 
             # remaining config values can be read automatically using the config templates
             main_template = {key: value for key, value in self.config_template.items()
-                             if key not in ('years', )}
+                             if key not in ('years', 'reporting_regions')}
             self.load_template(config, main_template)
-            self.reporting_areas.updateRegions()
 
             component_name = config['component']
             # TODO: later we need to select preprocessing/component/account tab first, and select component in that tab.

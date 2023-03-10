@@ -68,6 +68,10 @@ class RegionPicker(QtWidgets.QGroupBox):
         """Set the column name which should contain the id's of the selected regions"""
         self._id_label = label
 
+    def setShapefile(self, shapefile):
+        self._filewidget.lineEdit().setValue(shapefile)
+        self.updateRegions()
+
     def updateRegions(self):
         new_shapefile = self._filewidget.filePath()
         if self._current_shapefile == new_shapefile:
