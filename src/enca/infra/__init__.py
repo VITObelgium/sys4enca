@@ -68,16 +68,16 @@ class Infra(enca.ENCARun):
         path_temp = self.temp_dir()
 
         #first create NLEP
-        #create_NLEP(self)
+        create_NLEP(self)
 
         #second create NREP
-        #create_NREP(self)
+        create_NREP(self)
 
         # extract statistics per SELU
         logger.info('* Calculate Acessible Ecosystem Infrastructure per SELU')
         for year in self.years:
             logger.info('** processing year {} ...'.format(year))
-            #self.extract_stats(year)
+            self.extract_stats(year)
         logger.info('* SELU statistics ready')
 
         #return
@@ -86,7 +86,7 @@ class Infra(enca.ENCARun):
         print('* Calculate Overall access & intensity of use and health')
         for year in self.years:
             print('** processing year {} ...'.format(year))
-            #path_results_shp = self.calc_indices(year, ID_FIELD = 'HYBAS_ID', vrt_nodata=-9999)
+            path_results_shp = self.calc_indices(year, ID_FIELD = 'HYBAS_ID', vrt_nodata=-9999)
 
         print('* Indices available')
 

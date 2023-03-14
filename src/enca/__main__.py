@@ -7,7 +7,7 @@ import enca
 import enca.components
 import enca.framework.geoprocessing
 import enca.framework.run
-from enca import _
+#from enca import _
 from enca.framework.config_check import ConfigError
 from enca.framework.errors import Error
 

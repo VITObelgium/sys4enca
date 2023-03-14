@@ -20,6 +20,14 @@ from enca.framework.config_check import ConfigError, ConfigItem, check_csv
 from enca.framework.run import Run
 from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
 
+try:
+    dist_name = 'sys4enca'
+    __version__ = version(dist_name)
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "unknown"
+finally:
+    del PackageNotFoundError
+
 with as_file(files(__name__).joinpath('locale')) as path:
     t = gettext.translation(dist_name, path, fallback=True)
     _ = t.gettext
