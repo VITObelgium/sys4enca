@@ -7,7 +7,7 @@ the “green”landscape what is more or less important and symetrically, in les
 because of the presence of e.g. protected species or habitats.
 
 inputs:
-* Protected area map (i.e. WDPA)
+* Protected area map (i.e. naturalis)
 
 Created on Oct 28, 2019
 
@@ -21,62 +21,32 @@ import subprocess
 import traceback
 import rasterio
 
-from helper_functions import block_window_generator, rasterize, GSM
-from general.process import Grid
+from enca.framework.geoprocessing import block_window_generator, GSM
 
 class NATURALIS(object):
 
-    def __init__(self, params, options):
+    def __init__(self, runObject):
         '''
         Constructor
         '''
-        self.lut_gbli = params.nlep.nlepIn.lut_gbli
-        self.gaussian_kernel_radius = params.process.gaussian_kernel_radius
-        self.gaussian_sigma = params.process.gaussian_sigma
-        self.yearsL = params.run.yearsL
-        self.nlep = params.nlep.nlepOut
-        self.options = options
+        self.gaussian_kernel_radius = runObject.config["infra"]["general"]["gaussian_kernel_radius"]
+        self.gaussian_sigma = runObject.config["infra"]["general"]["gaussian_sigma"]
         self.block_shape = (4096, 4096)
-        
-        "get grid extent from land cover map"
-        self.lc = params.leac.leacOut.__dict__['lc'+str(params.run.yearsL[0])]
-        #self.lc = '/data/nca_vol1/saga_test/grids/Land-cover_ProbaV_PS-CLC_GEO_2000_100m_EPSG3035.sdat'
-        try:
-            '''
-            with rs.open(self.lc) as ds:
-                self.rows = ds.height
-                self.cols = ds.width
-                self.bounds = ds.bounds         #BoundingBox(left, bottom, right, top)
-                self.affine = ds.transform      #Affine()
-                self.crs = ds.crs
-                #adjust center / top-left
-                self.box_left = self.bounds.left + self.affine[1]/2
-                self.box_bottom = self.bounds.bottom + self.affine[1]/2
-                self.box_top  = self.box_bottom + ((self.rows-1) * self.affine[1])
-                self.box_right = self.box_left + ((self.cols-1) * self.affine[1]) 
-            '''
-            self.grid = Grid(self.lc)
-        except:
-            print("Not able to open raster %s to retrieve grid extent " % self.lc)
-            traceback.print_stack()
-            sys.exit(-1)
+        self.naturalis = runObject.config["infra"]["nlep"]["naturalis"]
+        self.nosm_reverse = runObject.naturalis_nosm_reverse
+        self.nosm = runObject.naturalis_nosm
+        self.sm = runObject.naturalis_sm
+        self.accord = runObject.accord
         
         return
         
-    def grid_PA(self,wdpa_shape):
-        
-        file = os.path.splitext(os.path.basename(wdpa_shape))[0]+'_nosm_reverse'
-        outfile_temp = os.path.join(self.nlep.root_nlep_temp, file)
+    def grid_PA(self):
 
-        rasterize(os.path.splitext(self.lc)[0]+'.tif', wdpa_shape, 'Weight',outfile_temp,dtype='Float64')
+        self.accord.rasterize(self.naturalis, 'Weight',self.nosm_reverse,dtype='Float64')
 
-
-        file = os.path.splitext(os.path.basename(wdpa_shape))[0]+'_nosm' + '.tif'
-        outfile = os.path.join(self.nlep.root_nlep_temp, file)
-
-        with rasterio.open(outfile_temp, 'r') as ds_open:
+        with rasterio.open(self.nosm_reverse, 'r') as ds_open:
             profile = ds_open.profile()
-            with rasterio.open(outfile, 'w', **dict(profile, driver='geotiff', dtype=np.ubyte, nodata = 255)) as ds_out:
+            with rasterio.open(self.nosm, 'w', **dict(profile, driver='geotiff', dtype=np.ubyte, nodata = 255)) as ds_out:
                 for _, window in block_window_generator(self.block_shape, ds_open.height, ds_open.width):
                     ablock = ds_open.read(1, window=window, masked=True)
                     ablock[ablock == -99999] = 255
@@ -84,31 +54,7 @@ class NATURALIS(object):
 
                     ds_out.write(ablock, window=window, indexes=1)
 
-
-        #no-data value is 0 but should be set to 255 instead to smooth in case we have binary 0 - 1000
-        
-        '''
-        tempfile = outfile
-        file = os.path.splitext(os.path.basename(wdpa_shape))[0]+'_nosm'
-        outfile = os.path.join(self.nlep.root_nlep_temp, file)
-        
-        cmd = 'gdal_translate -a_nodata 255'
-        cmd = cmd + ' ' + tempfile + '.sdat ' + outfile + '.sdat'
-        #run it
-        if self.options.verbose: print("Running command %s" % cmd )
-        try:
-            subprocess.check_call(cmd, shell=True)
-        except:
-            print("GDAL_TRANSLATE failed " + cmd)
-            traceback.print_stack()
-            raise
-        '''
-
-        return outfile
     
-    def smooth_PA(self,infile):
-        file = (os.path.splitext(os.path.basename(infile))[0]).strip('nosm')+'_sm'+str(self.gaussian_sigma)+'_'+str(self.gaussian_kernel_radius) + '.tif'
-        outfile = os.path.join(self.nlep.root_nlep,'stock',file)
-        GSM(infile,outfile,self.gaussian_sigma,self.gaussian_kernel_radius)
-        return outfile
+    def smooth_PA(self):
+        GSM(self.nosm,self.sm,self.gaussian_sigma,self.gaussian_kernel_radius)
     

@@ -16,52 +16,38 @@ import pathlib
 import shutil
 import traceback
 import rasterio
+import logging
 import numpy as np
-from helper_functions import block_window_generator, rasterize, adding_stats, add_area
+from enca.framework.geoprocessing import block_window_generator, adding_stats, add_area
 
-import general.process as process
-
-os.environ['GDAL_DATA'] = r'/usr/share/gdal'
 import geopandas as gpd
+logger = logging.getLogger(__name__)
 
 class Catchment(object):
     '''
     classdocs
     '''
 
-    def __init__(self, params, options):
+    def __init__(self, runObject, basin):
         '''
         Constructor
         '''
-        self.nlep = params.nlep.nlepOut
-        self.options = options
-        self.scale2ha = float(params.process.scale2ha)
-        self.pix2ha = float(params.process.pix2ha)
+
+        self.accord = runObject.accord
+        self.years = runObject.years
+        _ , scale = self.accord.ref_profile['crs'].linear_units_factor
+        self.scale2ha = scale ** 2 / 10000
+        self.catchment = runObject.config["infra"]["nlep"]["catchments"][basin]
+        self.catchment_temp = runObject.catchments_temp[basin]
+        self.basin = basin
     
-    def addArea(self,shapefile):
+    def addArea(self):
         
         #check if all required columns are available
-        
-        #copy input to process
         try:
-            for filename in pathlib.Path(os.path.split(shapefile)[0]).glob(os.path.splitext(os.path.split(shapefile)[1])[0]+'*'):
-                shutil.copy(str(filename), self.nlep.root_nlep_temp)     #PosixPath transfered in string
-                if os.path.splitext(str(filename))[1] == '.shp':
-                    self.catchment = os.path.join(self.nlep.root_nlep_temp, os.path.basename(str(filename)))
-        except:
-            print("Not able to copy catchment shape " + shapefile)
-            traceback.print_stack()
-            raise
-            
-        outfile = os.path.join(self.nlep.root_nlep_temp, os.path.basename(shapefile))
-
-        #Add area + scaling to polygons
-        add_area(outfile, outfile, self.scale2ha)
-
-        
-        #clean-up the shapefile
-        try:
-            data = gpd.read_file(outfile)
+            data = gpd.read_file(self.catchment).sort_index()
+            #Add area + scaling to polygons
+            data['AREA'] = data['geometry'].area * self.scale2ha
             #clean up the shapefile
             cols_to_drop = ["PERIMETER","VALUE"]
             for colname in cols_to_drop:
@@ -72,32 +58,33 @@ class Catchment(object):
                 if list(col.keys())[0] in data.columns:
                     data = data.rename(index=str, columns={list(col.keys())[0]:list(col.values())[0]})
             #write out new cleaned MEFF shapefile
-            data.to_file(outfile, drivers='ESRI Shapefile')
-        except:
-            print("Error cleaning up shapefile %s through geopandas " % outfile)
-            sys.exit(-1)
+            data.to_file(self.catchment_temp, drivers='ESRI Shapefile')
+        except Error as e:
+            raise Error(e)
         
-        return
+
         
 class OSM(object):
     '''
     classdocs
     '''
 
-    def __init__(self, params, options):
+    def __init__(self, runObject):
         '''
         Constructor
         '''
-        self.nlep = params.nlep.nlepOut
-        self.options = options
-        self.years = params.run.yearsL
-        self.lc = params.leac.leacOut.__dict__['lc'+str(self.years[0])]
-        self.grid = process.Grid(self.lc)
-        self.grid_ref = self.lc
+
+        self.years = runObject.years
+        self.temp_dir = runObject.temp_dir()
+        self.accord = runObject.accord
+        self.merged_trunkroads_railways = runObject.config["infra"]["nlep"]['osm']
+        self.merged_trunkroads_railways_inv = runObject.merged_trunkroads_railways_inv
+        self.merged_RR_inversed = runObject.merged_RR_inversed
+
         
     def merge_road_railways(self):
         
-        #TODO ADD OPTION TO MERGE ROAD AND RAILWAYS IF DIFFERENT INPUTS PROVIDED
+        #TODO ADD OPTION TO MERGE ROAD AND RAILWAYS IF DIFFERENT INPUTS PROVIDED NOT YET IMPLEMENTED (Move to preprocessing
         outfile = 'saga_test/temporary/gis_osm_merged_trunk_roads_railways.shp'
 
         #Need to add check if both layers have same projection
@@ -108,42 +95,12 @@ class OSM(object):
 
         return outfile
     
-    def inverse_RR(self, merged_trunkroads_railways):
-
-        #outfile = os.path.join(self.nlep.root_nlep_temp, os.path.splitext(os.path.basename(merged_trunkroads_railways))[0]) + '.tif'
-        outfile_inverse = os.path.join(self.nlep.root_nlep_temp, os.path.splitext(os.path.basename(merged_trunkroads_railways))[0]+'_inversed') + '.tif'
-
-
-        #TO checked if inversed
-        rasterize(self.grid_ref,merged_trunkroads_railways,None,outfile_inverse, nodata_value=0, dtype='uByte', burn=True, burn_value = 0)
-
-        self.merged_roadrails_raster = outfile_inverse
-        return outfile_inverse
+    def inverse_RR(self):
+        self.accord.rasterize_burn(self.merged_trunkroads_railways,self.merged_trunkroads_railways_inv, nodata_value=0,
+                                   burn_value=0, dtype='uByte')
     
-    def vectorize_RR(self, merged_RR_inversed):
-        
-        outfile = os.path.join(self.nlep.root_nlep_temp,os.path.splitext(os.path.basename(merged_RR_inversed))[0]) + '.shp'
-
-        #print('MAKE SURE ENOUGH MEMORY is available (i.e. 8GB for C5 region)')
-
-        # setup cmd command
-        #command slightly different won't no if output in single multi polygon or multiple polygon
-        cmd = 'gdal_polygonize.py -8 "{}" "{}" vectorized ID'.format(os.path.normpath(merged_RR_inversed), outfile)
-
-        if self.options.verbose: print("Running command %s" % cmd )
-        if not os.path.exists(outfile):
-            try:
-                subprocess.check_call(cmd, shell=True)
-            except subprocess.CalledProcessError as e:
-                raise OSError(f'Could not polygonize needed raster file: {e}')
-                traceback.print_stack()
-                sys.exit(-1)
-        else:
-            pass
-
-        
-        self.merged_roadrails = outfile
-        return
+    def vectorize_RR(self):
+        self.accord.vectorize(self.merged_trunkroads_railways_inv, self.temp_dir)
         
 class LFI(object):
     '''
@@ -151,100 +108,108 @@ class LFI(object):
     '''
 
 
-    def __init__(self, params, options):
+    def __init__(self, runObject):
         '''
         Constructor
         '''
-        self.nlep = params.nlep.nlepOut
-        self.AOI = params.run.region_short
-        self.projection = params.run.projection
-        self.options = options
+        self.runObject = runObject
+        self.AOI = runObject.aoi_name
+        self.accord = runObject.accord
         self.block_shape = (4096, 4096)
-        self.years = params.run.yearsL
-        self.scale2ha = float(params.process.scale2ha)
-        self.pix2ha = float(params.process.pix2ha)
+        self.years = runObject.years
+        _ , scale = self.accord.ref_profile['crs'].linear_units_factor
+        self.scale2ha = scale ** 2 / 10000
+        self.pix2ha = self.accord.pixel_area_m2() / 10000 #m2 to hectares
+        self.lcclass = runObject.config["infra"]["general"]["lc_urban"]
+        self.lcname='NoUrb'
+        self.basins = sorted([basin for basin in runObject.config["infra"]["nlep"]["catchments"].keys()])
         self.meshOutlier_ha = int(10*100)   #10km2
-        self.lc = params.leac.leacOut.__dict__['lc'+str(self.years[0])]
-        self.grid = process.Grid(self.lc)
+        self.catchments = runObject.config["infra"]["nlep"]["catchments"]
+        self.catchments_processed = runObject.catchments_processed
+        self.catchments_clean = runObject.catchments_clean
+        self.lfi_mesh = runObject.lfi_mesh
+        self.lfi_mesh_clean = runObject.lfi_mesh_clean
+        self.lfi_meff_hybas = runObject.lfi_meff_hybas
+        self.lfi_meff = runObject.lfi_meff
+        self.mask = {}
+        if runObject.tier == 4:
+            self.landcover_map = {}
+            # if lcclass (i.e. Urban) still is comprised from several classes, then first reclassify into one single urban class
+            # TODO temporary patch to cope with multiple Urban LandCover classes
+            # currently manual in QGIS with raster calculator (ZAEG_reclassified > 0 and ZAEG_reclassified < 12)*10
+            for year in self.years:
+                self.landcover[year] = '/data/nca_vol1/aux_input/preprocessed_data/NLEP/PNMB/PNMB_Urban_'+str(year)+'_3857.sdat'
+        else:
+            self.landcover = runObject.config["infra"]["leac"]
     
-    def intersect_Catchment_OSM(self,catchment,catch_level,merged_roadrails):
-    
-        outfile = os.path.join(self.nlep.root_nlep_temp,'MESH_intersect_'+str(self.AOI)+'_'+str(catch_level)+'_'+str(self.projection)+'.shp')
+    def intersect_Catchment_OSM(self,basin,merged_roadrails):
 
         gdf_merger_RR = gpd.read_file(merged_roadrails)
-        gdf_catchment = gpd.read_file(catchment)
-        gdf = gdf_merger_RR.overlay(gdf_catchment, how='intersection').explode()
-        gdf.to_file(outfile)
+        gdf_catchment = gpd.read_file(self.catchments_processed[basin])
+        data = gdf_merger_RR.overlay(gdf_catchment, how='intersection').explode()
 
+        #clean-up
+        data['AREA'] = data['geometry'].area * self.scale2ha
+        #clean up the shapefile
+        #complains about level_0
+        cols_to_drop = ["PERIMETER","VALUE","level_0"]
+        for colname in cols_to_drop:
+            if colname in data.columns:
+                data = data.drop([colname], axis=1)
+        cols_to_rename = [{"LEVEL3":"WSO3_ID"},{"LEVEL4":"WSO4_ID"},{"AREA":"MESH_HA"}]
+        for col in cols_to_rename:
+            if list(col.keys())[0] in data.columns:
+                data = data.rename(index=str, columns={list(col.keys())[0]:list(col.values())[0]})
+
+        #write out MESH shapefile
+        data.to_file(self.lfi_mesh[basin], drivers='ESRI Shapefile')
     
-        #add feature properties of the mesh intersect
-        add_area(outfile, outfile, self.scale2ha)
-        
-        #clean-up the shapefile
-        try:
-            data = gpd.read_file(outfile)
-            #clean up the shapefile
-            #complains about level_0
-            cols_to_drop = ["PERIMETER","VALUE","level_0"]
-            for colname in cols_to_drop:
-                if colname in data.columns:
-                    data = data.drop([colname], axis=1)
-            cols_to_rename = [{"LEVEL3":"WSO3_ID"},{"LEVEL4":"WSO4_ID"},{"AREA":"MESH_HA"}]
-            for col in cols_to_rename:
-                if list(col.keys())[0] in data.columns:
-                    data = data.rename(index=str, columns={list(col.keys())[0]:list(col.values())[0]})
-            #write out new cleaned MEFF shapefile
-            data.to_file(outfile, drivers='ESRI Shapefile')
-        except:
-            print("Error cleaning up shapefile %s through geopandas " % outfile)
-            sys.exit(-1)
-        
-        self.lfi_mesh = outfile
-        return outfile
-    
-    def intersect_LCclass(self,landcover,lcClass=0,lcName='None'):
+    def intersect_LCclass(self, year, lcName='None'):
         
         #filename first 10 chars will be used later in mesh
-        outfile = os.path.join(self.nlep.root_nlep_temp,os.path.splitext(lcName+'_'+os.path.basename(landcover))[0]) + '.tif'
+        self.mask[year] = os.path.join(self.runObject.temp_dir(),os.path.splitext(lcName+'_'+os.path.basename(self.landcover[year]))[0]) + '.tif'
         #'saga_test/Land_cover_ProbaV_PS-CLC_GEO_2000_100m_EPSG3035_urban'
 
-        with rasterio.open(landcover, 'r') as ds_open:
+        with rasterio.open(self.landcover[year], 'r') as ds_open:
             profile = ds_open.profile
-            with rasterio.open(outfile, 'w', **dict(profile, driver='GTiff', nodata =255, dtype=np.ubyte)) as ds_out:
+            with rasterio.open(self.mask[year], 'w', **dict(profile, driver='GTiff', nodata =255, dtype=np.ubyte)) as ds_out:
                 for _, window in block_window_generator(self.block_shape, ds_open.height, ds_open.width):
                     ablock = ds_open.read(1, window=window, masked=True)
 
-                    ds_out.write(ablock != int(lcClass), window=window, indexes=1)
+                    ds_out.write(ablock != int(self.lcclass), window=window, indexes=1)
         
-        return outfile
+        return self.mask[year]
     
-    def calc_mesh(self,lcmask,lfi_mesh):
-        adding_stats([lcmask],lfi_mesh,lfi_mesh, [np.sum])
-
-    def calc_meff(self, lfi_mesh, catchment, year, lcName, frag_field):
-
-        if not 'clean' in lfi_mesh:  #we are using temp since we need to combine the 3 fragmeff levels to final output
-            outfile = os.path.join(self.nlep.root_nlep,'temp',os.path.splitext(os.path.basename(lfi_mesh))[0]+'_clean'+'.shp')
+    def calc_mesh(self, year ,basin):
+        if year == self.years[0]:
+            adding_stats([self.mask[year]],self.lfi_mesh[basin] ,self.lfi_mesh[basin] , [np.sum])
         else:
-            outfile = lfi_mesh
-        if not 'clean' in catchment:
-            outfile_catchment = os.path.join(self.nlep.root_nlep,'temp',os.path.splitext(os.path.basename(catchment))[0]+'_clean'+'.shp')
-        else:
-            outfile_catchment = catchment
+            adding_stats([self.mask[year]],self.lfi_mesh_clean[basin] ,self.lfi_mesh_clean[basin] , [np.sum])
 
-        lcName = lcName  # + '_' SAGA seems to add an underscore during calc_mesh not so with Rasterio version
-        
+    def calc_meff(self, year, basin, lcName):
+        frag_field = self.get_field(year)
+        outfile = self.lfi_mesh_clean[basin]
+        outfile_catchment = self.catchments_clean[basin]
+        if os.path.exists(outfile):  #we are using temp since we need to combine the 3 fragmeff levels to final output
+            infile = outfile
+        else:
+            infile = self.lfi_mesh[basin]
+        if os.path.exists(outfile_catchment):
+            infile_catchment = outfile_catchment
+        else:
+            infile_catchment = self.catchment_processed[basin]
+
         #now calculate the mesh statistics and write in catchment
         try:
-            data = gpd.read_file(lfi_mesh)
-            data_catchment = gpd.read_file(catchment)
+            data = gpd.read_file(infile)
+            data_catchment = gpd.read_file(infile_catchment)
             #determine catchment level
-            ws_level = None
+            ws = None
             for col in data.columns:
                 if (col.startswith('WS') or col.startswith('HY')) and col.endswith('_ID'):
                     ws = col
             if ws is None:
-                print('No watershed level found')
+                logger.error('No watershed level found')
                 sys.exit(-1)
             else:
                 #check if catchment level also in catchment layer
@@ -327,21 +292,18 @@ class LFI(object):
             data_catchment.to_file(outfile_catchment, drivers='ESRI Shapefile')
             self.lfi_mesh = outfile
             self.lfi_frag_meff = outfile_catchment
-        except:
-            print("GEOPANDAS MESH calculation failed")
-            traceback.print_stack()
-            sys.exit(-1)
-        
-        return
+        except Error as e:
+            logger.ERROR("GEOPANDAS MESH calculation failed")
+            raise Error(e)
     
-    def rasterize_MEFF(self, meff_shape, field):
-
-        outfile = os.path.join(self.nlep.root_nlep_temp,os.path.splitext(os.path.basename(meff_shape))[0]+'_'+str(self.projection)+'_'+str(field)) + '.tif'
-
-        rasterize(self.lc, meff_shape, field, outfile , dtype = 'Float32')
+    def rasterize_MEFF(self, year, basin):
+        field = self.get_field(year)
+        gdf = gpd.read_file(self.catchments_clean[basin])
+        self.accord.rasterize(gdf, field , self.lfi_meff_hybas[basin][year] , dtype = 'Float32')
         # s.path.splitext(self.lc)[0]+'.sgrd'
 
-        return outfile
+    def get_field(self, year):
+        return 'FRAG'+str(year)[2:]+'_'+str(self.lcclass)
 
         
         
