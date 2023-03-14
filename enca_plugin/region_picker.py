@@ -17,6 +17,7 @@ class RegionPicker(QtWidgets.QGroupBox):
         self._selected_regions = QgsCheckableComboBox(self)
         layout.insertRow(0, 'Shape file', self._filewidget)
         layout.insertRow(1, 'Selected regions', self._selected_regions)
+        self._id_label = None
 
         self.setLayout(layout)
 
@@ -31,7 +32,7 @@ class RegionPicker(QtWidgets.QGroupBox):
     def connect_widgets(self):
         """Signals and slots to update the region selection combobox when a new reporting shapefile is selected."""
         # We want to update the list of regions whenever a new shape file was set by the user, but only when the
-        # user has finished editing (i.e. don't attempt to load a new NUTS shape while the user is still typing the
+        # user has finished editing (i.e. don't attempt to load a new shape while the user is still typing the
         # filename).  The file can be changed in the following ways:
         # - user edits the text using the widget's LineEdit -> use the editingFinished signal for this
         self._filewidget.lineEdit().editingFinished.connect(self.updateRegions)
@@ -63,25 +64,34 @@ class RegionPicker(QtWidgets.QGroupBox):
         """Detect when the user opens the shapefile selection dialog."""
         self._filewidget_clicked_flag = True
 
+    def set_id_label(self, label):
+        """Set the column name which should contain the id's of the selected regions"""
+        self._id_label = label
+
+    def setShapefile(self, shapefile):
+        self._filewidget.lineEdit().setValue(shapefile)
+        self.updateRegions()
+
     def updateRegions(self):
         new_shapefile = self._filewidget.filePath()
         if self._current_shapefile == new_shapefile:
-            # Do nothing if the NUTS file after editing is the same as the one before.
+            # Do nothing if the filename after editing is the same as the one before.
             return
 
         if new_shapefile:  # not None or empty
             try:
-                regions = gpd.read_file(new_shapefile, ignore_geometry=True)['NUTS_ID']
+                regions = gpd.read_file(new_shapefile, ignore_geometry=True)[self._id_label]
             except Exception:
-                QgsMessageLog.logMessage(f'Failed to read NUTS_ID\'s from file "{new_shapefile}"',
+                QgsMessageLog.logMessage(f'Failed to read ID\'s with label {self._id_label} '
+                                         f'from file "{new_shapefile}"',
                                          level=Qgis.Critical)
                 self._filewidget.lineEdit().setStyleSheet('border: 2px solid red')
                 return
         else:
             regions = []
         self._selected_regions.clear()
-        for nuts_id in sorted(regions):
-            self._selected_regions.addItem(nuts_id)
+        for id in sorted(regions):
+            self._selected_regions.addItem(id)
         self._current_shapefile = new_shapefile
         self._selected_regions.selectAllOptions()
         self._selected_regions.repaint()

@@ -6,8 +6,8 @@ import math
 import os
 import re
 import subprocess
-import sys
 from enum import Enum
+from importlib.metadata import version
 from os.path import splitext, basename, normpath
 
 import affine
@@ -22,12 +22,6 @@ from osgeo import __version__ as GDALversion
 from .ecosystem import ECOTYPE, ECO_ID
 from .errors import Error
 
-if sys.version_info[:2] >= (3, 8):
-    from importlib.metadata import version
-    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-else:
-    from importlib_metadata import version
-
 logger = logging.getLogger(__name__)
 
 GEO_ID = 'GEO_ID'  #: Column label for unique region identifier in GeoDataFrames
@@ -36,7 +30,9 @@ SHAPE_ID = 'SHAPE_ID'  # SHAPE_ID: integer identifier used when rasterizing vect
 LIST_UNITS = ['German legal metre', 'm', 'metre', 'Meter']
 DIC_KNOWN_WKT_STRINGS = {'ETRS_1989_LAEA': 3035,
                          'ETRS89-extended / LAEA Europe': 3035,
-                         'World_Mollweide': 54009}  # Note: 54009 is an ESRI identifier so add to ESRI id CONSTANT
+                         'ETRS89_ETRS_LAEA': 3035,
+                         'ETRS89 / ETRS_LAEA': 3035,
+                         'World_Mollweide': 54009}   # Note: 54009 is an ESRI identifier so add to ESRI id CONSTANT
 ESRI_IDENTIFIER = [54009]
 MINIMUM_RESOLUTION = 100.
 POLY_MIN_SIZE = 0.1  # size in square metre for minimum area for valid statistics vector to be used
@@ -67,35 +63,43 @@ _dtype_map = {
 
 
 class RasterType(Enum):
-    """When rescaling / reprojecting rasters, we need to take into account the type of data contained in a raster.
-    """
-    CATEGORICAL = 0  # Discrete values (map data), to be resampled with nearest neighbour method
-    RELATIVE = 1  # Quantities expressed in a unit relative to an area (e.g tonne / ha.)
-    ABSOLUTE_POINT = 2  # Point data such as height, slope, wind speed
-    ABSOLUTE_VOLUME = 3  # Quantities contained in pixel, e.g. population, precipitation. Must preserve total volume in geographical area.
+    """When rescaling / reprojecting rasters, we need to take into account the type of data contained in a raster."""
+
+    CATEGORICAL = 0  #: Discrete values (map data), to be resampled with nearest neighbour method
+    RELATIVE = 1  #: Quantities expressed in a unit relative to an area (e.g tonne / ha.)
+    ABSOLUTE_POINT = 2  #: Point data such as height, slope, wind speed
+    #: Quantities contained in pixel, e.g. population, precipitation. Must preserve total volume in geographical area.
+    ABSOLUTE_VOLUME = 3
 
 
 class Metadata(object):
-    """ This class handles all metadata"""
+    """This class handles all metadata.
 
-    def __init__(self, creator, seaa_model):
-        """ during the ini all master metadata of the project are added"""
-        self.module = seaa_model
+    :param creator: string used as tag in raster files for file creator
+    :param seaa_model: string used as tag in raster files for ecosystem service name
+    """
+
+    def __init__(self, creator, module):
+        """Initialize the project's master metadata."""
+        self.module = module
         self.master_tags = {"creator": creator,
-                            "SEAA-Module": self.module,
+                            "Module": self.module,
                             "ENCA-version": version('sys4enca'),
                             "software_raster_processing": "rasterio {} (on GDAL {}); "
                                                           "GDAL binary {}".format(rasterio.__version__,
                                                                                   rasterio.__gdal_version__,
                                                                                   GDALversion),
                             "software_vector_processing": "geopandas {}".format(gpd.__version__),
-                            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "TIFFTAG_SOFTWARE": 'ENCA version {}'.format(version('sys4enca'))
-                            }
+                            "creation_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         self.raster_tags = {}
 
     def read_raster_tags(self, path_list):
-        """ Function reads tags from raster data and stores them in raster_tags"""
+        """Read tags from a list of input rasters and store them in :attr:`raster_tags`.
+
+        The raster file processing history up to the second child is extracted from all input raster files.
+
+        :param path_list: list of absolute file names for which the metadata is extracted
+        """
         self.raster_tags = {}
         counter = 1
         # now we refill with all files used to process the current file
@@ -114,12 +118,11 @@ class Metadata(object):
                 src_tags['processing'] = 'unknown'
 
             self.raster_tags.update({"input-file{}".format(counter):
-                "file-name: {}, created on: {}, by: {}, info: {}".format(
-                    basename(src_tags['name']),
-                    src_tags['file_creation'],
-                    src_tags['creator'],
-                    src_tags['processing'])
-            })
+                                     "file-name: {}, created on: {}, by: {}, info: {}".format(
+                                         basename(src_tags['name']),
+                                         src_tags['file_creation'],
+                                         src_tags['creator'],
+                                         src_tags['processing'])})
             # deal with existing 1st child history lines of input files
             for key in src_tags.keys():
                 if re.match("^(input-file\\d*)$", key):
@@ -128,8 +131,25 @@ class Metadata(object):
                     history_counter += 1
             counter += 1
 
-    def prepare_raster_tags(self, processing_info, unit_info='N/A', output_file_name=None, output_profile=None):
-        """Prepare the tags to write out a raster via rasterio"""
+    def update_dataset_tags(self, ds, processing_info, unit, *input_rasters):
+        """Update metadata tags of a :class:`rasterio.DatasetWriter`.
+
+        :param ds: output Rasterio dataset.
+        :param processing_info: Description the raster contents.
+        :param unit: Unit of the raster values
+        :param input_rasters: List of input raster to include in the processing history.
+        """
+        if input_rasters:
+            self.read_raster_tags(input_rasters)
+        ds.update_tags(**self.prepare_raster_tags(processing_info, unit))
+
+    def prepare_raster_tags(self, processing_info, unit_info='N/A'):
+        """Prepare the tags to write out a raster via rasterio.
+
+        :param processing_info: Description the raster contents.
+        :param unit_info: Unit of the raster values
+        :return: dictionary of metadata tags for rasterio
+        """
         # first we fill the main tags for the new file
         out_tags = {"file_creation": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "processing": processing_info,
@@ -137,37 +157,35 @@ class Metadata(object):
         # now we add the master tags
         out_tags.update(self.master_tags)
         # now we add the raster tags prepared from the input files if exist
-        if not self.raster_tags:
-            pass
-        else:
+        if self.raster_tags:
             out_tags.update(self.raster_tags)
             # reset raster_tags since it is a one-time use
             self.raster_tags = {}
-        # add some standard TIFFTAGS
-        if output_file_name is not None:
-            out_tags.update(TIFFTAG_DOCUMENTNAME=os.path.splitext(os.path.basename(output_file_name))[0],
-                            TIFFTAG_IMAGEDESCRIPTION=processing_info,
-                            TIFFTAG_DATETIME=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        if output_profile is not None:
-            try:
-                unit = output_profile['crs'].linear_units
-                res = (float(output_profile['transform'].a), float(abs(output_profile['transform'].e)))
-            except:
-                pass
-            else:
-                out_tags.update(TIFFTAG_XRESOLUTION=res[0],
-                                TIFFTAG_YRESOLUTION=res[1],
-                                TIFFTAG_RESOLUTIONUNIT=unit)
         return out_tags
 
 
 class GeoProcessing(object):
-    """ class that handles the geoprocessing of raster and vector files towards given profile of reference raster"""
+    """Handles the geoprocessing of raster and vector files towards given profile of reference raster."""
 
-    def __init__(self, creator, seaa_model, temp_dir, ProjectExtentTiff=None):
-        self.metadata = Metadata(creator, seaa_model)
-        self.ref_profile = None  # in mainly the profile of the statistical raster processing file
-        self.ref_extent = None  # in mainly the extent of the statistical raster processing file
+    def __init__(self, creator, module, temp_dir, ProjectExtentTiff=None, GDAL_verbose=False):
+        """Initialize the GeoProcessing object with basic metadata and optional reference raster.
+
+        :param creator: Author name to embed in raster metadata.
+        :param module: Processing module name to embed in raster metadata.
+        :param temp_dir: Temporary directory to use for intermediate files.
+        :param ProjectExtentTiff: Reference raster for projection / extent / resolution.
+        :param GDAL_verbose: Print GDAL command line output to stdout or not.
+
+        """
+        self.metadata = Metadata(creator, module)
+        self.ref_profile = None  # typically the profile of the statistical raster processing file
+        self.ref_extent = None  # typically the extent of the statistical raster processing file
+        # GDAL terminal output
+        if GDAL_verbose:
+            self.GDAL_print = None
+        else:
+            self.GDAL_print = subprocess.DEVNULL
+
         if ProjectExtentTiff is not None:
             # get key parameter of input file
             param = self._load_profile(ProjectExtentTiff)
@@ -176,7 +194,7 @@ class GeoProcessing(object):
             # note: if really Geographical projection needed then init the ref_profile and ref_extent manually
             try:
                 self._epsg_check(param['epsg'], ProjectExtentTiff)
-            except:
+            except Exception:
                 raise ValueError('the provided raster file to init the GeoProcessing object has no valid EPSG.')
 
             if param['epsg'] in ESRI_IDENTIFIER:
@@ -184,8 +202,8 @@ class GeoProcessing(object):
                                    'reference file for the GeoProcessing object.')
 
             if param['projected'] is False:
-                raise Error(f'Currently the GeoProcessing object only supports reference files with projected '
-                            f'coordinate systems.')
+                raise Error('Currently the GeoProcessing object only supports reference files with projected '
+                            'coordinate systems.')
             if param['unit'] not in LIST_UNITS:
                 raise Error('Currently the GeoProcessing object only supports reference files with projected '
                             'coordinate systems in the following units: ' + ', '.join(LIST_UNITS))
@@ -194,13 +212,13 @@ class GeoProcessing(object):
             self.ref_extent = param['bbox']  # tuple: (lower left x, lower left y, upper right x, upper right y)
             self.epsg = param['epsg']
 
-        self.reporting_profile = None  #  mainly the profile of the reporting raster processing file
+        self.reporting_profile = None  # mainly the profile of the reporting raster processing file
         self.reporting_extent = None
         self.temp_dir = temp_dir
-        self.src_parameters = {}  # all the parameters of the raster file which has to be geoprocessed
+        self.src_parameters = {}   # all the parameters of the raster file which has to be geoprocessed
 
     def _check(self):
-        """ checks if profile and extent for reference file is existing"""
+        """Check if profile and extent for reference file exist."""
         if self.ref_profile is None:
             raise ValueError("The AccoRD object was not correctly initialized. "
                              "The rasterio profile for the reference file is missing")
@@ -209,7 +227,7 @@ class GeoProcessing(object):
                              "The rasterio extent for the reference file is missing")
 
     def _check2(self):
-        """ checks if profile and extent of reporting shapefile is existing"""
+        """Check if profile and extent of reporting shapefile exist."""
         if self.reporting_profile is None:
             raise ValueError("The AccoRD object was not completely initialized. "
                              "The rasterio profile for the reporting raster file is missing")
@@ -218,7 +236,10 @@ class GeoProcessing(object):
                              "The rasterio BoundingBox for the reporting raster file is missing")
 
     def _check3(self, filename):
-        """ checks if we have projected raster AND the projection unit is in the list we accept"""
+        """Check if we have projected raster AND the projection unit is in the list we accept.
+
+        :param filename: file name to raster file to which the status checks are applied
+        """
         if self.src_parameters['projected'] is False:
             raise Error(f'Currently the tool only supports raster maps with absolute volume-based data '
                         f' ({filename}) with a projected coordinate system.')
@@ -227,16 +248,20 @@ class GeoProcessing(object):
                         f' ({filename}) with the following projection units: ' + ', '.join(LIST_UNITS))
 
     def _epsg_check(self, epsg, filename):
-        """ check for the main current limitation of theGeoProcessing class - processing of datasets with valid EPSG"""
-        # TODO make this method part of _load_profile since we always call it after _load_profile()  anyway?
+        """Check for the main current limitation of the GeoProcessing class - processing of datasets with valid EPSG.
+
+        :param epsg: epsg code of the projection of the raster dataset (either int value, None or string 'no_epsg_code')
+        :param filename: file name to raster file to which the status checks are applied
+        """
         if (epsg == 'no_epsg_code') or (epsg is None):
             raise Error(f'The raster map {filename} does not have a valid EPSG projection or know WKT-string. '
                         f'Please adapt your raster map or insert a EPSG number in DIC_KNOWN_WKT_STRINGS dictionary.')
 
     def _full_pre_check(self, path_in, clean_src=False):
-        """ execute the _check() function PLUS make sure the key parameter of the to process file are loaded
+        """Execute the _check() function PLUS make sure the key parameter of the to process file are loaded.
 
         :param path_in: raster path to file for which is checked that all profile info is available
+        :param clean_src: boolean to indicate if profile parameters are fresh reloaded or existing are used
         """
         self._check()
         # delete src info if needed
@@ -249,8 +274,12 @@ class GeoProcessing(object):
         self._epsg_check(self.src_parameters['epsg'], path_in)
 
     def vectorize(self, raster_path, root_out):
-        """Wrapper for `gdal_polygonize`."""
+        """Wrap `gdal_polygonize`.
 
+        :param raster_path: absolute path to raster file which is vectorized
+        :param root_out: path to base folder in which the vectorized file is saved
+        :return: absolute path to vectorized file
+        """
         # create output file name
         out_path = os.path.join(root_out, 'vector_{}.shp'.format(splitext(basename(raster_path))[0]))
 
@@ -259,7 +288,7 @@ class GeoProcessing(object):
 
         if not os.path.exists(out_path):
             try:
-                subprocess.check_call(cmd, shell=True)
+                subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
             except subprocess.CalledProcessError as e:
                 raise OSError(f'Could not polygonize needed raster file: {e}')
             else:
@@ -396,7 +425,7 @@ class GeoProcessing(object):
         if not os.path.exists(path_out):
             try:
                 gdb[[gdb_column_name, 'geometry']].to_file(temp_out, driver='GPKG')
-                subprocess.check_call(cmd, shell=True)
+                subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
             except subprocess.CalledProcessError as e:
                 raise OSError(f'Could not rasterize needed vector file: {e}')
             else:
@@ -414,7 +443,7 @@ class GeoProcessing(object):
             pass
 
     def FillHoles(self, path_in, path_out, maxdistance=25, smooth=0):
-        """Fill nodata holes.
+        """Fill nodata holes in a raster file.
 
         :param path_in: input filename
         :param path_out: output filename
@@ -437,9 +466,9 @@ class GeoProcessing(object):
         # run
         if not os.path.exists(path_out):
             try:
-                subprocess.check_call(cmd1, shell=True)
-                subprocess.check_call(cmd2, shell=True)
-                subprocess.check_call(cmd3, shell=True)
+                subprocess.check_call(cmd1, shell=True, stdout=self.GDAL_print)
+                subprocess.check_call(cmd2, shell=True, stdout=self.GDAL_print)
+                subprocess.check_call(cmd3, shell=True, stdout=self.GDAL_print)
             except subprocess.CalledProcessError as e:
                 raise OSError(f'Could not fill the holes in the input raster: {e}')
             else:
@@ -453,7 +482,7 @@ class GeoProcessing(object):
             pass
 
     def pixel_area_m2(self):
-        """ gives the area of one pixel in square meter for the AccoRD reference file"""
+        """Return the area in square meter of one pixel from the AccoRD reference file."""
         self._check()
         if self.ref_profile['crs'].is_projected:
             return pixel_area(self.ref_profile['crs'], self.ref_profile['transform'])
@@ -461,7 +490,7 @@ class GeoProcessing(object):
             return None
 
     def _load_profile(self, raster_path):
-        """ function to extract key variables of the given raster file
+        """Extract key variables of the given raster file.
 
         :param raster_path: absolute file path to raster file for which to extract the profile
         :return: dictionary containing the key raster profile parameters
@@ -499,7 +528,7 @@ class GeoProcessing(object):
                 # dataset name
                 dFile['name'] = src.name
                 # dataset file tags (no band tags)
-                dFile['tags'] = src.tags
+                dFile['tags'] = src.tags()
                 # pixel area in square metre
                 if src.crs.is_projected:
                     dFile['px_area_m2'] = pixel_area(src.crs, src.transform)
@@ -516,9 +545,9 @@ class GeoProcessing(object):
         return dFile
 
     def _check_raster_processing_needed(self):
-        """ checks if profile of a given raster matches already the reference profile and if any processing is needed
+        """Check if profile of a given raster matches the reference profile and if any processing is needed.
 
-        :return: boolean
+        :return: True if profiles match, False if not.
         """
         if not self.src_parameters:
             raise ValueError('the _check_raster_processing_needed function can be only called when the profile '
@@ -534,15 +563,16 @@ class GeoProcessing(object):
 
     def AutomaticBring2AOI(self, path_in, raster_type=RasterType.CATEGORICAL, wOT=None, path_out=None,
                            secure_run=False):
-        """Wrapper around :func:`Bring2AOI` which checks if the raster needs to be adjusted, and if yes,
-           generates all settings automatically PLUS it returns the absolute filename of the adapted raster file.
+        """Wrap :func:`Bring2AOI` to adjust a raster file if needed. Optimal settings are picked automatically.
+
+        Returns the absolute filename of the adapted raster file, or the original filename if no changes where needed.
 
         :param path_in: input file path (absolute) of raster file to be processed to reference file specifications
         :param raster_type: type of raster data used to define the geoprocessing method
         :param wOT: overwriting the input raster data type
         :param path_out: output filename (a filename is derived from the input filename if not provided)
         :param secure_run: self.src_parameters is reset before function execution
-        :return: the file path of the adapted file is changes were needed, else the input file name
+        :return: the file path of the adapted file if changes were needed, else the input file name
         """
         # check if all parameters of input files are existing - when run in stand-alone mode
         self._full_pre_check(path_in, clean_src=secure_run)
@@ -565,13 +595,23 @@ class GeoProcessing(object):
             return path_out
 
     def Bring2AOI(self, path_in, path_out, raster_type=RasterType.CATEGORICAL, wOT=None, secure_run=False):
-        """Wrapper to automatically determine which geoprocessing mode has to applied to get the input file
-           to the raster configurations of the reference file (extent, resolution, projection)."""
+        """Automatically transform input file to reference file (extent, resolution, projection).
+
+        Compares input and reference projection parameters to select the optimal transformation method.
+
+        :param path_in: input file path (absolute) of raster file to be processed to reference file specifications
+        :param path_out: output file path (absolute) of raster file
+        :param raster_type: type of raster data used to define the geoprocessing method
+        :param wOT: overwriting the input raster data type
+        :param secure_run: self.src_parameters is reset before function execution
+        """
         # check if all parameters of input files are existing - when run in stand-alone mode
         self._full_pre_check(path_in, clean_src=secure_run)
 
         # make sure the output folder is existing
-        os.makedirs(os.path.dirname(path_out), exist_ok=True)
+        dir_out = os.path.dirname(path_out)
+        if dir_out:  # if path_out is just a filename without directory, dirname() returns ''.
+            os.makedirs(dir_out, exist_ok=True)
 
         # overwrite the output dataformat if not given
         if wOT is None:
@@ -603,10 +643,15 @@ class GeoProcessing(object):
                                f'specifications (see manual)')
 
     def _query_raster_processing_table(self, res_case, processing_case, raster_type):
-        """ evaluate which GEoProcessing function and settings have to be used based on given parameters"""
+        """Evaluate which GeoProcessing function and settings have to be used based on given parameters.
 
-        # possible processing_modes: Crop2AOI, Translate2AOI, Warp2AOI, VolumeWarp2AOI, VolumeTranslate2AOI
-        # possible resampling_modes: nearest, sum, bilinear, mode, average
+        :param res_case: resampling strategy between input raster $ reference raster (same, up-sampling, down-sampling)
+        :param processing_case: processing type between input raster & reference raster (crop, resample, warp)
+        :param raster_type: type of the raster content (categorical, relative, absolute_point, absolute_volume)
+        :return: tuple, given the processing_mode (crop, translate, warp) and resampling_mode
+        """
+        # possible processing_modes: Crop2AOI, Translate2AOI, Warp2AOI, VolumeWarp2AOI
+        # possible resampling_modes: nearest, sum, bilinear, mode, average, 3-step
         decision_tree = {
             'crop': {RasterType.CATEGORICAL: {'same': ('Crop2AOI', 'nearest')},
                      RasterType.RELATIVE: {'same': ('Crop2AOI', 'bilinear')},
@@ -634,7 +679,7 @@ class GeoProcessing(object):
                                                   'down-sampling': ('VolumeWarp2AOI', '3-step')}}}
         try:
             processing_mode, resampling_mode = decision_tree[processing_case][raster_type][res_case]
-        except:
+        except KeyError:
             raise ValueError(f'the given data ({processing_case, raster_type, res_case}) is not in the GeoProcessing '
                              f'decision tree to be evaluated. No geoprocessing mode and resampling mode can be '
                              f'determined.')
@@ -642,8 +687,10 @@ class GeoProcessing(object):
         return processing_mode, resampling_mode
 
     def _get_case_parameters(self):
-        """ run some tests to get the connection between src_dataset and reference dataset in terms of
-            spatial resolution and geoprocessing method"""
+        """Check src and reference dataset spatial resolution and projection to select correct geoprocessing method.
+
+        :return: tuple, given the resampling strategy and processing type between input & reference raster file
+        """
         # First, check resolution change
         if self.src_parameters['projected']:
             if self.src_parameters['unit_factor'] != 1:
@@ -681,10 +728,72 @@ class GeoProcessing(object):
 
         return res_case, processing_case
 
+    def _shift_check(self, path_in):
+        """Check if we need to regrid due to sub-pixel shift issues in GDAL_translate with nearest neighbor filter.
+
+        :param path_in: path to check if we need regridding
+        :return: boolean if we need a shift
+        """
+        # check if ref_profile is there
+        self._check()
+        # load file parameters (needed)
+        src_parameters = self._load_profile(path_in)
+        # now we check if key parameters are OK
+        if (src_parameters['epsg'] == self.ref_profile['crs'].to_epsg()) \
+                and (src_parameters['bbox'] == self.ref_extent) \
+                and (src_parameters['res'] == (float(self.ref_profile['transform'].a),
+                                               float(abs(self.ref_profile['transform'].e)))):
+            # all worked perfectly - nothing to do
+            return False
+        else:
+            # now we check if we have a shift or something else
+            if (src_parameters['epsg'] == self.ref_profile['crs'].to_epsg()) \
+                    and (src_parameters['res'] == (float(self.ref_profile['transform'].a),
+                                                   float(abs(self.ref_profile['transform'].e))))\
+                    and (src_parameters['height'] == self.ref_profile['height']) \
+                    and (src_parameters['width'] == self.ref_profile['width']):
+                # great something we can easy solve since it is just a sub-pixel shift
+                return True
+            else:
+                raise ValueError(f'Processed dataset ({path_in}) does not match requested specification. Unknown error.'
+                                 f' Please check the used geoprocessing function and debug.')
+
+    def _pixel_shift_adjustment(self, path_in):
+        """Adjust a sub-pixel shift in a raster file to the proper bounding box needed.
+
+        Note: current implementation does not support rotated datasets.
+
+        :param path_in: path to raster file which is checked.
+        """
+        # check if we need adjustment
+        if self._shift_check(path_in):
+            cmd = '{} -a_ullr {} {} {} {} "{}"'.format(_GDAL_EDIT,
+                                                       self.ref_extent.left,
+                                                       self.ref_extent.top,
+                                                       self.ref_extent.right,
+                                                       self.ref_extent.bottom,
+                                                       path_in)
+            try:
+                subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
+                logger.warning('- sub-pixel shift was detected and resolved.')
+            except subprocess.CalledProcessError as e:
+                raise OSError(
+                    'Could not resolve sub-pixel shift in raster file ({}) : {}'.format(os.path.basename(path_in), e))
+        else:
+            # nothing to do
+            return
+
     def VolumeWarp2AOI(self, path_in, path_out, wOT='Float64', oversampling_factor=10, secure_run=False):
-        """ Special case for warping raster with absolute volume based data
-            Note: still based on gdalwarp but in a 3 step approach which works for up-sampling and down-sampling
-            IMPORTANT: since gdal_translate has no "sum" resample method we also use this approach
+        """Warp rasters with absolute volume based data.
+
+        Note: still based on gdalwarp but in a 3-step approach which works for up-sampling and down-sampling
+        IMPORTANT: since gdal_translate has no "sum" resample method we also use this approach for translate cases
+
+        :param path_in: input file path (absolute) of raster file to be processed to reference file specifications
+        :param path_out: output file path (absolute) of raster file
+        :param wOT: overwriting the input raster data type
+        :param oversampling_factor: set the oversampling rate for the warp
+        :param secure_run: self.src_parameters is reset before function execution (mainly used when called stand-alone)
         """
         # check if all parameters of input files are existing - when run in stand-alone mode
         self._full_pre_check(path_in, clean_src=secure_run)
@@ -703,6 +812,10 @@ class GeoProcessing(object):
             s_srs_string = 'ESRI:{}'.format(self.src_parameters['epsg'])
         else:
             s_srs_string = 'EPSG:{}'.format(self.src_parameters['epsg'])
+
+        # resolve potential issue in wOT
+        if wOT in _dtype_map.keys():
+            wOT = _dtype_map[wOT]
 
         # 1. warp to target EPSG with oversampled resolution (nearest neighbor) (crop to ref file with buffer of 10 px)
         buffer_x = 10 * self.ref_profile['transform'].a
@@ -757,11 +870,16 @@ class GeoProcessing(object):
 
         if not os.path.exists(path_out):
             try:
-                subprocess.check_call(cmd1, shell=True)
-                subprocess.check_call(cmd2, shell=True)
-                subprocess.check_call(cmd3, shell=True)
+                subprocess.check_call(cmd1, shell=True, stdout=self.GDAL_print)
+                subprocess.check_call(cmd2, shell=True, stdout=self.GDAL_print)
+                subprocess.check_call(cmd3, shell=True, stdout=self.GDAL_print)
+                # now we run a check if all processing was successful or if we have a sub-pixel shift to resolve
+                self._pixel_shift_adjustment(path_out)
                 logger.debug(log_message)
             except subprocess.CalledProcessError as e:
+                # delete file if it is partly processed
+                if os.path.exists(path_out):
+                    os.remove(path_out)
                 raise OSError('Could not warp the raster file ({}) to the AOI: {}'.format(os.path.basename(path_in), e))
             else:
                 self.adapt_file_metadata(path_in, path_out)
@@ -778,15 +896,25 @@ class GeoProcessing(object):
             self.src_parameters = {}
 
     def Crop2AOI(self, path_in, path_out, wResampling='nearest', wOT='Float64', secure_run=False):
-        """Crop raster to AOI when in same coordinate system and same resolution. no checks are made
+        """Crop raster to AOI when in same coordinate system and same resolution. No checks are done.
 
-        Note: Nodata value is kept but dtype of output can be adjusted."""
+        Note: Nodata value is kept but dtype of output can be adjusted.
+
+        :param path_in: input file path (absolute) of raster file to be processed to reference file specifications
+        :param path_out: output file path (absolute) of raster file
+        :param wResampling: resampling method
+        :param wOT: overwriting the input raster data type
+        :param secure_run: self.src_parameters is reset before function execution (mainly used when called stand-alone)
+        """
         # check if all parameters of input files are existing - when run in stand-alone mode
         self._full_pre_check(path_in, clean_src=secure_run)
 
         # first resolve gdal_translate and gdalwarp language issue
         if wResampling == 'near':
             wResampling = 'nearest'
+        # resolve potential issue in wOT
+        if wOT in _dtype_map.keys():
+            wOT = _dtype_map[wOT]
 
         # Note: the resampling method was added to allow switches to different projection units even when theoretically
         #       no resampling is done (e.g. image in projection with kilometer unit and resolution 1 is same as
@@ -824,9 +952,14 @@ class GeoProcessing(object):
 
         if not os.path.exists(path_out):
             try:
-                subprocess.check_call(cmd, shell=True)
+                subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
+                # now we run a check if all processing was successful or if we have a sub-pixel shift to resolve
+                self._pixel_shift_adjustment(path_out)
                 logger.debug(log_message)
             except subprocess.CalledProcessError as e:
+                # delete file if it is partly processed
+                if os.path.exists(path_out):
+                    os.remove(path_out)
                 raise OSError(
                     'Could not crop the raster file ({}) to the AOI: {}'.format(os.path.basename(path_in), e))
             else:
@@ -841,15 +974,27 @@ class GeoProcessing(object):
 
     def Translate2AOI(self, path_in, path_out, wResampling='nearest', wOT='Float64', secure_run=False,
                       mode=None):
-        """Translate raster (resampling and cropping) to AOI when in same coordinate system. no checks are made
+        """Translate raster (resampling and cropping) to AOI when in same coordinate system.
 
-        Note: Nodata value is kept but dtype of output can be adjusted."""
+        Note: Nodata value is kept but dtype of output can be adjusted.
+
+        :param path_in: input file path (absolute) of raster file to be processed to reference file specifications
+        :param path_out: output file path (absolute) of raster file
+        :param wResampling: resampling method
+        :param wOT: overwriting the input raster data type
+        :param secure_run: self.src_parameters is reset before function execution (mainly used when called stand-alone)
+        :param mode: resampling strategy between input & reference raster (due to gdal_translate sub-pixel shifts we
+                     have to distinguish between up & down sampling) (default: None --> automatic detection)
+        """
         # check if all parameters of input files are existing - when run in stand-alone mode
         self._full_pre_check(path_in, clean_src=secure_run)
 
         # first resolve gdal_translate and gdalwarp language issue
         if wResampling == 'near':
             wResampling = 'nearest'
+        # resolve potential issue in wOT
+        if wOT in _dtype_map.keys():
+            wOT = _dtype_map[wOT]
 
         # due to gdal_translate sub-pixel shifts we have to distinguish between up & down sampling
         if mode is None:
@@ -964,10 +1109,15 @@ class GeoProcessing(object):
         if not os.path.exists(path_out):
             try:
                 if cmd_pre is not None:
-                    subprocess.check_call(cmd_pre, shell=True)
-                subprocess.check_call(cmd, shell=True)
+                    subprocess.check_call(cmd_pre, shell=True, stdout=self.GDAL_print)
+                subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
+                # now we run a check if all processing was successful or if we have a sub-pixel shift to resolve
+                self._pixel_shift_adjustment(path_out)
                 logger.debug(log_message)
             except subprocess.CalledProcessError as e:
+                # delete file if it is partly processed
+                if os.path.exists(path_out):
+                    os.remove(path_out)
                 raise OSError(
                     'Could not translate the raster file ({}) to the AOI: {}'.format(os.path.basename(path_in), e))
             else:
@@ -986,13 +1136,23 @@ class GeoProcessing(object):
     def Warp2AOI(self, path_in, path_out, wResampling='near', wOT='Float64', secure_run=False):
         """Warp a file to an AOI without any checks.
 
-        Note: nodata value stays the same, but dtype can be adjusted."""
+        Note: nodata value stays the same, but dtype can be adjusted.
+
+        :param path_in: input file path (absolute) of raster file to be processed to reference file specifications
+        :param path_out: output file path (absolute) of raster file
+        :param wResampling: resampling method
+        :param wOT: overwriting the input raster data type
+        :param secure_run: self.src_parameters is reset before function execution (mainly used when called stand-alone)
+        """
         # check if all parameters of input files are existing - when run in stand-alone mode
         self._full_pre_check(path_in, clean_src=secure_run)
 
         # first resolve gdal_translate and gdalwarp language issue
         if wResampling == 'nearest':
             wResampling = 'near'
+        # resolve potential issue in wOT
+        if wOT in _dtype_map.keys():
+            wOT = _dtype_map[wOT]
 
         # resolve ESRI / EPSG issue
         if self.src_parameters['epsg'] in ESRI_IDENTIFIER:
@@ -1020,9 +1180,14 @@ class GeoProcessing(object):
 
         if not os.path.exists(path_out):
             try:
-                subprocess.check_call(cmd, shell=True)
+                subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
+                # now we run a check if all processing was successful or if we have a sub-pixel shift to resolve
+                self._pixel_shift_adjustment(path_out)
                 logger.debug(log_message)
             except subprocess.CalledProcessError as e:
+                # delete file if it is partly processed
+                if os.path.exists(path_out):
+                    os.remove(path_out)
                 raise OSError('Could not warp the raster file ({}) to the AOI: {}'.format(os.path.basename(path_in), e))
             else:
                 self.adapt_file_metadata(path_in, path_out)
@@ -1035,12 +1200,34 @@ class GeoProcessing(object):
             self.src_parameters = {}
 
     def adapt_file_metadata(self, path_in, path_out):
-        """Write metadata extracted from input file to raster file."""
+        """Write metadata extracted from input file to raster file.
+
+        Note: existing file metadata is removed and replaced with object specific (Metadata class)
+
+        :param path_in: file path (absolute) to file to extract metadata from
+        :param path_out: file path (absolute) to processed file which needs metadata infusion
+        """
+        # first remove existing metadata in dst_file (only allow our metadata)
+        # Note: Structure metadata (incl. scale, offset, nodata value, Interleave, Area_or_point ) are not touched
+        cmd = '{} -unsetmd "{}"'.format(_GDAL_EDIT, path_out)
+        try:
+            subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
+        except subprocess.CalledProcessError as e:
+            raise OSError('GDAL_EDIT issue with file ({}) : {}'.format(os.path.basename(path_out), e))
+
         # get metadata of input file (adapted ones - not only original)
         self.metadata.read_raster_tags([os.path.normpath(path_in)])
+
+        # get unit if possible from input file
+        try:
+            punit = self.src_parameters['tags']['unit']
+        except Exception:
+            punit = ' '
+
+        # create full metadata dict
         tags = self.metadata.prepare_raster_tags(
             'Original file: {}. Warped/translated to EPSG, resolution and extent of project AOI'.format(
-                os.path.basename(os.path.normpath(path_in))), '')
+                os.path.basename(os.path.normpath(path_in))), punit)
 
         with rasterio.open(path_out, 'r+') as dst:
             dst.update_tags(**tags)
@@ -1068,8 +1255,10 @@ class GeoProcessing(object):
 
     def vector_in_raster_extent_check(self, raster_path, gdf, check_projected=True, check_unit=True, stand_alone=False):
         """Check a set of geographical regions is included in the raster bounds of a given file.
-        Note: no content check in raster  is done - so regions could be nodata.
-        IMPORTANT: the input raster info is saved after the check in case further processing (Bring2AOI) is needed
+
+        Note: no content check in raster is done - so regions could be nodata.
+
+        IMPORTANT: the input raster info is saved after the check in case further processing (Bring2AOI) is needed.
 
         :param raster_path: path to the raster file we want to check.
         :param gdf: GeoDataFrame containing shapes which should be within the raster bounds.
@@ -1152,15 +1341,33 @@ class GeoProcessing(object):
                     ds_out.write(aData.filled(ds_out.nodata), window=dst_window, indexes=1)
                     add_progress(100. / nblocks)
 
+    def vector_2_AOI(self, infile, outfile, mode='statistical'):
+        """Reproject and cut a vector file to the desired reference extent."""
+        if mode == 'statistical':
+            pextent = self.ref_extent
+            out_crs = self.ref_profile['crs']
+        elif mode == 'reporting':
+            self._check2()
+            pextent = self.reporting_extent
+            out_crs = self.reporting_profile['crs']
+
+        cmd = ['ogr2ogr', '-overwrite',
+               '-t_srs', str(out_crs).replace('"', '\\"'),
+               '-clipdst',  str(pextent.left), str(pextent.bottom), str(pextent.right), str(pextent.top),
+               outfile, infile]
+
+        subprocess.run(cmd, check=True)
+
     def merge_raster(self, lPathIn, path_out, mode=None):
-        """Merge several GeoTiff files into one
-           Note: use mainly to combine several tiles or raster with non-overlapping nodata areas
+        """Merge several GeoTiff files into one.
+
+        Note: use mainly to combine several tiles or raster with non-overlapping nodata areas.
 
         :param lPathIn: list of paths with all GeoTiff files to merge
         :param path_out: absolute path of the output file name for merged GeoTiff file
         :param mode: processing extent (statistical, regional, None)
         """
-        ##firstgenerate the VRT file
+        # first generate the VRT file
         # write paths to a text file
         path_list = os.path.join(self.temp_dir, 'paths.txt')
         with open(path_list, "w") as outfile:
@@ -1190,14 +1397,14 @@ class GeoProcessing(object):
             raise RuntimeError('The given mode option is not forseen in merge_raster function')
 
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
         except subprocess.CalledProcessError as e:
             raise OSError(f'Could not generate the needed VRT file: {e}.')
 
         # transfer to GeoTiff
         cmd = 'gdal_translate -strict -co COMPRESS=DEFLATE "{}" "{}"'.format(path_vrt, path_out)
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True, stdout=self.GDAL_print)
         except subprocess.CalledProcessError as e:
             raise OSError(f'Could not translate the VRT file into raster file: {e}.')
         finally:
@@ -1210,7 +1417,9 @@ class GeoProcessing(object):
     def spatial_disaggregation_byArea(self, path_proxy_raster, data, path_area_raster, area_names, path_out,
                                       add_progress=lambda p: None, proxy_sums=None,
                                       processing_info='N/A', unit_info='N/A', block_shape=(2048, 2048)):
-        """Given an Area GeoTiff and area-specific total values, disaggregate the totals according to the proxy raster,
+        """Disaggregate values per region using a proxy raster, such that the total for each region is preserved.
+
+        Given an area raster and a table total values per area, disaggregate the totals according to the proxy raster,
         such that the sum of the disaggregated values for the pixels within each Area equals the given total for the
         area. Uses block processing to reduce memory usage.
 
@@ -1240,7 +1449,8 @@ class GeoProcessing(object):
 
         # calculate area-specific contribution factor
         # TODO make sure area_names and data have the same index before calling statistics_byArea, so proxy_sums will
-        #  be complete! (and the reindex is not needed here anymore)?  Take care that area_names can be a dict (convert to Series first?)!
+        #  be complete! (and the reindex is not needed here anymore)?
+        #  Take care that area_names can be a dict (convert to Series first?)!
         dis_factor = (data / proxy_sums.reindex(data.index)).fillna(0)
 
         # start processing
@@ -1255,8 +1465,7 @@ class GeoProcessing(object):
             # init the output raster file
             with rasterio.open(path_out, 'w', **dst_profile) as dst:
                 # add metadata if needed
-                self.metadata.read_raster_tags([path_proxy_raster, path_area_raster])
-                dst.update_tags(**self.metadata.prepare_raster_tags(processing_info, unit_info))
+                self.metadata.update_dataset_tags(dst, processing_info, unit_info, path_proxy_raster, path_area_raster)
 
                 # now iterate over the blocks
                 for _, window in block_window_generator(block_shape, dst_profile['height'], dst_profile['width']):
@@ -1290,9 +1499,12 @@ class GeoProcessing(object):
                                            path_ET_raster, ET_names, path_out,
                                            add_progress=lambda p: None, proxy_sums=None,
                                            processing_info='N/A', unit_info='N/A', block_shape=(2048, 2048)):
-        """Given an Area GeoTiff plus EcosystemType Geotiff and area/ET-specific total values, disaggregate the totals
-        according to the proxy raster, such that the sum of the disaggregated values for the pixels for each ET class
-        within each Area equals the given total for the ET class and area. Uses block processing to reduce memory usage.
+        """Disaggregate values per region and ecosystem type using a proxy raster, preserving total values.
+
+        Given area and ecosystem type rasters, and a table of total values per combination of area and ecosystem type,
+        disaggregate the totals according to the proxy raster, such that the sum of the disaggregated values for the
+        pixels for each ET class within each Area equals the given total for the ET class and area. Uses block
+        processing to reduce memory usage.
 
         :param path_proxy_raster: path to the raster dataset containing the proxy for spatially disaggregation
         :param data: Series containing the area-ET-specific total values to distribute, MultiIndex is mandatory given
@@ -1311,15 +1523,14 @@ class GeoProcessing(object):
         :param block_shape: tuple (y_size, x_size) for block processing of the statistic extraction (optional)
         :return: DataFrame containing sum of proxy values per region and per ecosystem type. Can be reused in subsequent
                  calls to :meth:`spatial_disaggregation_byArea_byET` to save computation effort.
-
         """
         progress_remain = 100.
         if proxy_sums is None:
             # first get the proxy raster value sum of the different areas for which to disaggregate the table data
-            proxy_sums = \
-                statistics_byArea_byET(path_proxy_raster, path_area_raster, area_names, path_ET_raster, ET_names,
-                                       add_progress=lambda p: add_progress(0.4 * p),  # 40% of progress here
-                                       block_shape=block_shape)[SUM]
+            proxy_sums = statistics_byArea_byET(path_proxy_raster, path_area_raster, area_names, path_ET_raster,
+                                                ET_names,
+                                                add_progress=lambda p: add_progress(0.4 * p),  # 40% of progress here
+                                                block_shape=block_shape)[SUM]
             progress_remain = 60.
 
         # calculate area-specific contribution factor
@@ -1343,8 +1554,8 @@ class GeoProcessing(object):
             # init the output raster file
             with rasterio.open(path_out, 'w', **dst_profile) as dst:
                 # add metadata if needed
-                self.metadata.read_raster_tags([path_proxy_raster, path_area_raster, path_ET_raster])
-                dst.update_tags(**self.metadata.prepare_raster_tags(processing_info, unit_info))
+                self.metadata.update_dataset_tags(dst, processing_info, unit_info,
+                                                  path_proxy_raster, path_area_raster, path_ET_raster)
 
                 # now iterate over the blocks
                 for _, window in block_window_generator(block_shape, dst_profile['height'], dst_profile['width']):
@@ -1382,7 +1593,7 @@ class GeoProcessing(object):
 
 
 def Bring2COG():
-    """Wrapper to run translation from GeoTiff to COG
+    """Translate from GeoTiff to COG.
 
     # TODO: put in GeoProcessing class
 
@@ -1427,8 +1638,8 @@ def statistics_byArea(path_data_raster, path_area_raster, area_names, transforma
                       add_progress=lambda p: None, block_shape=(2048, 2048)):
     """Extract sum and count statistics for all areas given in the area_raster for the data_raster.
 
-    Note: currently only works correctly for raster with absolute data values (relative datasets would need unit and pixel
-    area)
+    Note: currently only works correctly for raster with absolute data values (relative datasets would need unit and
+    pixel area)
 
     :param path_data_raster: path to the raster dataset containing the absolute values
     :param path_area_raster: path to the raster holding the areas for which statistics are extracted
@@ -1438,7 +1649,6 @@ def statistics_byArea(path_data_raster, path_area_raster, area_names, transforma
     :param block_shape: tuple (y_size, x_size) for block processing of the statistic extraction (optional)
     :return: pandas dataframe with area codes as index and columns for raster value sum and raster pixel count
     """
-
     # convert area_names to DataFrame, indexed by SHAPE_ID
     area_names = pd.DataFrame(area_names.items(), columns=[GEO_ID, SHAPE_ID]).set_index(SHAPE_ID)
 
@@ -1474,8 +1684,12 @@ def statistics_byArea(path_data_raster, path_area_raster, area_names, transforma
             df = df.add(df_window.groupby(SHAPE_ID).sum(), fill_value=0.)
             add_progress(100. / nblocks)
 
-    result = df.join(area_names).set_index(GEO_ID)
-    return result
+    # If the SHAPE_ID index values do not agree, the rasterized shapefile doesn't match the currently selected regions.
+    if not df.index.isin(area_names.index).all():
+        raise Error('Mismatch between selected regions and rasterized regions shapefile.  '
+                    'This may happen when continuing from a previous run with different settings.')
+
+    return df.join(area_names).set_index(GEO_ID)
 
 def statistics_byShapes(rasters, shapes, stats, ID_FIELD='HYBAS_ID'):
     '''
@@ -1504,7 +1718,7 @@ def statistics_byShapes(rasters, shapes, stats, ID_FIELD='HYBAS_ID'):
 def statistics_byArea_byET(path_data_raster, path_area_raster, area_names, path_ET_raster, ET_names,
                            add_progress=lambda p: None,
                            block_shape=(2048, 2048)):
-    """Extract sum and count statistics for all Et given by ET_raster in areas given in the area_raster for the data_raster.
+    """Extract sum and count statistics for per area and per ecosystem type.
 
     Note: currently only works correctly for raster with absolute data values (relative datasets would need
     unit and pixel area)
@@ -1521,7 +1735,6 @@ def statistics_byArea_byET(path_data_raster, path_area_raster, area_names, path_
     :return: pandas dataframe with area codes and ET class as multi-index and columns for raster value sum and
              raster pixel count
     """
-
     # convert area_names and ET_names to DataFrame, indexed by SHAPE_ID and ECO_ID
     area_names = pd.DataFrame(area_names.items(), columns=[GEO_ID, SHAPE_ID]).set_index(SHAPE_ID)
     ET_names = pd.DataFrame(ET_names.items(), columns=[ECOTYPE, ECO_ID]).set_index(ECO_ID)
@@ -1559,11 +1772,15 @@ def statistics_byArea_byET(path_data_raster, path_area_raster, area_names, path_
             df = df.add(df_window.groupby([SHAPE_ID, ECO_ID]).sum(), fill_value=0.)
             add_progress(100. / nblocks)
 
-    result = df.join(area_names).join(ET_names).set_index([GEO_ID, ECOTYPE])
-    return result
+    # If the SHAPE_ID index values do not agree, the rasterized shapefile doesn't match the currently selected regions:
+    if not df.index.get_level_values(SHAPE_ID).isin(area_names.index).all():
+        raise Error('Mismatch between selected regions and rasterized regions shapefile.  '
+                    'This may happen when continuing from a previous run with different settings.')
+
+    return df.join(area_names).join(ET_names).set_index([GEO_ID, ECOTYPE])
 
 def block_window_generator(block_shapes, img_height, img_width):
-    """Returns an iterator over a band's block windows and their indexes.
+    """Return an iterator over a band's block windows and their indexes.
 
     Block windows are tuples::
 
@@ -1634,7 +1851,6 @@ def coord_2_index(x, y, raster_x_min, raster_y_max, pixres, raster_x_max=None, r
     .. note::
         output tuple is directly in numpy indexing order (row, column).
     """
-
     index_column = int((x - raster_x_min) / float(pixres[0]))
     index_row = int((y - raster_y_max) / float(-pixres[1]))
 

@@ -1,0 +1,163 @@
+CODE;SHORT_NAME;FULL_NAME
+a;AREA_ha;AREA_ha
+Area_poly;Area_polygones_ha;area calculated from the polygones [ha]
+Area_rast;Area_raster;area calculated from raster pixels [ha]
+delta_ha;delta Area_poly to Area_rast;delta between the area calculation of vector and raster [ha]
+num_SELU;number of SELU;number of SELU units combined
+CoastID;CoastHYBAS10;Coastal HYBAS10
+W1_11;W1_1lakvol;Lakes & reservoirs [m^3]
+W1_12;W1_1lak_Areaha;Lakes & reservoirs [Area_ha]
+W1_21;W1_21RIV_SRMU;Rivers & other streams [SRMU = km*m^3/s]
+W1_22;W1_22RIV_Length_ha;Rivers & other streams [length as ha pixel based count]
+W1_3;W1_3glacier;Glaciers, snow & ice [m^3]
+W1_41;W1_41majorGW_Areaha;Major groundwater [ha]
+W1_42;W1_42localGW_Areaha;Local or shallow aquifer [ha]
+W1_5;W1_5SoilVeg;Soil & Vegetation [m^3]
+W1;W1opening;Opening stocks descriptors  [no total]
+W2_1;W2_1precip;Precipitations
+W2_21;W2_21surfroffin;Surface runoff to rivers
+W2_22;W2_22percolin;Infiltration/percolation to soil and groundwater
+W2_23;W2_23gwdraininriv;Groundwater drainage into rivers
+W2_24;W2_24othertransin;Other transfers received
+W2_2;W2_2interntransin;Internal spontaneous water transfers received
+W2_2a;W2_2aNetGWdrain;Groundwater drainage to river minus percolation
+W2_31;W2_31rivup;Natural inflow of surface water from upstream territories 
+W2_32;W2_31GWup;Natural inflow of groundwater from upstream territories 
+W2_3;W2_3natinflowup;Natural inflows from upstream territories 
+W2_41;W2_41artinflowland;Artificial inflows of water from other territories (incl. distribution)
+W2_42;W2_42abstsea;Abstraction of water from the sea 
+W2_4;W2_4Artinflowtot;Artificial inflows of water from other territories and the sea 
+W2_51;W2_51urbww;Returns/discharge of urban waste water
+W2_51a;W2_51a_urbww_tr;part of W2_51 - returns/discharge of treated urban waste water
+W2_51b;W2_51b_urbww_utr;part of W2_51 - returns/discharge of untreated urban waste water
+W2_52;W2_52urbroff;Returns/untreated water_urban runoff
+W2_5;W2_5urbreturn;Waste water returns/discharge to inland water assets 
+W2_61;W2_61losstransp;Losses of water in transport and storage 
+W2_62;W2_62Irrig;Irrigation water
+W2_63;W2_63rethydro;Return of water from hydroelectricity production 
+W2_64;W2_65retcool;Return of cooling water
+W2_65;W2_64retmine;Return of mine water
+W2_66;W2_66retotherprod;Return of water from other production 
+W2_67;W2_67othretur_nca;Other returns of water n.c.a.
+W2_6;W2_6 othreturntot;Other returns of abstracted water to inland water bodies
+W2;W2_TOTinflow;Total inflows of water = SUM(W21 to W26 )
+W3_1;W3_1AETspont;Spontaneous actual evapo-transpiration 
+W3_21;W3_21surfroffout;Surface runoff to rivers
+W3_22;W3_22percolout;Infiltration/percolation from surface
+W3_23;W3_23gwdrainout;Groundwater drainage to rivers
+W3_24;W3_24othertransout;Other transfers supplied
+W3_2;W3_2internout;Internal spontaneous water transfers supplied
+W3_31;W3_31rivoutdown;Natural outflow of surface water to downstream territories
+W3_32;W3_32rivoutflowsea;Natural outflows to the sea 
+W3_33;W3_33GWdown [p.m.];Natural outflow of groundwater to downstream territories
+W3_3;W3_3natoutflowtot;Natural outflows to downstream territories and the sea 
+W3_41;W3_41distribabst;Abstraction of water for distribution 
+W3_42;W3_42agriabst;Own-account abstraction by agriculture (incl. for irrigation) 
+W3_43;W3_43hydroabst;Own-account abstraction by hydroelectricity production 
+W3_44;W3_44coolabst;Own-account abstraction / cooling
+W3_45;W3_45indusotherabst;Own-account abstraction by other production (incl. mining) 
+W3_46;W3_46munipopabst;Own-account abstraction for municipal and household use 
+W3_4;W3_4Abstinlandtot;Abstraction from inland water bodies
+W3_4a;W3_4a_irrig_use;of which for irrigation use (distributed and own account)
+W3_4b;W3_4b_muniHHuse;of which for municipal and household use (distributed and own account)
+W3_4c;W3_4c_surfabstr;of which water abstraction from surface water
+W3_4d;W3_4d_GWabstr;of which water abstraction from groundwater
+W3_5;W3_5RainColltot;Collection of precipitation water and urban runoff
+W3_51;W3_51RainCollpre;part of W3_5 which comes from precipitation
+W3_52;W3_52RainCollroff;part of W3_5 which comes from urban runoff
+W3_6;W3_6AET_irrg;Actual evapo-transpiration induced by irrigation 
+W3_7;W3_7Evapo_uses;Evaporation from industry and other uses 
+W3_81;W3_81wwsea;Direct discharge of wastewater to the sea
+W3_81b;W3_81a_wwseatreated;of which treated wastewater
+W3_81a;W3_81b_wwseauntreat;of which untreated wastewater
+W3_82;W3_82otherout;Other artificial outflow to other territory and the sea
+W3_8;W3_8artoutflowtot;Artificial outflow of water to other territories and the sea 
+W3_9;W3_9adj;Other change in volume of stocks and adjustment (+ or -)
+W3;W3TOToutflow;Total outflows of water = SUM(W34 to W39)
+W4a;W4aeffectrainfall;Available Effective Rainfall = W21-W3_1
+W4b;W4bGWsurfrech;Groundwater net surface recharge
+W4;W4NEWB;Net Ecosystem Water Balance (NEWB) = W2-W3
+W5_11;W5_11lake;Lakes & reservoirs [1000m^3]
+W5_12;W5_12lak_Areaha;Lakes & reservoirs [Area_ha]
+W5_21;W5_21river;Rivers & other streams [SRMU]
+W5_22;W5_22RIV_Length_ha;Rivers & other streams [length as ha pixel based count]
+W5_3;W5_3glacier;Glaciers, snow & ice [1000m^3]
+W5_41;W5_41majorGW;Major ground water [ha]
+W5_42;W5_42localGW;Local or shallow aquifer [ha]
+W5_5;W5_5SoilVeg;Soil & Vegetation
+W5;W5closing;Closing stocks descriptors  [no total]
+W2a;W2aTNWR;Total natural renewable water resources (TNWR) = W21+W22+W23
+W2b;W2bTsecondW;Total secondary water resources = W24+W25+W26 
+W6;W6NetWResource;Net primary & secondary water resource = W2a+W2b-W32-W33
+W7_11;W7_11reg90;Regular renewable water resources (regular as > 90% of time)  (-)
+W7_12;W7_12legalrof;Legally reserved runoff (for dilution (BOD), aquatic life, navigation) (-)
+W7_13;W7_13nonguarantinflo;Inflow not guaranteed through treaties, agreements, regulations or laws (-)
+W7_14;W7_14guarantoutflo;Outflow guaranteed through treaties, agreements, regulations or laws (-)
+W7_15;W7_15nonuseWqual;Water natural resource unusable due to quality (incl. salinity) (-)
+W7_16;W7_16remoteW;Remote inaccessible water resources (-)
+W7_17;W7_17irregularWuse;Exploitable irregular renewable water resources/ annual storage (+)
+W7_18;W7_18netaccumul;Previous net accumulation in water stocks (+ or -)
+W7_19;W7_19otheradj;Other accessibility adjustments of natural water (+ or -)
+W7_1;W7_1TOTadjrenewW;Total adjustment of natural renewable water resources (+ or -)
+W7a;W7aENWR;Exploitable natural water resources ENWR = W2a+W71+W39
+W7_21;W7_21nonusesecWqual;Secondary water resource unusable due to quality (-)
+W7_22;W7_22other_hydro;Other adjsutment of secondary resource (incl. hydroelectricity return)
+W7_2;W7_2secondWadj;Total adjustment of secondary renewable water resources
+W7b;W7bESWR;Exploitable secondary water resources ESWR = W2b+W72
+W7;W7NEWS;Net Ecosystem Water Surplus = W7a+W7b
+W8_1;W8_1LakRofPot;Lakes & reservoirs runoff potential
+W8_2;W8_2RivRofPot;River runoff land potential 
+W8_3;W8_3SnoRofPot;Snow and ice discharge potential
+W8_4;W8_4GWRecharPot;Groundwater accessible recharge potential
+W8_5;W8_5SoilVegPot;Soil and vegetation potential  (proxy = AET)
+W8;W8NEAWP;Net Ecosystem Accessible Water Potential 
+W9_1;W9_1Abstbodytot;Abstraction from inland water bodies (W9_1 = W3_4)
+W9_21;W9_21rainfedagri;Spontaneous actual evapo-transpiration from rainfed agriculture & pasture 
+W9_22;W9_22AETspontforest;Spontaneous actual evapo-transpiration from managed forests
+W9_2;W9_2greenW;Green water use = W3_11+W3_12
+W9_31;W9_31rainharvest;Collection of precipitation water (rainwater harvest) (W9_4 = W3_51)
+W9_32;W9_32urbroff;Collection of urban runoff (W9_4 = W3_52)
+W9_3;W9_3RainColltot;Collection of precipitation water and urban runoff (=W3_5)
+W9;W9TOTuseEW;Total Use of Ecosystem Water
+W10_1;W10_1importW;Imports of water from other territories
+W10_2;W10_2exportW;Exports of water to other territories
+W10_3;W10_3abstsea;Withdrawal of water from the sea  (W10_2=W242)
+W10_4;W10_4Re-useW;Re-use water within economic units
+W10_5;W10_5WcontentImport;Imports of Water/ commodities & residuals content
+W10_6;W10_6WcontentExport;Exports of Water/ commodities & residuals content
+W10a;W10aWDirUse;Direct Use of Water
+W10b;W10aWDomConso;Domestic Consumption of Water = W10a-W10_2-W10_6
+W11;W11EmbeddedW;Virtual water embedded into imported commodities
+W12;W12WFootprint;Total Water Requirement [Water Footprint]
+W13_1;W131WuseIndex;Intensity of water use = if((W7+1)/(W9+1))?1, [0,1], if not, [1]
+W13_21;W13_21lakeQTTind;Quantitative state / Lakes & reservoirs index
+W13_22;W13_22GW_QTTind;Quantitative state / Accessible groundwater index
+W13_23;W13_23soilQTTind;Soil & vegetation vulnerability to natural water stress index
+W13_24;W13_24dependency;Dependency  from artificial inflows from other territories and the sea
+W13_2;W13_2WBodyQTTindex;Water bodies quantitative status / SELU composite index = weighted mean {W13_21 to W13_23}
+W13;W13SIWU;Sustainable intensity of water use overall index, SIWU = weighted mean {W131, W132}
+W14_11;W14_11lakebiochem;Bio-chemical diagnosis / Lakes & reservoirs index
+W14_12;W14_12rivbiochem;Bio-chemical diagnosis / Rivers & other streams
+W14_13;W14_13glacierbiochem;Bio-chemical diagnosis / Glaciers, snow & ice
+W14_14;W14_14GWbiochem;Bio-chemical diagnosis / Accessible groundwater
+W14_1;W14_1Wbiochem_index;Water assets bio-chemical diagnosis  /  SELU composite index
+W14_21;W14_21vulnerpoll;Vulnerability to urban, industrial & agriculture pollution
+W14_22;W14_22Wdiseasehuman;Water borne diseases/ humans
+W14_23;W14_23WdiseaseFF;Water borne diseases/ fauna & flora
+W14_24;W14_24IndirectIndOther;Other indirect indicators of water pollution
+W14_2;W14_2IndirQLTindex;Index based on indirect water quality indicators
+W14;W14EWH;Composite index of ecosystem water health EWH 
+W15;W15WEIUV;Water ecological internal unit value, WEIUV
+i0;i0Area_ha;Total AREA_ha
+i1;i1Lake_area ;Lake_reservoir land cover area
+i2;i2Lak15ROFF1000m3;Lake_reservoir_runoff TOT_1000 m3
+i3;i3Lak_QLTindex;Lake_reservoir area average quality index [0 to 1]
+i4;i4RIV_length_ha;Rivers length (ha pixels count)
+i5;i5RIV_QLT;River quality  average index (GOLDRIV)
+i6;i6SRMU_SELU;SELU10 River stock of Sandard River Measurement Unit (SRMU_SELU)
+i7;i7SRMUQLT_SELU;SELU10 Quality weighted SRMUs
+i8;i8GWaccess_area;Aquifer accessibility area
+i9;i9GW_QTT_index;Aquifer quantitative status index [0 to 1]
+i10;i10GW_salinity_area;Aquifers salinity area - IGRAC 
+i11;i11GW_salinity_index;Aquifers salinity quality index [0 to1]
+i12;i12Lakbody_Areaha;Total_area_ha_of_accessed_Lake_body

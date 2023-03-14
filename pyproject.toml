@@ -12,32 +12,43 @@ authors = [
 ]
 description = "Natural Capital Accounting package"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 keywords = ["ecosystem", "accounting", "SEEA"]
 license = {text = "BSD-3-Clause"}
 classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "requests",
-    'importlib-metadata; python_version<"3.8"',
-    'importlib-resources; python_version<"3.9"',
+    'GDAL>=3.1.0',
     'pandas',
+    'matplotlib',
     'numpy',
-    'geopandas',
+    'geopandas>=0.9',
     'rasterio',
     'richdem',
     'scikit-learn',
     'openpyxl',
     'Rtree',
-    'pyshp'
+    'pyshp',
+    'pyyaml'
 ]
 dynamic = ["version"]
 
 [project.scripts]
 enca = "enca.__main__:main"
+bring2aoi = "enca.tools.bring2aoi:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+enca = ["*.mo"]
+
 [tool.setuptools_scm]
+
+[tool.autopep8]
+max_line_length = 120
+ignore = "E501,W6"  # or ["E501", "W6"]
+in-place = true
+recursive = true
+aggressive = 3

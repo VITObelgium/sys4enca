@@ -23,9 +23,8 @@ import glob
 import logging
 import os
 from functools import reduce
-from typing import Optional, Union
 
-import geopandas as gpd
+import fiona
 import pandas as pd
 import rasterio
 from fiona.errors import FionaError
@@ -58,13 +57,13 @@ class ConfigError(Error):
 class ConfigItem:
     """A ConfigItem describes what kind of value is expected at a given position in the config dictionary.
 
-        :param check_function: A function ``check(value, **kwargs)`` by which to check the parameter's value. This
-                               function should raise :obj:`.errors.Error` if the check fails.
-        :param description: Description of the parameter's meaning.
-        :param optional: Whether this config parameter may be omitted.
-        :param default: Default value.
-        :param kwargs: Extra keyword arguments to pass on to ``check_function``.
-        """
+    :param check_function: A function ``check(value, **kwargs)`` by which to check the parameter's value. This
+    function should raise :obj:`.errors.Error` if the check fails.
+    :param description: Description of the parameter's meaning.
+    :param optional: Whether this config parameter may be omitted.
+    :param default: Default value.
+    :param kwargs: Extra keyword arguments to pass on to ``check_function``.
+    """
 
     def __init__(self, check_function=None, description=None, optional=False, default=None, **kwargs):
         self.description = description
@@ -79,32 +78,30 @@ class ConfigItem:
         self.value = None  #: Value found after a successful call to :meth:`check`.
 
     def check(self):
-        """Check if :attr:`config` contains a value for this :class:`ConfigItem`, and, if one is provided, run the
-         check function on this value. """
+        """Check if :attr:`_config` contains a value for this :class:`ConfigItem`, and check that value."""
         if self._path is None or self._config is None:
             raise RuntimeError('ConfigItem.check() called but _path and _config are not set.  This is a bug. '
                                f'{self._path}, {self._config}')
+        # Users may omit ConfigItems with a default, or ConfigItems which are optional.  To avoid having to check for
+        # presence of optional config keys or sections in the rest of our code, we complete the input config dict,
+        # filling in missing sections with default values.
+        # 1. for nested config sections, first look up the parent section (creating empty subsections if needed)
+        if len(self._path) > 1:
+            parent_section = reduce(lambda section, key: section.setdefault(key, {}), self._path[:-1], self._config)
+        else:
+            parent_section = self._config
+        # 2. Look up the config value, replacing the default if no value is there.
         try:
-            value = reduce(dict.__getitem__, self._path, self._config)
-        except KeyError:  # Key is missing -> section not specified?
-            value = None
+            value = dict.setdefault(parent_section, self._path[-1], self._default)
         except TypeError:
-            # We get a TypeError when we expect to find a dict (e.g. {2000: path_to_2000_data, 2006: ....}, but find a
-            # single value instead.
-            raise ConfigError(f'Incorrect config format, could not look up {": ".join(str(x) for x in self._path)}.',
-                              self._path)
+            # We get a TypeError when 'parent_section' is not a dict.  This happens when we expect to find a dict for a
+            # subsection (e.g. {2000: path_to_2000_data, 2006: ....}, but find a single value instead.  This means the
+            # input configuration has the wrong format.
+            raise ConfigError('Incorrect input configuration, '
+                              f'could not look up {": ".join(str(x) for x in self._path)}.', self._path)
         if not value:  # value is None or empty string
-            if self._default is not None:
-                # Update config with the default value
-                # 1. make sure parent subsections exist, by creating default empty config subsections if needed:
-                parent_keys = self._path[:-1]
-                parent_section = reduce(lambda x, y: x.setdefault(y, {}), parent_keys, self._config)
-                # 2. set the default value
-                key = self._path[-1]
-                value = self._default
-                parent_section[key] = value
-            elif self._optional:  # An optional value can be left unspecified, stop here
-                return
+            if self._optional:
+                return  # Optional items may be left empty/None.  Return here because we can't check these values.
             else:
                 raise ConfigError(f'No value for configuration key {": ".join(str(x) for x in self._path)}.',
                                   self._path)
@@ -130,7 +127,8 @@ class ConfigItem:
         :param configcheck: :obj:`ConfigCheck` which this ConfigItem belongs to.
         :param config: Dictionary which contains a configuration.
         :param path: List of keys by which to look up the value in ``config`` and nested sub-dictionaries.
-        :param years: List of years for which this ConfigItem is valid (either single year or all years)."""
+        :param years: List of years for which this ConfigItem is valid (either single year or all years).
+        """
         self._configcheck = configcheck
         self._config = config
         self._path = path
@@ -141,7 +139,8 @@ class ConfigRef(list):
     """Describes a list of keys identifying an item in a nested config dict.
 
     `ConfigRef('land_cover', 2000)` indicates a reference to config['land_cover'][2000].  This just a simple wrapper
-    for the builtin :obj:`list` class, meant to make the purpose more clear."""
+    for the builtin :obj:`list` class, meant to make the purpose more clear.
+    """
 
     def __init__(self, *path):
         super().__init__()
@@ -165,37 +164,28 @@ class ConfigChoice(ConfigItem):
 
 class ConfigShape(ConfigItem):
 
-    def check_value(self, shapes: Union[str, gpd.GeoDataFrame], id_list: Optional[ConfigRef] = None) -> None:
-        """Check if ``shapes`` can be opened using :func:`geopandas.read_file`.
+    def check_value(self, shape: str) -> None:
+        """Check if ``shapes`` can be opened using :func:`fiona.open`.
 
-        :param shapes: Path to a shapefile, or a :class:`geopandas.GeoDataFrame`.
-        :param id_list: If provided, check these id's are present in the shapefile.
+        :param shape: Path to a shapefile.
         """
-        if isinstance(shapes, str):  # File name provided  # TODO clean up Default NUTS handling...
-            check_exists(shapes)
-            try:
-                df = gpd.read_file(shapes)
-            except FionaError as e:
-                raise Error(f'Failed to open shape file {shapes}: {e}.')
-        elif isinstance(shapes, gpd.GeoDataFrame):
-            df = shapes
-            shapes = f'[Default shape for {": ".join(str(x) for x in self._path)}]'
-
-        if id_list is not None:
-            id_lists = (self._configcheck.look_up_item(id_list, year) for year in self._years)
-            df = df.set_index('NUTS_ID')
-            for ids in id_lists:
-                geometries = df['geometry'].reindex(ids)
-                missing_geometry = geometries.isna()
-                if missing_geometry.any():
-                    missing_ids = list(missing_geometry[missing_geometry].index)
-                    raise Error(f'File {shapes} does not contain geometry for selected region(s) {missing_ids}.',
-                                self._path)
+        check_exists(shape)
+        try:
+            with fiona.open(shape):
+                pass
+        except FionaError as e:
+            raise Error(f'Failed to open shape file {shape}: {e}.')
 
 
 class RasterMixin:
 
     def check_raster(self, file):
+        """Check if ``file`` can be opened using :func:`rasterio.open`, and has the required minimum extent.
+
+        The input statistics shapes for the current run should be contained in the raster extent.
+
+        :param file: Name of the file.
+        """
         try:
             with rasterio.open(file, 'r'):
                 pass
@@ -205,6 +195,7 @@ class RasterMixin:
         # Check if raster extent contains all regions we need.
         self._configcheck.accord.check_raster_contains_ref_extent(file)
 
+
 class ConfigRaster(ConfigItem, RasterMixin):
 
     def __init__(self, check_projected=False, check_unit=False, raster_type=RasterType.CATEGORICAL, **kwargs):
@@ -212,10 +203,13 @@ class ConfigRaster(ConfigItem, RasterMixin):
         self.check_projected = check_projected
         self.check_unit = check_unit
         self.type = raster_type
+        if raster_type == RasterType.ABSOLUTE_VOLUME:
+            # Absolute volume data sets must always be provided in a projected coordinate system in the right units.
+            self.check_projected = True
+            self.check_unit = True
 
     def check_value(self, file: str) -> None:
-        """Check if ``file`` can be opened using :func:`rasterio.open`, and if its extent contains all input statistics
-        shapes for the current run.
+        """Check if ``file`` can be opened using :func:`rasterio.open`, and has the required extent.
 
         :param file: Name of the file.
         """
@@ -233,8 +227,7 @@ class ConfigRasterDir(ConfigItem, RasterMixin):
         self.type = raster_type
 
     def check_value(self, dir: str) -> None:
-        """Check if ``dir`` is a directory, and if all files ending in ``\*.tif`` are valid raster files."""
-
+        r"""Check if ``dir`` is a directory, and if all files ending in ``\*.tif`` are valid raster files."""
         if not os.path.isdir(dir):
             raise Error(f'"{dir}" is not a directory.')
 
@@ -250,7 +243,8 @@ class ConfigRasterDir(ConfigItem, RasterMixin):
 class ConfigKeyValue(ConfigItem):
     """Key-value dictionary where the values are a set of ConfigItems.
 
-    For example: a dictionary of labels and corresponding rasters."""
+    For example: a dictionary of labels and corresponding rasters.
+    """
 
     def __init__(self, value_check: ConfigItem):
         super().__init__()
@@ -312,8 +306,10 @@ class ConfigCheck:
         return result
 
     def validate(self, validate_section=None):
-        """Validate if :attr:`config` satisfies the requirements of :attr:`config_items`.  Raises an exception if a
-        required configuration parameter is missing, or if its value doesn't pass a check. """
+        """Validate if :attr:`config` satisfies the requirements of :attr:`config_items`.
+
+        Raises an exception if a required configuration parameter is missing, or if its value doesn't pass a check.
+        """
         if validate_section is None:
             self.validate(self.config_items)
             self._validated = True
@@ -376,7 +372,8 @@ def check_csv(file, required_columns=[], unique_columns=[], allow_missing=True, 
     :param file:
     :param required_columns: List of columns which must be present in the CSV file.
     :param unique_columns: List of columns (or combinations of columns) which may not hold duplicate values.
-    :param allow_missing: If `False`, the table may not contain any missing values."""
+    :param allow_missing: If `False`, the table may not contain any missing values.
+    """
     check_exists(file)
     try:
         # TODO more elaborate checks for valid separator etc?
