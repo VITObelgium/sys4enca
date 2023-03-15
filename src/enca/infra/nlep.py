@@ -352,70 +352,6 @@ def calc_nlep_admin(pm, admin, region):
     pm.update(options.config)
     return
 
-
-##################
-#Not used anymore?, to be removed?
-def publish_toWeb(pm):
-
-    #install web class for raster
-    web = Raster(pm, options)
-    #loop over files to be published to webservice
-    pmkeys = pm.web.getKeys('nlep_webraster')
-    ctfiles = ['/data/nca_vol1/lut_input/legend_gbli_frange.txt','/data/nca_vol1/lut_input/legend_gbli_frange.txt',None]
-    cttype = ['Byte','Byte','Int16']
-    #TODO change is now grey with only positive values -> need color with neg/pos indication
-    for idx, file in enumerate([pm.nlep.nlepOut.gbli1_sm, pm.nlep.nlepOut.gbli2_sm, pm.nlep.nlepOut.gbli_change]):
-        tempfile = web.add_color(file, ctfiles[idx],pm.web.root_web_nlep_temp,type=cttype[idx])
-        webfile = web.create_cog(tempfile,  os.path.join(pm.web.root_web,'NLEP','GBLI'))
-        setattr(pm.web,pmkeys[idx],webfile)
-
-
-    ctfiles = ['/data/nca_vol1/lut_input/legend_naturalis_frange.txt']
-    for idx, file in enumerate([pm.nlep.nlepOut.naturalis]):
-        file = '/data/nca_vol1/CECN/FDH/RUN7/NLEP/NATURILIS_FINAL.sdat'
-        tempfile = web.add_color(file, ctfiles[idx], pm.web.root_web_nlep_temp)
-        webfile = web.create_cog(tempfile, os.path.join(pm.web.root_web,'NLEP','NATURALIS'))
-        setattr(pm.web,pmkeys[idx],webfile)
-
-    '''
-    ctfiles = [None]
-    cttype = ['Byte']
-    for idx, file in enumerate([pm.nlep.nlepOut.fmi]):
-        tempfile = web.add_color(file, ctfiles[idx], pm.web.root_web_nlep_temp,type=cttype[idx])
-        webfile = web.create_cog(tempfile, os.path.join(pm.web.root_web,'NLEP','LFI'))
-        setattr(pm.web,pmkeys[idx],webfile)
-    '''
-
-    ctfiles = ['/data/nca_vol1/lut_input/legend_nlep_frange.txt','/data/nca_vol1/lut_input/legend_nlep_frange.txt',None]
-    cttype = ['Byte','Byte','Int16']
-    for idx, file in enumerate([pm.nlep.nlepOut.nlep1,pm.nlep.nlepOut.nlep2,pm.nlep.nlepOut.nlep_change]):
-        tempfile = web.add_color(file, ctfiles[idx], pm.web.root_web_nlep_temp,type=cttype[idx])
-        webfile = web.create_cog(tempfile, os.path.join(pm.web.root_web,'NLEP','NLEP'))
-        setattr(pm.web,pmkeys[idx],webfile)
-
-
-    #pm.update(options.config)
-
-    #install web class for shapes
-    web = Shape(pm, options)
-    #loop over files to be published to webservice
-    pmkeys = pm.web.getKeys('nlep_webshape')
-    for idx, file in enumerate([pm.nlep.nlepOut.lfi_mesh]):
-        shapefile = web.Shape(file, os.path.join(pm.web.root_web,'NLEP','LFI'))
-        setattr(pm.web,pmkeys[idx],shapefile)
-
-    #TODO: only one stats in yaml - need to split to multiple stats
-    for idx, file in enumerate([pm.nlep.nlepOut.nlep_stats, \
-                                '/data/nca_vol1/CECN/FDH/RUN7/NLEP/admin/NLEP_gadm36_FDH_1_EPSG3857.shp', \
-                                '/data/nca_vol1/CECN/FDH/RUN7/NLEP/admin/NLEP_hybas_lake_FDH_level7_EPSG3857.shp']):
-        shapefile = web.Shape(file, os.path.join(pm.web.root_web,'NLEP','NLEP'))
-        #setattr(pm.web,pmkeys[idx],shapefile)
-
-    #pm.update(options.config)
-
-    return
-
-
 ####################################################################################################
 # workflow to create NLEP account
 #From a runObject
@@ -423,24 +359,28 @@ def create_NLEP(runObject):
 
     try:
         #1. Generate the Green Background Landscape potential Index (GBLI)
+        #3 min for 2 year
         gbli = GBLI(runObject)
         create_gbli(gbli)
         logger.info("** GBLI ready ...\n\n")
 
         #2. Generate the nature conservation value index
+        #45sec for 2 jaar
         naturalis = NATURALIS(runObject)
         create_naturalis(naturalis)
         logger.info("** NATURALIS ready ...\n\n")
 
         #3. Generate the landscape fragmentation indicator (effective mesh size)
+        #4min
         fragm = LFI(runObject)
         create_lfi(fragm)   #3rd parameter is basin level to use
 
-
+        #15sec
         join_lfi(fragm)   #join fragmentation on multiple basin levels
         logger.info("** FRAGMENTATION indicator ready ...\n\n")
 
         #4. Calculate NLEP and NLEP change
+        #50sec
         calc_nlep(runObject)
         print("** NLEP indicator ready ...\n\n")
 

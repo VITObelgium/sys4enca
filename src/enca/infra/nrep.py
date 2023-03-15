@@ -60,7 +60,7 @@ def create_rawi(rawi):
         rawi.group_SRMUperSELU()
 
     # Rasterize river & blend with land cover to calculate RS (river system area units count in ha) and RAWI
-    if os.path.exists(rawi.rawi[rawi.years[0]]):
+    if not os.path.exists(rawi.rawi_mask):
         rawi.rasterize_rivers()
 
     for idx, year in enumerate(rawi.years):
@@ -101,11 +101,11 @@ def create_fragriv(oFragriv, catchlevel):
 # workflow to create NREP account
 def create_NREP(runObject):
 
-    try:
         print('\n')
         #options.overwrite = True
         #1. Generate the River Accessibility Weighted Index (RAWI)
         logger.info('* Calculate River Accessibility Weighted Index (RAWI)')
+        #1.5min
         rawi = RAWI(runObject)
         #what's this 12 removing it, putting it hard coded?
         create_rawi(rawi)
@@ -113,26 +113,25 @@ def create_NREP(runObject):
         #options.overwrite = False
 
         #2. Generate the Rivers High Nature Value (NATRIV)
+        #1.5min
         logger.info('* Calculate Rivers High Nature Value (NATRIV)')
         natriv = NATRIV(runObject)
         create_natriv(natriv,rawi.rawi_mask)
-        print("** NATRIV ready ...\n\n")
+        logger.info("** NATRIV ready ...\n\n")
 
         #3. Calculate River fragmentation (FRAGRIV)
+        #4min
         logger.info('* Calculate River fragmentation (FRAGRIV)')
         fragriv = FRAGRIV(runObject)
         for basin in fragriv.hybas.keys():
             create_fragriv(fragriv, basin)  #latest parameter is hybas level
 
         #join the three levels
+
         if not (os.path.exists(fragriv.fragriv)):
             fragriv.join()
-        print ('** FRAGRIV ready ... \n\n')
+        logger.info('** FRAGRIV ready ... \n\n')
 
-    except:
-        print("Error creating NREP")
-        traceback.print_stack()
-        sys.exit(-1)
 
 ######################################################################################################################
 def main(options):

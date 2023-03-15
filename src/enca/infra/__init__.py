@@ -75,6 +75,7 @@ class Infra(enca.ENCARun):
 
         # extract statistics per SELU
         logger.info('* Calculate Acessible Ecosystem Infrastructure per SELU')
+        #40s per year
         for year in self.years:
             logger.info('** processing year {} ...'.format(year))
             self.extract_stats(year)
@@ -83,28 +84,21 @@ class Infra(enca.ENCARun):
         #return
 
         # create INFRA account table per SELU
-        print('* Calculate Overall access & intensity of use and health')
+        logger.info('* Calculate Overall access & intensity of use and health')
+        #40s
         for year in self.years:
-            print('** processing year {} ...'.format(year))
+            logger.info('** processing year {} ...'.format(year))
             path_results_shp = self.calc_indices(year, ID_FIELD = 'HYBAS_ID', vrt_nodata=-9999)
 
-        print('* Indices available')
+        logger.info('* Indices available')
 
         # group INFRA account per reporting area -> done in TEC
         print('* Create INFRA account table')
         for year in self.years:
-            print('** processing year {} ...'.format(year))
+            #5s
+            logger.info('** processing year {} ...'.format(year))
             self.create_account_table(year)
-        print('* INFRA account created')
-
-
-
-        return
-
-
-
-
-
+        logger.info('* INFRA account created')
 
     ######################################################################################################################
     def calc_indices(self, year, ID_FIELD = 'HYBAS_ID', vrt_nodata=-9999):
@@ -116,6 +110,9 @@ class Infra(enca.ENCARun):
 
         lPaths = []
         lColumns = []
+
+        #remove keys with none value
+        self.config["infra"]["paths_indices"] = {k: v for k, v in self.config["infra"]["paths_indices"].items() if v is not None}
 
         #TODO move to yaml incl key to indicate layer for indexing
         #note indexing the layer starts from 0

@@ -290,8 +290,6 @@ class LFI(object):
             #write out new cleaned MEFF shapefile
             data.to_file(outfile, drivers='ESRI Shapefile')
             data_catchment.to_file(outfile_catchment, drivers='ESRI Shapefile')
-            self.lfi_mesh = outfile
-            self.lfi_frag_meff = outfile_catchment
         except Error as e:
             logger.ERROR("GEOPANDAS MESH calculation failed")
             raise Error(e)
