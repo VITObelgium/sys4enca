@@ -7,7 +7,7 @@ import rasterio
 
 import enca
 from enca.framework.config_check import ConfigRaster, ConfigItem, check_csv
-from enca.framework.geoprocessing import RasterType, block_window_generator, statistics_byArea, SHAPE_ID
+from enca.framework.geoprocessing import RasterType, block_window_generator, SHAPE_ID
 
 LAND_COVER_FRACTION = 'land_cover_fraction'
 WOOD_REMOVAL_LIMIT = 'wood_removal_limitation'
@@ -48,9 +48,7 @@ class CarbonForest(enca.ENCARun):
         print('Hello from ENCA Carbon Forest preprocessing.')
         for year in self.years:
             self.create_clean_cf(year)
-            carbon_stats = self.carbon_statistics(year)
-            logger.debug('cf_stats %s:\n%s', year, carbon_stats)
-            self.make_forest_carbon_maps(year, carbon_stats)
+            self.make_forest_carbon_maps(year)
 
     def create_clean_cf(self, year, block_shape=(1024, 1024)):
         """Set unneeded cover fraction pixel values to nodata (=0).
@@ -80,47 +78,27 @@ class CarbonForest(enca.ENCARun):
                 cf[valid] *= limit[valid]
                 ds_out_wr.write(cf.astype(ds_out_wr.profile['dtype']), 1, window=window)
 
-    def carbon_statistics(self, year):
-        """Extract carbon statistics per reporting region."""
-        df_cf = statistics_byArea(self.cf_clean.format(year=year),
-                                  self.reporting_raster, self.reporting_shape[SHAPE_ID]).rename(columns={
-                                      'sum': 'cf_sum', 'px_count': 'cf_count'})
-
-        df_cf_wr = statistics_byArea(self.cf_clean_wr.format(year=year),
-                                     self.reporting_raster, self.reporting_shape[SHAPE_ID]).rename(columns={
-                                         'sum': 'cf_sumWR', 'px_count': 'cf_countWR'})
-        result = df_cf.join(df_cf_wr)
-
+    def make_forest_carbon_maps(self, year, block_shape=(1024, 1024)):
+        """Disaggregate AGB/BGB/Litter/Removals statistics using tree cover fraction as a proxy."""
         comp_config = self.config[self.component]
         agb = pd.read_csv(comp_config[FAOFRA_AGB], sep=';', index_col=enca.GID_0)[f'agbCt_{year}']
         bgb = pd.read_csv(comp_config[FAOFRA_BGB], sep=';', index_col=enca.GID_0)[f'bgbCt_{year}']
         litter = pd.read_csv(comp_config[FAOFRA_LITTER], sep=';', index_col=enca.GID_0)[f'litterCt_{year}']
         removals = pd.read_csv(comp_config[FAOFRA_WREM], sep=';', index_col=enca.GID_0)[f'WremCt_{year}']
 
-        result['CTWFagb'] = agb / result['cf_sum']
-        result['CTWFbgb'] = bgb / result['cf_sum']
-        result['CTWFlitter'] = litter / result['cf_sum']
-        result['CTWFrem'] = removals / result['cf_sumWR']
-
-        return result
-
-    def make_forest_carbon_maps(self, year, carbon_stats, block_shape=(1024, 1024)):
-        """Multiply tree cover fraction per reporting region with CTWF."""
-        # By submitting a vector of ones as precomputed proxy_sums, we can use our spatial_disaggregation method:
         path_cf = self.cf_clean.format(year=year)
-        self.accord.spatial_disaggregation_byArea(path_cf, carbon_stats['CTWFagb'],
-                                                  self.reporting_raster, self.reporting_shape[SHAPE_ID],
-                                                  os.path.join(self.maps, f'agb_{year}.tif'),
-                                                  proxy_sums=pd.Series(1, index=carbon_stats.index))
-        self.accord.spatial_disaggregation_byArea(path_cf, carbon_stats['CTWFbgb'],
+        proxy_sums = self.accord.spatial_disaggregation_byArea(path_cf, agb,
+                                                               self.reporting_raster, self.reporting_shape[SHAPE_ID],
+                                                               os.path.join(self.maps, f'agb_{year}.tif'))
+        self.accord.spatial_disaggregation_byArea(path_cf, bgb,
                                                   self.reporting_raster, self.reporting_shape[SHAPE_ID],
                                                   os.path.join(self.maps, f'bgb_{year}.tif'),
-                                                  proxy_sums=pd.Series(1, index=carbon_stats.index))
-        self.accord.spatial_disaggregation_byArea(path_cf, carbon_stats['CTWFlitter'],
+                                                  proxy_sums=proxy_sums)
+        self.accord.spatial_disaggregation_byArea(path_cf, litter,
                                                   self.reporting_raster, self.reporting_shape[SHAPE_ID],
                                                   os.path.join(self.maps, f'litter_{year}.tif'),
-                                                  proxy_sums=pd.Series(1, index=carbon_stats.index))
-        self.accord.spatial_disaggregation_byArea(self.cf_clean_wr.format(year=year), carbon_stats['CTWFrem'],
+                                                  proxy_sums=proxy_sums)
+
+        self.accord.spatial_disaggregation_byArea(self.cf_clean_wr.format(year=year), removals,
                                                   self.reporting_raster,  self.reporting_shape[SHAPE_ID],
-                                                  os.path.join(self.maps, f'removals_{year}.tif'),
-                                                  proxy_sums=pd.Series(1, index=carbon_stats.index))
+                                                  os.path.join(self.maps, f'removals_{year}.tif'))
