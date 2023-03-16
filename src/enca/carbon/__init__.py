@@ -410,3 +410,4 @@ class Carbon(enca.ENCARun):
 
         logger.debug('Indices for %s:\n%s', year, df)
         return df
+

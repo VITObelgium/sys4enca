@@ -26,6 +26,7 @@ dependencies = [
     'geopandas>=0.9',
     'rasterio',
     'richdem',
+    'scipy',
     'scikit-learn',
     'openpyxl',
     'Rtree',

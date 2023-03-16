@@ -1,12 +1,15 @@
 import gettext
 import logging
 import os
+import sys
+
 from importlib.metadata import PackageNotFoundError, version
 from importlib.resources import as_file, files
 
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+
 import pandas as pd
 import pyproj
 import rasterio
@@ -17,7 +20,6 @@ from enca.framework.config_check import ConfigError, ConfigItem, check_csv
 from enca.framework.run import Run
 from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
 
-
 try:
     dist_name = 'sys4enca'
     __version__ = version(dist_name)
@@ -25,7 +27,6 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 finally:
     del PackageNotFoundError
-
 
 with as_file(files(__name__).joinpath('locale')) as path:
     t = gettext.translation(dist_name, path, fallback=True)
@@ -37,9 +38,10 @@ logger.setLevel(logging.DEBUG)
 ENCA = 'ENCA'
 ACCOUNT = 'ENCA_ACCOUNT'
 PREPROCESS = 'ENCA_PREPROCESS'
-
 HYBAS_ID = 'HYBAS_ID'
+#should also be possible to be GID_1
 GID_0 = 'GID_0'
+C_CODE = 'C_CODE'
 CODE = 'CODE'
 
 AREA_RAST = 'Area_rast'
@@ -59,8 +61,8 @@ class ENCARun(Run):
     id_col_reporting = GID_0
 
     epsg = 3857
-
     _indices_avarage = None  #: List of SELU-wide indicators, to be defined in each subclass
+
 
     def __init__(self, config):
         """Initialize an ENCA run."""
@@ -152,6 +154,7 @@ class ENCARun(Run):
         )
 
         return df_overlap
+
 
     def selu_stats(self, raster_files):
         """Calculate sum of raster values per SELU region for a dict of input rasters.
