@@ -112,7 +112,7 @@ class ConfigItem:
         except ConfigError:
             # If a ConfigItem we depend on gets checked, we may get a ConfigError here -> pass it on without change.
             raise
-        except Error as e:
+        except Exception as e:
             raise ConfigError(str(e), self._path)
         self.value = value
 

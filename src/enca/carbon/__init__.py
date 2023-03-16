@@ -91,7 +91,7 @@ class Carbon(enca.ENCARun):
                         'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']
 
     def __init__(self, config):
-        """Initialize config template and default carbon run parameters."""
+        """Initialize config template."""
         super().__init__(config)
 
         self.config_template.update({

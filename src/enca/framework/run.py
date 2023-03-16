@@ -440,7 +440,8 @@ class Run:
             raise RuntimeError('adjust_rasters() called on ConfigCheck before validation.  This is an error.')
         config_rasters = config_check.get_configitems(ConfigRaster)
         config_rasterdirs = config_check.get_configitems(ConfigRasterDir)
-        rasterlists = {rasterdir: glob.glob(os.path.join(rasterdir.value, '*.tif'))
+        rasterlists = {rasterdir: glob.glob(os.path.join(rasterdir.value, '*.tif')) +
+                       glob.glob(os.path.join(rasterdir.value, '*.tiff'))
                        for rasterdir in config_rasterdirs if rasterdir.value}
         num_rasters = len(config_rasters) + sum(len(lst) for lst in rasterlists.values())
         if num_rasters == 0:

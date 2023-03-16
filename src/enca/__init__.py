@@ -16,9 +16,9 @@ import rasterio
 
 import enca
 import enca.parameters
-from enca.framework.config_check import ConfigError, ConfigItem, check_csv
+from enca.framework.config_check import YEARLY, ConfigError, ConfigItem, ConfigRaster, check_csv
 from enca.framework.run import Run
-from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea
+from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea, RasterType
 
 try:
     dist_name = 'sys4enca'
@@ -46,6 +46,8 @@ CODE = 'CODE'
 
 AREA_RAST = 'Area_rast'
 
+PARAMETERS_CSV = 'parameters_csv'
+LAND_COVER = 'land_cover'
 
 # Use non-interactive matplotlib backend
 matplotlib.use('Agg')
@@ -74,7 +76,11 @@ class ENCARun(Run):
         except KeyError as e:
             raise ConfigError(f'Missing config key {str(e)}', [str(e)])
 
-        self.config_template.update(parameters_csv=ConfigItem(check_csv, optional=True))
+        self.config_template.update({
+            PARAMETERS_CSV: ConfigItem(check_csv, optional=True),
+            LAND_COVER: {YEARLY: ConfigRaster(raster_type=RasterType.CATEGORICAL)},
+            }
+        )
 
         self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), self.run_type, self.component,
                                     self.run_name)
