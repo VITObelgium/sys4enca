@@ -9,16 +9,8 @@ Created on Oct 26, 2020
 @author: smetsb
 '''
 
-import os
-import sys
-import shutil
-import subprocess
-import time
-import datetime
-import traceback
 import rasterio
 import numpy as np
-import fiona
 from enca.framework.geoprocessing import block_window_generator
 
 

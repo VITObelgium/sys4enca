@@ -14,29 +14,17 @@ Created on Oct 17, 2019
 '''
 
 import os
-import sys
-import optparse
-import pathlib
-import shutil
-import subprocess
-import time
-import datetime
-import traceback
 import logging
 
-os.environ['GDAL_DATA'] = r'/usr/share/gdal'
 import rasterio
 from rasterio.windows import Window
 import numpy as np
-import geopandas as gpd
-import pandas as pd
 
 from enca.infra.gbli import GBLI
 from enca.infra.naturalis import NATURALIS
 from enca.infra.lfi import LFI, Catchment, OSM
 from enca.framework.errors import Error
-#from general.params import Parameters
-from enca.framework.geoprocessing import block_window_generator, number_blocks #, adding_stats, count
+from enca.framework.geoprocessing import block_window_generator, number_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +32,7 @@ logger = logging.getLogger(__name__)
 ######################################################################################################################
 def create_gbli(gbli):
 
-    keys_available = True
+    # keys_available = True
 
     #for easy typing
     years = gbli.years
@@ -75,8 +63,8 @@ def create_gbli(gbli):
 
             # post-process output data
             # let's now translate to colored geotiff
-            ctfile = '/data/nca_vol1/qgis/legend_gbli_change_2.txt'
-            scale = [0, 255, 0, 255]  # scale from values to values
+            # ctfile = '/data/nca_vol1/qgis/legend_gbli_change_2.txt'
+            # scale = [0, 255, 0, 255]  # scale from values to values
             #tiffile = web.add_color(gbli_diff_sm + '.sdat', ctfile, os.path.join(pm.nlep.nlepOut.root_nlep, 'flow'),'Byte', 0, scale)
 
         logger.info("GBLI calculated")
@@ -100,7 +88,7 @@ def create_naturalis(naturalis):
         pass
 
     #"smooth naturalis map"  #TODO remove limit of mandating sdat input (needed for smooth via saga)
-    naturalis_sm = naturalis.smooth_PA()
+    naturalis.smooth_PA()
 
 
 def create_lfi(lfi):
@@ -158,7 +146,7 @@ def create_lfi(lfi):
                 lfi.calc_meff(year, basin, lc)
 
                 #rasterize fragmentation index, need pixel based for NLEP (frag mef data is in catchemtn shape
-                lfi_frag_meff_raster = lfi.rasterize_MEFF(year,basin)
+                # lfi_frag_meff_raster = lfi.rasterize_MEFF(year,basin)
 
             except Error as e:
                 raise Error(e)
@@ -211,7 +199,7 @@ def join_lfi(lfi):
 ##################
 def calc_nlep(runObject):
 
-    keys_available = True
+    # keys_available = True
     block_shape = (4096, 4096)
 
     for idx, year in enumerate(runObject.years):
@@ -267,91 +255,6 @@ def calc_nlep(runObject):
         except Error as e:
             raise Error(e)
 
-##################
-#Not used anymore?, to be removed?
-def calc_nlep_admin(pm, admin, region):
-    #calculate NLEP per region inside level-0
-
-    keys_available = True
-    for idx, year in enumerate(pm.run.yearsL[:-1]):
-        nlep_stats = 'nlep_stats_' +str(region) + '_' + str(idx)
-        if not (nlep_stats in pm.nlep.nlepOut.__dict__) or not (os.path.exists(pm.nlep.nlepOut.__dict__[nlep_stats])):
-            keys_available = keys_available and False
-
-    if (not options.overwrite) and keys_available:
-        logger.info("Skip NLEP statistics, data exists")
-        return
-
-    for idx, year in enumerate(pm.run.yearsL[:-1]):
-        nlep_stats = 'nlep_stats_' + str(region) + '_' + str(idx)
-        try:
-            pm.nlep.nlepOut.__dict__[nlep_stats] = None   #ensure a clean shapefile is copied
-            #A. Copy shapefile to keep source clean
-            for filename in pathlib.Path(os.path.split(admin)[0]).glob(os.path.splitext(os.path.split(admin)[1])[0]+'*'):
-                shutil.copy(str(filename), os.path.join(pm.nlep.nlepOut.root_nlep_admin,'NLEP_'+ (os.path.basename(os.path.splitext(str(filename))[0])+ '_'+str(idx+1))+( os.path.splitext(str(filename))[1])) )     #PosixPath transfered in string for LC stocks
-                if os.path.splitext(str(filename))[1] == '.shp':
-                    pm.nlep.nlepOut.__dict__[nlep_stats] = os.path.join(pm.nlep.nlepOut.root_nlep_admin,'NLEP_'+ (os.path.basename(os.path.splitext(str(filename))[0])+ '_'+str(idx+1))+ (os.path.splitext(str(filename))[1]) )
-        except:
-            print("Error preparing regional shape files" )
-            sys.exit(-1)
-
-        try:
-            if pm.nlep.nlepOut.__dict__[nlep_stats] is None:
-                print("ERROR: no shapefile found for {}".format(admin))
-                sys.exit(-1)
-
-            #B. Calculate NLEP per admin (nlep2000, nlep2015 and nlep_change)
-            rasters = [pm.nlep.nlepOut.__dict__['nlep'+str(idx+1)],
-                       pm.nlep.nlepOut.__dict__['nlep'+str(idx+2)],
-                       pm.nlep.nlepOut.__dict__['nlep'+str(idx+1)+'_change']]
-            shapes = pm.nlep.nlepOut.__dict__[nlep_stats]
-            stats = [count,np.sum, np.mean]
-
-            adding_stats(rasters, shapes, shapes, stats)
-
-
-            #clean up the shapefile
-            # (CEL = count and provides area in ha (if pix2ha = 1), (MEA = mean value so the NLEP index, (SUM = sum so NLEP value
-            data = gpd.read_file(pm.nlep.nlepOut.__dict__[nlep_stats])
-            data['AREA_HA'] = data['geometry'].area/10**4   #convert from meters to hectares
-            data['SAGA_HA'] = data['NLEP'+str(pm.run.yearsL[idx][-2:])+' (CEL']*pm.process.pix2ha
-            data['NLEP'+str(pm.run.yearsL[idx][-2:])+'_HA'] = data['NLEP'+str(pm.run.yearsL[idx][-2:])+' (SUM']*pm.process.pix2ha
-            #data['NLEP'+str(pm.run.yearsL[0][-2:])+'_IDX'] = data['NLEP'+str(pm.run.yearsL[0][-2:])+'_HA']/data['AREA_HA']
-            data['NLEP' + str(pm.run.yearsL[idx][-2:]) + '_IDX'] = data['NLEP'+str(pm.run.yearsL[idx][-2:])+' (MEA']
-            data['NLEP'+str(pm.run.yearsL[idx+1][-2:])+'_HA'] = data['NLEP'+str(pm.run.yearsL[idx+1][-2:])+' (SUM']*pm.process.pix2ha
-            #data['NLEP'+str(pm.run.yearsL[1][-2:])+'_IDX'] = data['NLEP'+str(pm.run.yearsL[1][-2:])+'_HA'] / data['AREA_HA']
-            data['NLEP'+str(pm.run.yearsL[idx+1][-2:])+'_IDX'] = data['NLEP'+str(pm.run.yearsL[idx+1][-2:])+' (MEA']
-            #data['NLEC_HA'] = data['NLEP-CHANGE']*pm.process.pix2ha
-            data['C' + str(pm.run.yearsL[idx][-2:]) + '-' + str(pm.run.yearsL[idx+1][-2:]) + '_HA']= data['NLEP'+str(pm.run.yearsL[idx+1][-2:])+'_HA'] - data['NLEP'+str(pm.run.yearsL[idx][-2:])+'_HA']
-            data['C' + str(pm.run.yearsL[idx][-2:]) + '-' + str(pm.run.yearsL[idx+1][-2:]) + '_IDX'] = data['NLEP'+str(pm.run.yearsL[idx+1][-2:])+'_IDX'] - data['NLEP' + str(pm.run.yearsL[idx][-2:]) + '_IDX']
-            cols_to_drop = ["NEXT_DOWN","NEXT_SINK","DIST_SINK","DIST_MAIN","UP_AREA","gridcode","SIDE","LAKE","ENDO","COAST","ORDER_", \
-                            "SORT","Id","gridcode", \
-                            "CC","VARNAME_1","HASC", "ENGTYPE","Shape_Leng","Shape_Area", \
-                            "NLEP"+str(pm.run.yearsL[idx][-2:])+" (CEL", "NLEP"+str(pm.run.yearsL[idx][-2:])+" (SUM", "NLEP"+str(pm.run.yearsL[idx][-2:])+" (MEA", \
-                            "NLEP"+str(pm.run.yearsL[idx+1][-2:])+" (CEL", "NLEP"+str(pm.run.yearsL[idx+1][-2:])+" (SUM", "NLEP"+str(pm.run.yearsL[idx+1][-2:])+" (MEA", \
-                            "NLEC"+str(pm.run.yearsL[idx+1][-2:])+" (CEL", "NLEC"+str(pm.run.yearsL[idx+1][-2:])+ " (SUM", "NLEC"+str(pm.run.yearsL[idx+1][-2:])+" (MEA"]
-
-            for colname in cols_to_drop:
-                if colname in data.columns:
-                    data = data.drop([colname], axis=1)
-
-            #write out new cleaned NLEP shapefile
-            data.to_file(pm.nlep.nlepOut.__dict__[nlep_stats], drivers='ESRI Shapefile')
-
-            #TODO check to combine in one single csv (also above shapes)
-            data_DLCT = data.groupby('DLCT_'+str(year)).mean()
-            data_DLCT.to_csv(os.path.splitext(pm.nlep.nlepOut.__dict__[nlep_stats])[0] + '_DLCT_mean_'+str(pm.run.yearsL[idx+1])+'.csv')
-            data_DLCT = data.groupby('DLCT_'+str(year)).sum()
-            data_DLCT.to_csv(os.path.splitext(pm.nlep.nlepOut.__dict__[nlep_stats])[0] + '_DLCT_sum_'+str(pm.run.yearsL[idx+1])+'.csv')
-
-        except Exception as e:
-            print("Error preparing regional shape files {}".format(e) )
-            sys.exit(-1)
-
-    #now add reference to nlep_statistics in yaml
-    pm.update(options.config)
-    return
-
 ####################################################################################################
 # workflow to create NLEP account
 #From a runObject
@@ -386,5 +289,3 @@ def create_NLEP(runObject):
 
     except Error as e:
         raise Error(e)
-
-

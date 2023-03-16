@@ -14,11 +14,7 @@ Created on Oct 28, 2019
 @author: smetsb
 '''
 
-import os
-import sys
 import numpy as np
-import subprocess
-import traceback
 import rasterio
 
 from enca.framework.geoprocessing import block_window_generator, GSM
@@ -57,4 +53,3 @@ class NATURALIS(object):
     
     def smooth_PA(self):
         GSM(self.nosm,self.sm,self.gaussian_sigma,self.gaussian_kernel_radius)
-    

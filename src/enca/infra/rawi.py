@@ -7,16 +7,10 @@ Created on Oct 26, 2020
 '''
 import os, sys
 import math
-import subprocess
-import pathlib
-import shutil
-import traceback
 from math import sqrt
 import geopandas as gpd
 import numpy as np
 import rasterio
-import shapefile
-import fiona
 from enca.framework.geoprocessing import adding_stats, block_window_generator
 
 class RAWI(object):

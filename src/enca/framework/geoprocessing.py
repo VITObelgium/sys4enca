@@ -18,6 +18,8 @@ import rasterio
 import rasterio.mask
 import shapely.geometry
 from osgeo import __version__ as GDALversion
+from rasterio.windows import Window
+from scipy.ndimage import correlate
 
 from .ecosystem import ECOTYPE, ECO_ID
 from .errors import Error
@@ -324,10 +326,10 @@ class GeoProcessing(object):
         else:
             raise RuntimeError('this mode was not forseen in rasterization function.')
 
-
         if burn_value == nodata_value:
             init_value = 1
-        else: init_value = nodata_value
+        else:
+            init_value = nodata_value
         cmd = 'gdal_rasterize -l "{}" -init {} -burn {} -at -a_nodata {} -co COMPRESS=DEFLATE -co TILED=YES -co INTERLEAVE=BAND ' \
               '-ot {} -te {} {} {} {} -tr {} {} -a_SRS "EPSG:{}" "{}" "{}"'.format(
                     splitext(basename(path_in))[0],
@@ -345,7 +347,6 @@ class GeoProcessing(object):
                     path_in,
                     path_out)
 
-
         if not os.path.exists(path_out):
             try:
                 subprocess.check_call(cmd, shell=True)
@@ -360,9 +361,6 @@ class GeoProcessing(object):
         else:
             logger.debug('* Rasterized file %s already exists, skipping.', path_out)
             pass
-
-
-
 
     def rasterize(self, gdb: gpd.GeoDataFrame, gdb_column_name: str, path_out: str, nodata_value=0, dtype='Float32',
                   guess_dtype=False, mode='statistical'):
@@ -1630,11 +1628,8 @@ def Bring2COG():
     """
     pass
 
-def unity_function(raster):
-    return raster *1
 
-
-def statistics_byArea(path_data_raster, path_area_raster, area_names, transformation = unity_function,
+def statistics_byArea(path_data_raster, path_area_raster, area_names, transform=None,
                       add_progress=lambda p: None, block_shape=(2048, 2048)):
     """Extract sum and count statistics for all areas given in the area_raster for the data_raster.
 
@@ -1645,6 +1640,7 @@ def statistics_byArea(path_data_raster, path_area_raster, area_names, transforma
     :param path_area_raster: path to the raster holding the areas for which statistics are extracted
     :param area_names: dict or Series mapping raster value to clear name of areas (key/index = clear name,
                        value = raster value)
+    :param transform: Optional single-argument function to transform the data by.
     :param add_progress: callback function to update progress bar.
     :param block_shape: tuple (y_size, x_size) for block processing of the statistic extraction (optional)
     :return: pandas dataframe with area codes as index and columns for raster value sum and raster pixel count
@@ -1676,8 +1672,8 @@ def statistics_byArea(path_data_raster, path_area_raster, area_names, transforma
                 add_progress(100. / nblocks)
                 continue
 
-            #transform data if needed else apply unity_function
-            aData = transformation(aData)
+            if transform:
+                aData = transform(aData)
             # bring valid data into DataFrame
             df_window = pd.DataFrame({SHAPE_ID: aArea[mValid].flatten(), SUM: aData[mValid].data.flatten(), COUNT: 1})
             # add block data to master DataFrame
@@ -1691,29 +1687,6 @@ def statistics_byArea(path_data_raster, path_area_raster, area_names, transforma
 
     return df.join(area_names).set_index(GEO_ID)
 
-def statistics_byShapes(rasters, shapes, stats, ID_FIELD='HYBAS_ID'):
-    '''
-    Can be merged with add stats?
-    raster: list of rasters with elements to used to calc stats
-    shapes: shapes over which the stats should be calculated
-    outname: name of the output file
-    stats: list of statistics to process
-    '''
-    gdf = gpd.read_file(shapes).sort_index()
-    new_column = []
-    for raster in rasters:
-        with rasterio.open(raster) as ds:
-            for atuple in gdf.itertuples():
-                try:
-                    value, _ = rasterio.mask.mask(ds, [atuple.geometry], crop=True, indexes=1)
-                except:
-                    logger.warning("Something went wrong with the masking, could be due to shapes falling outside raster")
-                    value = ds.nodata
-                new_column.append([stat(value, where=(value != ds.nodata) & ~(np.isnan(value))) for stat in stats])
-
-        new_df = pd.DataFrame(new_column, columns = [os.path.splitext(os.path.basename(raster))[0] + '_' + stat.__name__ for stat in stats])
-        df = pd.concat([gdf[ID_FIELD],new_df],axis =1)
-    return df
 
 def statistics_byArea_byET(path_data_raster, path_area_raster, area_names, path_ET_raster, ET_names,
                            add_progress=lambda p: None,
@@ -1778,6 +1751,7 @@ def statistics_byArea_byET(path_data_raster, path_area_raster, area_names, path_
                     'This may happen when continuing from a previous run with different settings.')
 
     return df.join(area_names).join(ET_names).set_index([GEO_ID, ECOTYPE])
+
 
 def block_window_generator(block_shapes, img_height, img_width):
     """Return an iterator over a band's block windows and their indexes.
@@ -1862,44 +1836,40 @@ def coord_2_index(x, y, raster_x_min, raster_y_max, pixres, raster_x_max=None, r
         else:
             raise ValueError("The given coordinate is outside the dataset")
 
+
 #Might be interesting to move to Geoprocessing Class
-def GSM(nosm, sm, gaussian_sigma, gaussian_kernel_radius, block_shape=(2048,2048)):
-    from rasterio.windows import Window
-    from scipy.ndimage import correlate
-    #create kernel
+def GSM(nosm, sm, gaussian_sigma, gaussian_kernel_radius, block_shape=(2048, 2048)):
+    # create kernel
     radius = gaussian_kernel_radius
     y, x = np.ogrid[-radius: radius + 1, -radius: radius + 1]
     kernelr = x ** 2 + y ** 2 <= radius ** 2
-    #struct = np.array([kernelr.astype(np.bool)])
-    #some how there is a factor 10 in the sigma when converting SAGA to normal scipy stuff
+    # struct = np.array([kernelr.astype(np.bool)])
+    # some how there is a factor 10 in the sigma when converting SAGA to normal scipy stuff
     kernel = gaussian_kernel(gaussian_kernel_radius*2+1, sigma=gaussian_sigma/10)
-    kernel[kernelr == False] = 0
+    kernel[~kernelr] = 0
     kernel = kernel/np.sum(kernel)
-
 
     with rasterio.open(nosm, 'r') as ds_open:
         profile = ds_open.profile
         with rasterio.open(sm, 'w', **dict(profile, driver='GTiff', dtype='float64')) as ds_out:
             for _, window in block_window_generator(block_shape, ds_open.height, ds_open.width):
-                #calc amout of padding:
-                window = Window.from_slices(rows=window[0],cols=window[1])
-                #add padding
-                PaddedWindow= Window(window.col_off - gaussian_kernel_radius, window.row_off - gaussian_kernel_radius,
-                                     window.width + gaussian_kernel_radius*2,window.height + gaussian_kernel_radius*2)
+                # calc amout of padding:
+                window = Window.from_slices(rows=window[0], cols=window[1])
+                # add padding
+                PaddedWindow = Window(window.col_off - gaussian_kernel_radius, window.row_off - gaussian_kernel_radius,
+                                      window.width + gaussian_kernel_radius*2, window.height + gaussian_kernel_radius*2)
 
-                #adapt window for padding
-                aBlock = ds_open.read(1, window=PaddedWindow, boundless= True, masked=True).astype(np.float64)
+                # adapt window for padding
+                aBlock = ds_open.read(1, window=PaddedWindow, boundless=True, masked=True).astype(np.float64)
 
-                #should not use gaussian_filter since it is only for rectangular shapes and not circ shaped kernels
-                #Does not have major impact if sigma > kernel_radius
-                #output = gaussian_filter(aBlock,sigma=gaussian_sigma,radius=radius)[radius:-radius, radius:-radius]
+                # should not use gaussian_filter since it is only for rectangular shapes and not circ shaped kernels
+                # Does not have major impact if sigma > kernel_radius
+                # output = gaussian_filter(aBlock,sigma=gaussian_sigma,radius=radius)[radius:-radius, radius:-radius]
 
-                output = correlate(aBlock,kernel)[radius:-radius, radius:-radius]
-
-
-
+                output = correlate(aBlock, kernel)[radius:-radius, radius:-radius]
 
                 ds_out.write(output, window=window, indexes=1)
+
 
 def gaussian_kernel(size, sigma=1):
     kernel_1D = np.linspace(-(size // 2), size // 2, size)
@@ -1909,13 +1879,16 @@ def gaussian_kernel(size, sigma=1):
     kernel_2D *= 1.0 / kernel_2D.max()
     return kernel_2D
 
+
 def dnorm(x, mu, sd):
     return 1 / (np.sqrt(2 * np.pi) * sd) * np.e ** (-np.power((x - mu) / sd, 2) / 2)
+
 
 def add_area(inname, outname, scaling):
     gdf = gpd.read_file(inname).sort_index()
     gdf['AREA'] = gdf['geometry'].area * scaling
     gdf.to_file(outname)
+
 
 def adding_stats(rasters, shapes, outname, stats):
     '''
@@ -1931,14 +1904,17 @@ def adding_stats(rasters, shapes, outname, stats):
             for atuple in gdf.itertuples():
                 try:
                     value, _ = rasterio.mask.mask(ds, [atuple.geometry], crop=True, indexes=1)
-                except:
-                    logger.warning("Something went wrong with the masking, could be due to shapes falling outside raster")
+                except Exception:
+                    logger.exception("Something went wrong with the masking, "
+                                     "could be due to shapes falling outside raster")
                     value = ds.nodata
                 new_column.append([stat(value, where=(value != ds.nodata) & ~(np.isnan(value))) for stat in stats])
 
-        new_df = pd.DataFrame(new_column, columns = [os.path.splitext(os.path.basename(raster))[0] + '_' + stat.__name__ for stat in stats])
-        gdf = gpd.pd.concat([gdf,new_df],axis =1)
+        new_df = pd.DataFrame(new_column, columns=[os.path.splitext(
+            os.path.basename(raster))[0] + '_' + stat.__name__ for stat in stats])
+        gdf = gpd.pd.concat([gdf, new_df], axis=1)
     gdf.to_file(outname)
+
 
 def count(raster, where=filter):
 

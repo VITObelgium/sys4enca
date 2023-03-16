@@ -10,7 +10,6 @@ Created on Oct 28, 2019
 
 @author: smetsb
 '''
-import os
 import rasterio
 from enca.framework.geoprocessing import block_window_generator, GSM
 from enca.classification import CSV_2_dict, reclassification

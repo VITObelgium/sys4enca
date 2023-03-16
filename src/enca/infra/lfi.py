@@ -10,15 +10,13 @@ Created on Oct 28, 2019
 
 @author: smetsb
 '''
-import os, sys
-import subprocess
-import pathlib
-import shutil
-import traceback
+import os
+import sys
 import rasterio
 import logging
 import numpy as np
-from enca.framework.geoprocessing import block_window_generator, adding_stats, add_area
+from enca.framework.geoprocessing import block_window_generator, adding_stats
+from enca.framework.errors import Error
 
 import geopandas as gpd
 logger = logging.getLogger(__name__)
@@ -302,8 +300,3 @@ class LFI(object):
 
     def get_field(self, year):
         return 'FRAG'+str(year)[2:]+'_'+str(self.lcclass)
-
-        
-        
-        
-    

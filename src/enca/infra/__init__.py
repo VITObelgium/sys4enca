@@ -61,11 +61,11 @@ class Infra(enca.ENCARun):
 
         logger.debug('Hello from ENCA Infra')
 
-        region = self.aoi_name
-        tier = self.tier
-        path_out = self.run_dir
-        rc = self.run_name
-        path_temp = self.temp_dir()
+        # region = self.aoi_name
+        # tier = self.tier
+        # path_out = self.run_dir
+        # rc = self.run_name
+        # path_temp = self.temp_dir()
 
         #first create NLEP
         create_NLEP(self)
@@ -88,7 +88,7 @@ class Infra(enca.ENCARun):
         #40s
         for year in self.years:
             logger.info('** processing year {} ...'.format(year))
-            path_results_shp = self.calc_indices(year, ID_FIELD = 'HYBAS_ID', vrt_nodata=-9999)
+            self.calc_indices(year, ID_FIELD = 'HYBAS_ID', vrt_nodata=-9999)
 
         logger.info('* Indices available')
 
@@ -102,13 +102,13 @@ class Infra(enca.ENCARun):
 
     ######################################################################################################################
     def calc_indices(self, year, ID_FIELD = 'HYBAS_ID', vrt_nodata=-9999):
-        region = self.aoi_name
+        # region = self.aoi_name
         path_SELU = self.path_results_eip[year]
         path_BASELINE = self.path_results_eip[self.years[0]]
         # 1. build datacube raster from all input
-        path_temp = self.temp_dir()
+        # path_temp = self.temp_dir()
 
-        lPaths = []
+        # lPaths = []
         lColumns = []
 
         #remove keys with none value
@@ -140,7 +140,7 @@ class Infra(enca.ENCARun):
 
         df = pd.DataFrame(index=self.statistics_shape.index.astype(str) ,  dtype=float)
         df.index.name = ID_FIELD
-        m2_2ha = 1/100**2
+        # m2_2ha = 1/100**2
         pix2ha = self.accord.pixel_area_m2()/100**2
 
         for idx,path in enumerate(paths):
@@ -201,7 +201,7 @@ class Infra(enca.ENCARun):
         elif 'ad_4'  in lColumns and 'ad_5'  in lColumns and 'ad_7' in lColumns:
             df['EHI6'] = df[['ad_4','ad_5','ad_7']].mean(axis=1)            #Average all biodiversity inputs
             df['EHI6'] = np.clip(df['EHI6'], a_max=None, a_min=0.7)         #Clip biodiversity between 0.7 and 1.0 to count for uncertainty in biodiv indices
-            EHI6_ready = True
+            # EHI6_ready = True
         else: df['EHI6']    = 1
 
         if 'ad_8' in lColumns and 'ad_9' in lColumns:
@@ -210,7 +210,7 @@ class Infra(enca.ENCARun):
                 # non-burned_area/area + (burned/area * (health_fire_danger-impact [0-1] / fire_density[0-3 fires in avg/year]))
                 df['EHI7']    =  ( ((df['EB1_1LC'] - df['ad_8']) / df['EB1_1LC'] * 1.0) + (df['ad_8'] / df['EB1_1LC'] * (df['ad_9'] / df['ad_11'])) )
             else : df['EHI7']    =  ( ((df['EB1_1LC'] - df['ad_8']) / df['EB1_1LC'] * 1.0) + (df['ad_8'] / df['EB1_1LC'] * df['ad_9']) )
-            EHI7_ready = True
+            # EHI7_ready = True
         else: df['EHI7']    = 1
 
 
@@ -220,7 +220,7 @@ class Infra(enca.ENCARun):
         if ['ad_10'] in lColumns:
             df['EHI8']    = 1 - ((df['ad_10'] - 1.)/(10./2))                #Mining Pollution ranges 1.0 to 10.0
             df['EHI8'] = np.clip(df['EHI8'], a_max=None, a_min=0.5)         #clip mining pollution between 0.5 and 1.0
-            EHI8_ready = True
+            # EHI8_ready = True
         else: df['EHI8']    = 1
 
         df['EIH'] = np.power(df['EHI6']*df['EHI7']*df['EHI8'],1./(3))  #geometric mean
@@ -440,7 +440,7 @@ class Infra(enca.ENCARun):
         for year in self.years:
             if year in self.config["infra"]["leac"]:
                 logger.info("leac information was manual added")
-                basename = os.path.basename(self.config["infra"]["leac"][year])
+                # basename = os.path.basename(self.config["infra"]["leac"][year])
                 continue
             expected_path = os.path.join(self.temp_dir.replace(self.component, 'leac'),
                                          f'cci_LC_{year}_100m_3857_PSCLC.tif')
@@ -531,7 +531,7 @@ class Infra(enca.ENCARun):
         #self.resolution = self.accord.
         base = os.path.splitext(os.path.basename(self.config["infra"]["nrep"]["gloric"]))[0]
         self.riverSRMU = os.path.join(self.maps, base + '_log_SRMU.tif')
-        self.rawi_mask = os.path.join(self.temp_dir(), base + f'.tif')
+        self.rawi_mask = os.path.join(self.temp_dir(), base + '.tif')
         self.rawi_shape = os.path.join(self.temp_dir(), base + '.shp')
         self.rawi_selu = os.path.join(self.maps, base + '_SRMU.shp')
         self.rawi = {}

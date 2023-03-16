@@ -11,18 +11,10 @@ Created on Oct 26, 2020
 '''
 
 import os
-import sys
-import shutil
-import subprocess
-import time
-import datetime
-import traceback
 
 import rasterio
 import geopandas as gpd
-import fiona
 import numpy as np
-from tqdm import tqdm
 from math import e
 from enca.framework.geoprocessing import block_window_generator
 

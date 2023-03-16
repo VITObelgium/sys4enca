@@ -15,19 +15,7 @@ Created on Oct 26 2020
 '''
 
 import os
-import sys
-import optparse
-import pathlib
-import shutil
-import subprocess
-import time
-import datetime
-import traceback
 import logging
-import rasterio
-
-import geopandas as gpd
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -131,46 +119,3 @@ def create_NREP(runObject):
         if not (os.path.exists(fragriv.fragriv)):
             fragriv.join()
         logger.info('** FRAGRIV ready ... \n\n')
-
-
-######################################################################################################################
-def main(options):
-
-    # read yaml configuration file
-    pm = Parameters(options.config, mode='infra')
-
-    # create leac account
-    create_NREP(pm)
-
-    print("NREP account ready for %s" % pm.run.region_long)
-
-    return
-
-#######################################################################################################################
-if __name__ == '__main__':
-
-    try:
-        # check if right Python version is available.
-        assert sys.version_info[0:2] >= (3 ,5), "You need at minimum python 3.5 to execute this script."
-        start_time = time.time()
-        # ini the Option Parser
-        parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), usage=globals()['__doc__'], version="%prog v2.0")
-        parser.add_option ('-v', '--verbose', action='store_true', default=False, help='verbose output')
-        parser.add_option ('-e', '--config', help='Path to the config.ini file. Needed.')
-        parser.add_option ('-r', '--overwrite', action= 'store_true', default=False, help='Reprocess all data through overwriting. Optional')
-        parser.add_option ('-m', '--message', action='store_true', default=False, help="Set -m if you want to receive an email for errors or finished script.")
-        # parse the given system arguments
-        (options, args) = parser.parse_args()
-        # do checks on the parsed options
-        if (not options.config) or (not os.path.isfile(os.path.normpath(options.config))):
-            parser.error ("the -e argument for the config file is missing or the given path doesn't exist!!!")
-        if len(args) != 0:
-            parser.error ('too many arguments')
-
-        if options.verbose: print('START OF MODULE: NCA NREP')
-        if options.verbose: print(time.asctime())
-        # call main function - "options" object is set to global object
-        main(options)
-        # Pparameter, sSuccess = main()
-    except:
-        traceback.print_stack()
