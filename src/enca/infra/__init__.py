@@ -9,7 +9,7 @@ import enca
 from enca.infra.nlep import create_NLEP
 from enca.infra.nrep import create_NREP
 from enca.framework.config_check import ConfigItem, ConfigRaster, ConfigShape, YEARLY
-from enca.framework.geoprocessing import statistics_byArea, unity_function, norm_1
+from enca.framework.geoprocessing import statistics_byArea, norm_1
 
 
 logger = logging.getLogger(__name__)
@@ -131,10 +131,10 @@ class Infra(enca.ENCARun):
                       'l4':'ad_7','l5':'ad_5','l6':'ad_4',
                       'l7':'ad_9','l8':'ad_10','l9':'ad_3',
                       'l10':'ad_11','l11':'ad_12'}
-        function = {'l1':unity_function, 'l2':unity_function, 'l3':norm_1,
-                    'l4':norm_1, 'l5':unity_function, 'l6':unity_function,
-                    'l7':unity_function,'l8':unity_function,'l9':unity_function,
-                    'l10':unity_function,'l11':unity_function}
+        function = {'l1':None, 'l2':None, 'l3':norm_1,
+                    'l4':norm_1, 'l5':None, 'l6':None,
+                    'l7':None,'l8':None,'l9':None,
+                    'l10':None,'l11':None}
         lColumns= [rename_dict.get(key) for key in keys]
 
 
@@ -177,9 +177,9 @@ class Infra(enca.ENCARun):
         df['EISUI'] = df['EIP4'] / df['EIP6']
 
 
-        EHI6_ready = False
-        EHI7_ready = False
-        EHI8_ready = False
+        # EHI6_ready = False
+        # EHI7_ready = False
+        # EHI8_ready = False
         #health indicators
         if 'ad_4' in lColumns:
             df['ad_4'] = np.clip(df['ad_4'], a_max=1.0, a_min=0.7)         #Clamp biodiversity intactness index to 1.0
@@ -196,7 +196,7 @@ class Infra(enca.ENCARun):
             if 'ad_5' in lColumns:
                 df['EHI6']  = df[['ad_5','ad_12']].mean(axis=1)
                 df['EHI6'] = np.clip(df['EHI6'], a_max=None, a_min=0.7)
-                EHI6_ready = True
+                # EHI6_ready = True
             else: df['EHI6']    = 1
         elif 'ad_4'  in lColumns and 'ad_5'  in lColumns and 'ad_7' in lColumns:
             df['EHI6'] = df[['ad_4','ad_5','ad_7']].mean(axis=1)            #Average all biodiversity inputs
