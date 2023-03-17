@@ -231,10 +231,10 @@ class ConfigRasterDir(ConfigItem, RasterMixin):
         if not os.path.isdir(dir):
             raise Error(f'"{dir}" is not a directory.')
 
-        raster_files = glob.glob(os.path.join(dir, '*.tif'))
+        raster_files = glob.glob(os.path.join(dir, '*.tif')) + glob.glob(os.path.join(dir, '*.tiff'))
 
         if not raster_files:
-            raise Error(f'"{dir}" does not contain any with extension ".tif".')
+            raise Error(f'"{dir}" does not contain any with extension ".tif" or ".tiff".')
 
         for file in raster_files:
             self.check_raster(file)
