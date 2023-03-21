@@ -58,7 +58,7 @@ class CarbonErosion(enca.ENCARun):
         with rasterio.open(soil_loss_2001) as src:
             tresolution = src.transform[0]
             bbox = src.bounds
-            target_crs = int(src.crs.data['init'].lstrip('epsg:'))
+            target_crs = src.crs
         carbon_average = self.soil_carbon_average(tresolution, bbox, target_crs)
 
         for year in self.years:
@@ -103,7 +103,7 @@ class CarbonErosion(enca.ENCARun):
         with rasterio.open(self.statistics_raster) as src:
             tresolution = src.transform[0]
             bbox = src.bounds
-            target_crs = int(src.crs.data['init'].lstrip('epsg:'))
+            target_epsg = src.crs.to_epsg()
         cmd = ('gdalwarp --config GDAL_CACHEMAX 256 -overwrite -t_srs '
                'EPSG:{} -te {} {} {} {} -tr {} {} -r bilinear -co COMPRESS=LZW -co BIGTIFF=YES -multi {} {}').format(
                    target_crs, bbox.left, bbox.bottom, bbox.right, bbox.top, tresolution, tresolution,
@@ -160,8 +160,7 @@ class CarbonErosion(enca.ENCARun):
         with rasterio.open(path_High_AOI) as src:
             tresolution = src.transform[0]
             bbox = src.bounds
-            if src.crs.is_epsg_code:
-                target_crs = int(src.crs.data['init'].lstrip('epsg:'))
+            target_crs = src.crs
 
         if not os.path.exists(path_Low_AOI):
             Resample2AOI(config[R_FACTOR_25], path_Low_AOI, target_crs, bbox, tresolution, wResampling='cubicspline')
@@ -213,9 +212,9 @@ def Cut2AOI(path_in, path_out, bbox):
 
 def Resample2AOI(path_in, path_out, target_crs, bbox, tresolution, wResampling='bilinear'):
     """Resample a file to an AOI without any checks."""
-    cmd = ('gdalwarp --config GDAL_CACHEMAX 256 -overwrite -t_srs EPSG:{} '
+    cmd = ('gdalwarp --config GDAL_CACHEMAX 256 -overwrite -t_srs "{}" '
            '-te {} {} {} {} -tr {} {} -r {} -co COMPRESS=LZW -co BIGTIFF=YES -multi {} {}').format(
-               target_crs, bbox.left, bbox.bottom, bbox.right, bbox.top,
+               str(target_crs).replace('"', '\\"'), bbox.left, bbox.bottom, bbox.right, bbox.top,
                tresolution, tresolution, wResampling, path_in, path_out)
     subprocess.check_call(cmd, shell=True)
 
