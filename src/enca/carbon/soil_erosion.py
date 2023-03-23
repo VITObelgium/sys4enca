@@ -1,14 +1,12 @@
 import logging
 import os
 import subprocess
-from contextlib import ExitStack
 
 import rasterio
 
-
 import enca
 from enca.framework.config_check import ConfigItem
-from enca.framework.geoprocessing import block_window_generator
+from enca.framework.geoprocessing import block_window_generator, average_rasters
 
 
 logger = logging.getLogger(__name__)
@@ -228,26 +226,3 @@ def FillHoles(path_in, path_out):
         nodata = src.nodata
     cmd = 'gdal_edit.py -a_nodata {} {}'.format(nodata, path_out)
     subprocess.check_call(cmd, shell=True)
-
-
-def average_rasters(output_file, *rasters, block_shape=(1024, 1024)):
-    """Calculate the average of a list of input rasters with same extent/resolution/projection.
-
-    metadata tags are taken from the first raster in the list.
-    """
-    with ExitStack() as stack:
-        input_ds = [stack.enter_context(rasterio.open(f)) for f in rasters]
-        src_tags = input_ds[0].tags()
-        del src_tags['AREA_OR_POINT']
-        fill_value = input_ds[0].nodata
-
-        weight = 1. / len(rasters)
-
-        profile = dict(input_ds[0].profile,
-                       dtype=rasterio.float32,
-                       tiled=True, compress='LZW', blockxsize=block_shape[1], blockysize=block_shape[0])
-        with rasterio.open(output_file, 'w', **profile) as out:
-            out.update_tags(**src_tags)
-            for _, window in block_window_generator(block_shape, out.profile['height'], out.profile['width']):
-                result = sum(ds.read(1, window=window, masked=True) for ds in input_ds) * weight
-                out.write(result.filled(fill_value).astype(out.profile['dtype']), 1, window=window)
