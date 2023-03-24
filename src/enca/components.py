@@ -1,5 +1,6 @@
 """Registry of all available ENCA components."""
 
+from .carbon.agriculture import CarbonAgriculture
 from .carbon.forest import CarbonForest
 from .carbon.npp import CarbonNPP
 from .carbon.livestock import CarbonLivestock
@@ -11,7 +12,7 @@ from .water import Water
 from enca.framework.config_check import ConfigError
 
 COMPONENT = 'component'
-_run_components = {CarbonForest, CarbonLivestock, CarbonNPP, CarbonSoil, CarbonErosion,
+_run_components = {CarbonAgriculture, CarbonForest, CarbonLivestock, CarbonNPP, CarbonSoil, CarbonErosion,
                    Carbon, Infra, Water}  #: List of all ENCA components we can run.
 
 # Build a dict of {'component name': class} for all run components, so we can easily start a run given it's component
