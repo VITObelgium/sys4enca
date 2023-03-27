@@ -119,6 +119,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
+        self.set_up_component_dropdowns()
+
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setIconSize(iface.iconSize(dockedToolbar=True))
 
@@ -160,13 +162,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.tier.addItem('2', 2)
         self.tier.addItem('3', 3)
 
-        # Set up references to QStackedWidget pages grouping inputs for different components
-        self.component_pages = {component: self.findChild(QtWidgets.QWidget, component)
-                                for component in {'CARBON', 'WATER', 'LEAC', 'INFRA'}}
-
         self.config_template = {
             'years': [self.year],
-            'component': self.component,
             'output_dir': self.output_dir,
             'aoi_name': self.aoi_name,
             'statistics_shape': self.data_areas,
@@ -176,6 +173,16 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             'continue': self.continue_run,
             'tier': self.tier
         }
+
+    def set_up_component_dropdowns(self):
+        """Fill the dropdown menu for preprocessing/run/ accounts tabs, and connect signals."""
+        for i in range(self.run_types.count()):
+            tab = self.run_types.widget(i)
+            dropdown = findChild(tab, 'component')
+            components_stack = findChild(tab, 'components_stack')
+            for j in range(components_stack.count()):
+                dropdown.addItem(components_stack.widget(j).objectName())
+            dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
     def saveConfig(self):
         """Save current ui state as a yaml config file."""
@@ -209,16 +216,27 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                              if key not in ('years', 'reporting_regions')}
             self.load_template(config, main_template)
 
+            # select the right tab (preprocessing/components/accounts), and the right component within that tab:
             component_name = config['component']
-            # TODO: later we need to select preprocessing/component/account tab first, and select component in that tab.
-            self.component.setCurrentText(component_name)
-            component_widget = self.component_pages[component_name]
+            run_class = enca.components.get_component(component_name)
+            run_type = run_class.run_type
+            # select tab:
+            run_type_tab = findChild(self.run_types, run_type.name)
+            self.run_types.setCurrentWidget(run_type_tab)
+            # select component:
+            component_widget = findChild(run_type_tab, component_name)
+            component_combo = findChild(run_type_tab, 'component')
+            component_combo.setCurrentText(component_name)
+
             # handle run name:
-            findChild(component_widget, 'run_name').setText(config['run_name'])
+            try:
+                findChild(component_widget, 'run_name').setText(config['run_name'])
+            except ValueError:
+                pass  # Not all input pages have a run_name widget yet
             # read other config values using the template
             self.load_template(config, {component_name:
                                             {key: findChild(component_widget, key)
-                                             for key in component_input_widgets[component_name]}})
+                                             for key in component_input_widgets.get(component_name, {})}})
 
         except BaseException as e:
             QtWidgets.QMessageBox.critical(self, 'Error loading config', f'Could not load config {filename}: {e}.')
@@ -243,8 +261,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def list_config_widgets(self):
         result = self.list_widgets(self.config_template)
         for component, keys in component_input_widgets.items():
-            component_widget = self.component_pages[component]
-            result += [findChild(component_widget, key) for key in keys]
+            component_page = self.findChild(QtWidgets.QWidget, component)
+            result += [findChild(component_page, key) for key in keys]
         return result
 
     def load_template(self, config, template):
@@ -288,12 +306,22 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return expand_template(self.make_template())
 
     def make_template(self):
-        component = self.component.currentText()
-        component_widget = self.component_pages[component]
-        return {**self.config_template,
-                'run_name': findChild(component_widget, 'run_name'),
-                component: {key: findChild(component_widget, key)
-                            for key in component_input_widgets[component]}}
+        # Get the currently selected component.
+        # 1. see which tab we are on (preprocessing / components / accounts)
+        tab_runtype = self.run_types.currentWidget()
+        # 2. select the component form this tab
+        component_dropdown = findChild(tab_runtype, 'component')
+        component = component_dropdown.currentText()  # TODO fill component drop-down with user data corresponding to internal component name?
+        component_widget = findChild(tab_runtype, component)
+        template =  {**self.config_template,
+                     'component': component_dropdown,
+                     component: {key: findChild(component_widget, key)
+                                 for key in component_input_widgets.get(component, {})}}
+        try:
+            template['run_name'] = findChild(component_widget, 'run_name')
+        except ValueError:  # Some pages are currently incomplete
+            pass
+        return template
 
 
 class Task(QgsTask):

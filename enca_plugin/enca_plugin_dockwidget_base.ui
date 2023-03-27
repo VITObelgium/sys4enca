@@ -120,42 +120,39 @@
      </layout>
     </item>
     <item>
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="run_types">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
-      <widget class="QWidget" name="preprocessing_tab">
+      <widget class="QWidget" name="PREPROCESS">
        <attribute name="title">
         <string>Preprocessing</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QComboBox" name="comboBox_4">
-          <item>
-           <property name="text">
-            <string>Carbon Forest</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Land cover map</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Forest land cover classes</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Other preprocessing tasks...</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="component"/>
         </item>
         <item>
-         <widget class="QStackedWidget" name="stackedWidget_3">
-          <widget class="QWidget" name="page_3">
+         <widget class="QStackedWidget" name="components_stack">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="CARBON_NPP">
+           <widget class="QLabel" name="label_57">
+            <property name="geometry">
+             <rect>
+              <x>60</x>
+              <y>40</y>
+              <width>261</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Carbon NPP preprocessing</string>
+            </property>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="CARBON_SOIL">
            <widget class="QLabel" name="label_17">
             <property name="geometry">
              <rect>
@@ -166,43 +163,111 @@
              </rect>
             </property>
             <property name="text">
-             <string>preprocessing settings here..,.</string>
+             <string>Carbon Soil Preprocessing</string>
             </property>
            </widget>
           </widget>
-          <widget class="QWidget" name="page_4"/>
+          <widget class="QWidget" name="CARBON_SOIL_EROSION">
+           <widget class="QLabel" name="label_58">
+            <property name="geometry">
+             <rect>
+              <x>110</x>
+              <y>90</y>
+              <width>191</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Carbon Soil Erosion</string>
+            </property>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="CARBON_LIVESTOCK">
+           <widget class="QLabel" name="label_59">
+            <property name="geometry">
+             <rect>
+              <x>40</x>
+              <y>50</y>
+              <width>281</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Carbon Livestock</string>
+            </property>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="CARBON_FIRE_VULNERABILITY">
+           <widget class="QLabel" name="label_60">
+            <property name="geometry">
+             <rect>
+              <x>40</x>
+              <y>60</y>
+              <width>261</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Carbon Fire Vulnerability</string>
+            </property>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="CARBON_AGRICULTURE">
+           <widget class="QLabel" name="label_61">
+            <property name="geometry">
+             <rect>
+              <x>60</x>
+              <y>50</y>
+              <width>301</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Carbon Agriculture</string>
+            </property>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="CARBON_FIRE">
+           <widget class="QLabel" name="label_62">
+            <property name="geometry">
+             <rect>
+              <x>50</x>
+              <y>70</y>
+              <width>251</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Carbon Fire</string>
+            </property>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="CARBON_FOREST">
+           <widget class="QLabel" name="label_63">
+            <property name="geometry">
+             <rect>
+              <x>60</x>
+              <y>70</y>
+              <width>231</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Carbon Forest</string>
+            </property>
+           </widget>
+          </widget>
          </widget>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="component_tab">
+      <widget class="QWidget" name="ENCA">
        <attribute name="title">
         <string>Components</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QComboBox" name="component">
-          <item>
-           <property name="text">
-            <string>LEAC</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>INFRA</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>CARBON</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>WATER</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="component"/>
         </item>
         <item>
          <widget class="QScrollArea" name="scrollArea">
@@ -738,28 +803,17 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="accounts_tab">
+      <widget class="QWidget" name="ACCOUNT">
        <attribute name="title">
         <string>Accounts</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QComboBox" name="comboBox_3">
-          <item>
-           <property name="text">
-            <string>Yearly total</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Trend</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="component"/>
         </item>
         <item>
-         <widget class="QStackedWidget" name="stackedWidget_2">
-          <widget class="QWidget" name="page">
+         <widget class="QStackedWidget" name="components_stack">
+          <widget class="QWidget" name="TOTAL">
            <widget class="QLabel" name="label_18">
             <property name="geometry">
              <rect>
@@ -774,7 +828,7 @@
             </property>
            </widget>
           </widget>
-          <widget class="QWidget" name="page_2"/>
+          <widget class="QWidget" name="TREND"/>
          </widget>
         </item>
        </layout>
@@ -804,32 +858,12 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>comboBox_3</tabstop>
   <tabstop>tier</tabstop>
   <tabstop>aoi_name</tabstop>
-  <tabstop>tabWidget</tabstop>
-  <tabstop>component</tabstop>
+  <tabstop>run_types</tabstop>
   <tabstop>base_year</tabstop>
   <tabstop>year</tabstop>
-  <tabstop>comboBox_4</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>component</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>components_stack</receiver>
-   <slot>setCurrentIndex(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>95</x>
-     <y>524</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>131</x>
-     <y>545</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

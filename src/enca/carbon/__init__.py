@@ -82,7 +82,7 @@ def load_lut():  # TODO Can we embed this LUT as a dict in the code?
 class Carbon(enca.ENCARun):
     """Carbon accounting class."""
 
-    run_type = enca.ENCA
+    run_type = enca.RunType.ENCA
     component = 'CARBON'
 
     #: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.

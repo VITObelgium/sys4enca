@@ -28,7 +28,7 @@ _conversion_factor = 0.001
 class CarbonErosion(enca.ENCARun):
     """Carbon Soil Erosion preprocessing run."""
 
-    run_type = enca.PREPROCESS
+    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_SOIL_EROSION'
 
     def __init__(self, config):

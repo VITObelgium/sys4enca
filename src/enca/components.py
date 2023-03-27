@@ -38,3 +38,8 @@ def make_run(config):
 def list_components():
     """Return a list of all known components."""
     return list(_component_registry.keys())
+
+
+def get_component(component_name):
+    """Return the class for the component with the given name."""
+    return _component_registry[component_name]

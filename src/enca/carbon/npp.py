@@ -23,7 +23,7 @@ _GDMP_nodata = -1
 class CarbonNPP(enca.ENCARun):
     """Cabon NPP preprocessing run."""
 
-    run_type = enca.PREPROCESS
+    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_NPP'
 
     def __init__(self, config):

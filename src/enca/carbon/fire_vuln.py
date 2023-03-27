@@ -13,7 +13,7 @@ DAILY_SEVERITY_RATING = 'dsr'
 
 class CarbonFireVulnerability(enca.ENCARun):
 
-    run_type = enca.PREPROCESS
+    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_FIRE_VULNERABILITY'
 
     def __init__(self, config):

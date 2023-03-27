@@ -18,7 +18,7 @@ INDICES = [f'l{idx}' for idx in range(1,13)]
 
 class Infra(enca.ENCARun):
 
-    run_type = enca.ENCA
+    run_type = enca.RunType.ENCA
     component = 'infra'
     #id_col_reporting = "GID_0"
 

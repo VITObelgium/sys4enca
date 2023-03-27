@@ -38,7 +38,7 @@ _livestock_types = [CATTLE, CHICKEN, SHEEP, GOAT, PIG]
 
 class CarbonLivestock(enca.ENCARun):
 
-    run_type = enca.PREPROCESS
+    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_LIVESTOCK'
 
     def __init__(self, config):

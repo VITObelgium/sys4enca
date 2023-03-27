@@ -1,7 +1,7 @@
 import gettext
 import logging
 import os
-import sys
+from enum import Enum
 
 from importlib.metadata import PackageNotFoundError, version
 from importlib.resources import as_file, files
@@ -35,9 +35,13 @@ with as_file(files(__name__).joinpath('locale')) as path:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-ENCA = 'ENCA'
-ACCOUNT = 'ENCA_ACCOUNT'
-PREPROCESS = 'ENCA_PREPROCESS'
+class RunType(Enum):
+    """ENCA runs belong to one of these types."""
+
+    ENCA = 0  #: Regular run for a single component.
+    ACCOUNT = 1  #: Yearly account or trend.
+    PREPROCESS = 2  #: Preprocessing.
+
 HYBAS_ID = 'HYBAS_ID'
 #should also be possible to be GID_1
 GID_0 = 'GID_0'
@@ -82,7 +86,7 @@ class ENCARun(Run):
             }
         )
 
-        self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), self.run_type, self.component,
+        self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), str(self.run_type), self.component,
                                     self.run_name)
         self.maps = os.path.join(self.run_dir, 'maps')
         self.reports = os.path.join(self.run_dir, 'reports')
