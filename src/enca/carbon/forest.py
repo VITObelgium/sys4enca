@@ -34,11 +34,13 @@ class CarbonForest(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
+                FOREST_LC_CLASSES: ConfigItem(),
                 LAND_COVER_FRACTION: ConfigRaster(raster_type=RasterType.ABSOLUTE_POINT),
                 WOOD_REMOVAL_LIMIT: ConfigRaster(raster_type=RasterType.ABSOLUTE_POINT),
                 FAOFRA_AGB: ConfigItem(check_csv),
                 FAOFRA_BGB: ConfigItem(check_csv),
-                FAOFRA_LITTER: ConfigItem(check_csv)}
+                FAOFRA_LITTER: ConfigItem(check_csv),
+                FAOFRA_WREM: ConfigItem(check_csv)}
         })
 
         self.cf_clean = os.path.join(self.temp_dir(), 'cf_clean_{year}.tif')
