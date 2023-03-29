@@ -42,6 +42,8 @@ class CarbonFireVulnerability(enca.ENCARun):
         # Calculate 40 year average severity rating:
         path_lta = os.path.join(self.temp_dir(), 'fire-severity_long-term-average.tif')
         with rasterio.open(self.config[self.component][DAILY_SEVERITY_RATING]) as ds_dsr:
+            output_profile = dict(ds_dsr.profile, crs='EPSG:4326', count=1)
+
             total = np.zeros((ds_dsr.height, ds_dsr.width), dtype=np.float64)
             count = np.zeros((ds_dsr.height, ds_dsr.width), dtype=int)
             for band in range(1 + ds_dsr.count - int(40 * 365.24), 1 + ds_dsr.count):
@@ -56,7 +58,7 @@ class CarbonFireVulnerability(enca.ENCARun):
             lta[valid] = total[valid] / count[valid]
             del valid, total, count
 
-            with rasterio.open(path_lta, 'w', **dict(ds_dsr.profile, crs='EPSG:4326', count=1)) as ds_out:
+            with rasterio.open(path_lta, 'w', **output_profile) as ds_out:
                 ds_out.write(lta, 1)
 
             # Calculate annual severity rating, and ratio with:
@@ -80,13 +82,13 @@ class CarbonFireVulnerability(enca.ENCARun):
                 del valid, total, count
 
                 with rasterio.open(os.path.join(self.temp_dir(), f'fire-severity_annual-average_{year}.tif'), 'w',
-                                   **dict(ds_dsr.profile, crs='EPSG:4326', count=1)) as ds_annual:
+                                   **output_profile) as ds_annual:
                     ds_annual.write(annual, 1)
 
                 # ratio between annual and long term average fire vulnerability:
                 ratio = annual / lta
                 with rasterio.open(os.path.join(self.temp_dir(), f'fire_vulnerability_ratio_{year}.tif'), 'w',
-                                   **dict(ds_dsr.profile, crs='EPSG:4326')) as ds_ratio:
+                                   **output_profile) as ds_ratio:
                     ds_ratio.write(ratio, 1)
 
                 # now we have to calculate a meaningful health indicator for the table work from the vulnerability.
@@ -113,9 +115,7 @@ class CarbonFireVulnerability(enca.ENCARun):
 
                 path_vuln_4326 = os.path.join(self.temp_dir(), f'fire-vulnerability-health-index_{year}.tif')
                 with rasterio.open(path_vuln_4326, 'w',
-                                   **dict(ds_dsr.profile,
-                                          crs='EPSG:4326', count=1,
-                                          dtype=rasterio.float32, interleave='band')) as ds_fvhi:
+                                   **dict(output_profile, dtype=rasterio.float32, interleave='band')) as ds_fvhi:
                     ds_fvhi.write(annual_fvhi, 1)
 
                 # TODO original preprocesing uses 2-step resampling:
