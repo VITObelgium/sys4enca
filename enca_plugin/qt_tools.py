@@ -22,7 +22,7 @@ from qgis.core import QgsMessageLog, Qgis
 from qgis.gui import QgsFileWidget, QgsCheckableComboBox, QgsFilterLineEdit,  QgsSpinBox
 
 from .region_picker import RegionPicker
-
+from .keyvalue_files import KeyValueFiles
 
 def expand_template(template):
     """Given a template, recursively replace all references to widgets by the value of those widgets."""
@@ -58,7 +58,7 @@ def expand_template(template):
         return template.document().toPlainText()
     if isinstance(template, QtWidgets.QButtonGroup):
         return template.checkedButton().text()
-    if isinstance(template, RegionPicker):
+    if isinstance(template, KeyValueFiles):
         return template.value()
     raise RuntimeError(f'Failed to expand config template: {html.escape(str(template))}.')
 
@@ -107,8 +107,8 @@ def writeWidget(widget, value):
             if button.text() == value:
                 button.setChecked(True)
                 return
-    elif isinstance(widget, RegionPicker):
-        widget.set(value)
+    elif isinstance(widget, KeyValueFiles):
+        widget.setValue(value)
     else:
         raise RuntimeError(f'Failed to set widget state: {html.escape(str(widget))}')
 
@@ -135,5 +135,4 @@ def readWidget(widget):
         return widget.isChecked()
     elif isinstance(widget, QtWidgets.QAbstractSpinBox):
         return str(widget.value())
-    elif isinstance(widget, RegionPicker):
-        return widget.value()
+ 
