@@ -1323,8 +1323,12 @@ class GeoProcessing(object):
         # run block-wise processing of destination file
         with rasterio.open(src_path, 'r') as src_data, \
                 rasterio.open(path_mask, 'r') as ds_mask:
+            if src_data.nodatavals[0] :
+                src_nodata = src_data.nodatavals[0]
+            else:
+                src_nodata = 0
             with rasterio.open(dst_path, 'w', **dict(self.reporting_profile.copy(), dtype=src_data.dtypes[0],
-                                                     nodata=src_data.nodatavals[0])) as ds_out:
+                                                     nodata=src_nodata)) as ds_out:
                 nblocks = number_blocks(self.reporting_profile, block_shape)
                 # copy tags to dst
                 ds_out.update_tags(**src_data.tags())
@@ -1963,3 +1967,30 @@ def count(raster, where=filter):
 def norm_1(raster):
     #function normalizes and inverts value
     return 1 / (1 + raster/100)
+
+def add_color(file, ctable, path, type = 'Byte'):
+        from osgeo import gdal
+        if type == 'Byte':
+            max = 255
+        else:
+            max = 65535
+
+        ds = gdal.Open(file, gdal.GA_Update)
+        band = ds.GetRasterBand(1)     #single band VRT mosaics
+        ct = gdal.ColorTable()         #gdal.GCI_PaletteIndex)
+
+        #create dummy table
+        for i in range(0,max):
+            ct.SetColorEntry(i,(255,255,255,255))
+
+        with open(ctable) as f:
+            next(f)
+            next(f)
+            for line in f:
+                #overwrite values
+                ct.SetColorEntry(int(line.split(',')[0]),(int(line.split(',')[1]),int(line.split(',')[2]),int(line.split(',')[3]),int(line.split(',')[4])))    #(value,(R,G,B,alpha))
+
+        band.SetColorTable(ct)
+        band.FlushCache()
+        #push to file
+
