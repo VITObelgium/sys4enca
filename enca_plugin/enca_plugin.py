@@ -1,12 +1,18 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
+from qgis.core import Qgis, QgsMessageLog
 # Initialize Qt resources from file resources.py
 from .resources import *
 
 # Import the code for the DockWidget
 from .enca_plugin_dockwidget import ENCAPluginDockWidget
 import os.path
+
+import datetime
+import logging
+import platform
+from enca.framework.run import set_up_logfile
 
 _revision = '$Format:%h$'  # Use git archive with export-subst attributes to insert short hash here.
 
@@ -49,6 +55,11 @@ class ENCAPlugin:
 
         self.pluginIsActive = False
         self.dockwidget = None
+
+        log_location = get_log_location()
+        set_up_logfile(log_location, logging.getLogger('enca'), verbose=True,
+                       filename=datetime.date.today().strftime('enca_%Y%m%d.log'))
+        QgsMessageLog.logMessage(f'Writing ENCA log file in {log_location}', level=Qgis.Info)
 
 
     # noinspection PyMethodMayBeStatic
@@ -204,3 +215,23 @@ class ENCAPlugin:
             # show the dockwidget
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
             self.dockwidget.show()
+
+
+def get_log_location():
+    """Get an appropriate user directory to write the inca log file.
+
+    On windows, this should be somewhere in AppData, on Linux it should be a directory in the user's $HOME."""
+    system = platform.system()
+
+    if system == 'Windows':
+        log_dir = os.getenv('APPDATA')
+    elif system == 'Linux':
+        # Following https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html :
+        log_dir = os.getenv('XDG_STATE_HOME')
+        if log_dir is None:
+            log_dir = os.path.join(os.getenv('HOME'), '.local', 'state')
+    else:  # Mac?
+        log_dir = os.path.join(os.getenv('HOME'), '.inca')
+
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
