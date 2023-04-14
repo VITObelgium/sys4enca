@@ -105,15 +105,15 @@ component_input_widgets = [
         (carbon_livestock.LIVESTOCK_CARBON, carbon.livestock._livestock_types),
         (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),
         (carbon_livestock.WEIGHTS, carbon.livestock._livestock_types)]),
-    (carbon_fire_vuln, [
+    (carbon_fire_vuln.CarbonFireVulnerability.component, [
        carbon_fire_vuln.DAILY_SEVERITY_RATING]),
-    (carbon_agriculture, [
+    (carbon_agriculture.CarbonAgriculture.component, [
         carbon_agriculture.AGRICULTURE_DISTRIBUTION,
         carbon_agriculture.AGRICULTURE_STATS]),
-    (carbon_fire, [
+    (carbon_fire.CarbonFire.component, [
         carbon_fire.BURNT_AREAS,
         carbon_fire.FOREST_BIOMASS]),
-    (carbon_forest, [
+    (carbon_forest.CarbonForest.component, [
         carbon_forest.FAOFRA_AGB,
         carbon_forest.FAOFRA_BGB,
         carbon_forest.FAOFRA_LITTER,
