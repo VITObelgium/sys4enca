@@ -82,7 +82,7 @@ def load_lut():  # TODO Can we embed this LUT as a dict in the code?
 class Carbon(enca.ENCARun):
     """Carbon accounting class."""
 
-    run_type = enca.ENCA
+    run_type = enca.RunType.ENCA
     component = 'CARBON'
 
     #: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.
@@ -91,7 +91,7 @@ class Carbon(enca.ENCARun):
                         'C11_ha', 'C10_ha', 'C5_ha', 'C10_1_ha', 'C2_3_ha']
 
     def __init__(self, config):
-        """Initialize config template and default carbon run parameters."""
+        """Initialize config template."""
         super().__init__(config)
 
         self.config_template.update({

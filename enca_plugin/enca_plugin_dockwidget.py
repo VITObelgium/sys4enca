@@ -8,10 +8,18 @@ import yaml
 from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsTask
-from qgis.gui import QgsFileWidget
+from qgis.gui import QgsFileWidget, QgsDoubleSpinBox
 from qgis.utils import iface
 
 import enca.carbon as carbon
+import enca.carbon.npp as carbon_npp
+import enca.carbon.soil as carbon_soil
+import enca.carbon.soil_erosion as carbon_soil_erosion
+import enca.carbon.livestock as carbon_livestock
+import enca.carbon.fire_vuln as carbon_fire_vuln
+import enca.carbon.agriculture as carbon_agriculture
+import enca.carbon.fire as carbon_fire
+import enca.carbon.forest as carbon_forest
 import enca.components
 import enca.framework
 import enca.water as water
@@ -32,50 +40,91 @@ _tasks = []  #: global reference to currently launched tasks.
 
 #:  names of input widgets per component.
 # Note: names must match the name of the corresponding ui widget *and* the config key to which they refer.
-component_input_widgets = {
-    carbon.Carbon.component: [carbon.FOREST_AGB,
-                              carbon.FOREST_BGB,
-                              carbon.FOREST_LITTER,
-                              carbon.SOIL,
-                              carbon.LIVESTOCK,
-                              carbon.NPP,
-                              carbon.AGRICULTURE_CEREALS,
-                              carbon.AGRICULTURE_FIBER,
-                              carbon.AGRICULTURE_FRUIT,
-                              carbon.AGRICULTURE_OILCROP,
-                              carbon.AGRICULTURE_PULSES,
-                              carbon.AGRICULTURE_ROOTS,
-                              carbon.AGRICULTURE_CAFE,
-                              carbon.AGRICULTURE_VEGETABLES,
-                              carbon.AGRICULTURE_SUGAR,
-                              carbon.WOODREMOVAL,
-                              carbon.SOIL_EROSION,
-                              carbon.ILUP,
-                              carbon.CEH1,
-                              carbon.CEH4,
-                              carbon.CEH6,
-                              carbon.CEH7,
-                              carbon.COW,
-                              carbon.FIRE,
-                              carbon.FIRE_SPLIT,
-                              carbon.FIRE_INTEN],
-    water.Water.component: [water.USE_AGRI,
-                            water.USE_MUNI,
-                            water.EVAPO_RAINFED,
-                            water.PRECIPITATION,
-                            water.EVAPO,
-                            water.LT_PRECIPITATION,
-                            water.LT_EVAPO,
-                            water.DROUGHT_VULN,
-                            water.RIVER_LENGTH,
-                            water.LT_OUTFLOW,
-                            water.AQUIFER,
-                            water.SALINITY,
-                            water.HYDRO_LAKES,
-                            water.GLORIC_ADAPTED],
-    'INFRA': ['leac_result'],
-    'LEAC': ['base_year']
-}
+component_input_widgets = [
+    (carbon.Carbon.component, [
+        carbon.FOREST_AGB,
+        carbon.FOREST_BGB,
+        carbon.FOREST_LITTER,
+        carbon.SOIL,
+        carbon.LIVESTOCK,
+        carbon.NPP,
+        carbon.AGRICULTURE_CEREALS,
+        carbon.AGRICULTURE_FIBER,
+        carbon.AGRICULTURE_FRUIT,
+        carbon.AGRICULTURE_OILCROP,
+        carbon.AGRICULTURE_PULSES,
+        carbon.AGRICULTURE_ROOTS,
+        carbon.AGRICULTURE_CAFE,
+        carbon.AGRICULTURE_VEGETABLES,
+        carbon.AGRICULTURE_SUGAR,
+        carbon.WOODREMOVAL,
+        carbon.SOIL_EROSION,
+        carbon.ILUP,
+        carbon.CEH1,
+        carbon.CEH4,
+        carbon.CEH6,
+        carbon.CEH7,
+        carbon.COW,
+        carbon.FIRE,
+        carbon.FIRE_SPLIT,
+        carbon.FIRE_INTEN]),
+    (water.Water.component, [
+        water.USE_AGRI,
+        water.USE_MUNI,
+        water.EVAPO_RAINFED,
+        water.PRECIPITATION,
+        water.EVAPO,
+        water.LT_PRECIPITATION,
+        water.LT_EVAPO,
+        water.DROUGHT_VULN,
+        water.RIVER_LENGTH,
+        water.LT_OUTFLOW,
+        water.AQUIFER,
+        water.SALINITY,
+        water.HYDRO_LAKES,
+        water.GLORIC_ADAPTED]),
+    (carbon_npp.CarbonNPP.component, [
+        carbon_npp.GDMP_DIR,
+        carbon_npp.GDMP_2_NPP]),
+    (carbon_soil.CarbonSoil.component, [
+        carbon_soil.SEAL_ADJUST,
+        carbon_soil.SOC,
+        carbon_soil.SOC_MANGROVES,
+        carbon_soil.MANGROVE_CLASSES,
+        carbon_soil.NONSOIL_CLASSES,
+        carbon_soil.URBAN_CLASSES]),
+    (carbon_soil_erosion.CarbonErosion.component, [
+        carbon_soil_erosion.R_FACTOR_1,
+        carbon_soil_erosion.R_FACTOR_25,
+        carbon_soil_erosion.SOIL_CARBON_10,
+        carbon_soil_erosion.SOIL_CARBON_20,
+        carbon_soil_erosion.SOIL_CARBON_30,
+        carbon_soil_erosion.SOIL_LOSS_2001,
+        carbon_soil_erosion.SOIL_LOSS_2012]),
+    (carbon_livestock.CarbonLivestock.component, [
+        (carbon_livestock.LIVESTOCK_CARBON, carbon.livestock._livestock_types),
+        (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),
+        (carbon_livestock.WEIGHTS, carbon.livestock._livestock_types)]),
+    (carbon_fire_vuln, [
+       carbon_fire_vuln.DAILY_SEVERITY_RATING]),
+    (carbon_agriculture, [
+        carbon_agriculture.AGRICULTURE_DISTRIBUTION,
+        carbon_agriculture.AGRICULTURE_STATS]),
+    (carbon_fire, [
+        carbon_fire.BURNT_AREAS,
+        carbon_fire.FOREST_BIOMASS]),
+    (carbon_forest, [
+        carbon_forest.FAOFRA_AGB,
+        carbon_forest.FAOFRA_BGB,
+        carbon_forest.FAOFRA_LITTER,
+        carbon_forest.FAOFRA_WREM,
+        carbon_forest.FOREST_LC_CLASSES,
+        carbon_forest.LAND_COVER_FRACTION,
+        carbon_forest.WOOD_REMOVAL_LIMIT
+    ]),
+    ('INFRA', ['leac_result']),
+    ('LEAC', ['base_year'])
+]
 
 #: vector output files to be loaded after a run, with visualization parameters (keyword arguments for
 component_vector_layers = {
@@ -85,7 +134,8 @@ component_vector_layers = {
     water.Water.component: [(os.path.join('temp', 'WATER_Indices_SELU_{year}.gpkg'), dict(
         layer_name='TOTuseEW',
         attribute_name='W9_ha',
-        color_ramp='Blues'))]
+        color_ramp='Blues'))],
+    carbon_livestock.CarbonLivestock.component: []
 }
 
 def findChild(widget: QtWidgets.QWidget, name: str):
@@ -118,6 +168,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # http://doc.qt.io/qt-5/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+
+        self.set_up_component_dropdowns()
+        self.set_up_carbon_livestock()
 
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setIconSize(iface.iconSize(dockedToolbar=True))
@@ -160,13 +213,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.tier.addItem('2', 2)
         self.tier.addItem('3', 3)
 
-        # Set up references to QStackedWidget pages grouping inputs for different components
-        self.component_pages = {component: self.findChild(QtWidgets.QWidget, component)
-                                for component in {'CARBON', 'WATER', 'LEAC', 'INFRA'}}
-
         self.config_template = {
             'years': [self.year],
-            'component': self.component,
             'output_dir': self.output_dir,
             'aoi_name': self.aoi_name,
             'statistics_shape': self.data_areas,
@@ -176,6 +224,29 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             'continue': self.continue_run,
             'tier': self.tier
         }
+        self.component_templates = self.build_template_tree(component_input_widgets, self.run_types)
+
+    def set_up_component_dropdowns(self):
+        """Fill the dropdown menu for preprocessing/run/ accounts tabs, and connect signals."""
+        for i in range(self.run_types.count()):
+            tab = self.run_types.widget(i)
+            dropdown = findChild(tab, 'component')
+            components_stack = findChild(tab, 'components_stack')
+            for j in range(components_stack.count()):
+                dropdown.addItem(components_stack.widget(j).objectName())
+            dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
+
+    def set_up_carbon_livestock(self):
+        """Set up Carbon livestock key-value widgets."""
+        self.livestock_carbon.setLayout(QtWidgets.QFormLayout())
+        self.livestock_distribution.setLayout(QtWidgets.QFormLayout())
+        self.weights.setLayout(QtWidgets.QFormLayout())
+        for key in enca.carbon.livestock._livestock_types:
+            self.livestock_carbon.layout().addRow(key, QgsFileWidget(self, objectName=key))
+            self.livestock_distribution.layout().addRow(key, QgsFileWidget(self, objectName=key))
+            widget_weight = QgsDoubleSpinBox(self, objectName=key)
+            widget_weight.setRange(0., 1000.)
+            self.weights.layout().addRow(key, widget_weight)
 
     def saveConfig(self):
         """Save current ui state as a yaml config file."""
@@ -209,16 +280,25 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                              if key not in ('years', 'reporting_regions')}
             self.load_template(config, main_template)
 
+            # select the right tab (preprocessing/components/accounts), and the right component within that tab:
             component_name = config['component']
-            # TODO: later we need to select preprocessing/component/account tab first, and select component in that tab.
-            self.component.setCurrentText(component_name)
-            component_widget = self.component_pages[component_name]
+            run_class = enca.components.get_component(component_name)
+            run_type = run_class.run_type
+            # select tab:
+            run_type_tab = findChild(self.run_types, run_type.name)
+            self.run_types.setCurrentWidget(run_type_tab)
+            # select component:
+            component_page = findChild(run_type_tab, component_name)
+            component_combo = findChild(run_type_tab, 'component')
+            component_combo.setCurrentText(component_name)
+
             # handle run name:
-            findChild(component_widget, 'run_name').setText(config['run_name'])
+            try:
+                findChild(component_page, 'run_name').setText(config['run_name'])
+            except ValueError:
+                pass  # Not all input pages have a run_name widget yet
             # read other config values using the template
-            self.load_template(config, {component_name:
-                                            {key: findChild(component_widget, key)
-                                             for key in component_input_widgets[component_name]}})
+            self.load_template(config, {component_name: self.component_templates[component_name]})
 
         except BaseException as e:
             QtWidgets.QMessageBox.critical(self, 'Error loading config', f'Could not load config {filename}: {e}.')
@@ -241,10 +321,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return result
 
     def list_config_widgets(self):
-        result = self.list_widgets(self.config_template)
-        for component, keys in component_input_widgets.items():
-            component_widget = self.component_pages[component]
-            result += [findChild(component_widget, key) for key in keys]
+        result = self.list_widgets(self.config_template) + self.list_widgets(self.component_templates)
         return result
 
     def load_template(self, config, template):
@@ -273,7 +350,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def run(self):
         template = self.make_template()
-        taskname = f'{self.component.currentText()} run {template["run_name"].text()}'
+        taskname = f'{template["component"].currentText()} run {template["run_name"].text()}'
         task = Task(taskname, template, output_vectors=component_vector_layers[self.component.currentText()])
         _tasks.append(task)
         QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
@@ -283,18 +360,37 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.closingPlugin.emit()
         event.accept()
 
+    def build_template_tree(self, widget_names: list, root_widget: QtWidgets.QWidget):
+        result = {}
+        for entry in widget_names:
+            if isinstance(entry, tuple):
+                name, children = entry
+                result[name] = self.build_template_tree(children, findChild(root_widget, name))
+            else:
+                assert isinstance(entry, str)   # entry is the name of a widget
+                result[entry] = findChild(root_widget, entry)
+        return result
+
     def make_config(self):
         """Generate a config from current settings."""
         return expand_template(self.make_template())
 
     def make_template(self):
-        component = self.component.currentText()
-        component_widget = self.component_pages[component]
-        return {**self.config_template,
-                'run_name': findChild(component_widget, 'run_name'),
-                component: {key: findChild(component_widget, key)
-                            for key in component_input_widgets[component]}}
-
+        # Get the currently selected component.
+        # 1. see which tab we are on (preprocessing / components / accounts)
+        tab_runtype = self.run_types.currentWidget()
+        # 2. select the component form this tab
+        component_dropdown = findChild(tab_runtype, 'component')
+        component_name = component_dropdown.currentText()  # TODO fill component drop-down with user data corresponding to internal component name?
+        template = {**self.config_template,
+                    'component': component_dropdown,
+                    component_name: self.component_templates[component_name]}
+        component_widget = findChild(tab_runtype, component_name)
+        try:
+            template['run_name'] = findChild(component_widget, 'run_name')
+        except ValueError:  # Some pages are currently incomplete
+            pass
+        return template
 
 class Task(QgsTask):
 

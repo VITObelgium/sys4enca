@@ -6,6 +6,7 @@ import math
 import os
 import re
 import subprocess
+from contextlib import ExitStack
 from enum import Enum
 from importlib.metadata import version
 from os.path import splitext, basename, normpath
@@ -1835,6 +1836,44 @@ def coord_2_index(x, y, raster_x_min, raster_y_max, pixres, raster_x_max=None, r
             return index_row, index_column
         else:
             raise ValueError("The given coordinate is outside the dataset")
+
+
+def average_rasters(output_file, *rasters, block_shape=(1024, 1024), **profile_args):
+    """Calculate the average of a list of input rasters with same extent/resolution/projection.
+
+    Metadata tags are taken from the first raster in the list.
+
+    :param output_file: Name of the output file.
+    :param block_shape: Block shape to use during processing.
+    :param profile_args: Additional options for the output raster profile.
+
+    """
+    sum_rasters(output_file, rasters, weight=1./len(rasters), block_shape=block_shape, **profile_args)
+
+
+def sum_rasters(output_file, *rasters,
+                weight=1,
+                block_shape=(1024, 1024), dtype=rasterio.float32, compress='LZW', **profile_args):
+    """Calculate the sum of a list of input rasters with same extent/resolution/projection.
+
+    An optional weight can be provided (i.e. to calculate an average).
+    Metadata tags are taken from the first raster in the list.
+    """
+    with ExitStack() as stack:
+        input_ds = [stack.enter_context(rasterio.open(f)) for f in rasters]
+        src_tags = input_ds[0].tags()
+        del src_tags['AREA_OR_POINT']
+        fill_value = input_ds[0].nodata
+
+        profile = dict(input_ds[0].profile,
+                       tiled=True, blockxsize=block_shape[1], blockysize=block_shape[0],
+                       dtype=dtype, compress=compress, **profile_args)
+
+        with rasterio.open(output_file, 'w', **profile) as out:
+            out.update_tags(**src_tags)
+            for _, window in block_window_generator(block_shape, out.profile['height'], out.profile['width']):
+                result = sum(ds.read(1, window=window, masked=True) for ds in input_ds) * weight
+                out.write(result.filled(fill_value).astype(out.profile['dtype']), 1, window=window)
 
 
 #Might be interesting to move to Geoprocessing Class

@@ -85,7 +85,7 @@ input_codes = dict(
 class Water(enca.ENCARun):
     """Water accounting class."""
 
-    run_type = enca.ENCA
+    run_type = enca.RunType.ENCA
     component = 'WATER'
 
     #: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.

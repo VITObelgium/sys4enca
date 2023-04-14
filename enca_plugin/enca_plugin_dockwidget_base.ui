@@ -120,89 +120,461 @@
      </layout>
     </item>
     <item>
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="run_types">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
-      <widget class="QWidget" name="preprocessing_tab">
+      <widget class="QWidget" name="PREPROCESS">
        <attribute name="title">
         <string>Preprocessing</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QComboBox" name="comboBox_4">
-          <item>
-           <property name="text">
-            <string>Carbon Forest</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Land cover map</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Forest land cover classes</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Other preprocessing tasks...</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="component"/>
         </item>
         <item>
-         <widget class="QStackedWidget" name="stackedWidget_3">
-          <widget class="QWidget" name="page_3">
-           <widget class="QLabel" name="label_17">
-            <property name="geometry">
-             <rect>
-              <x>120</x>
-              <y>180</y>
-              <width>331</width>
-              <height>16</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>preprocessing settings here..,.</string>
-            </property>
-           </widget>
+         <widget class="QStackedWidget" name="components_stack">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="CARBON_NPP">
+           <layout class="QFormLayout" name="formLayout_7">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_57">
+              <property name="text">
+               <string>GDMP Files</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="GDMP_DIR">
+              <property name="storageMode">
+               <enum>QgsFileWidget::GetDirectory</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QgsDoubleSpinBox" name="GDMP_2_NPP"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_64">
+              <property name="text">
+               <string>GDMP to NPP conversion factor</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name">
+              <property name="text">
+               <string>carbon_npp</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_65">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
-          <widget class="QWidget" name="page_4"/>
+          <widget class="QWidget" name="CARBON_SOIL">
+           <layout class="QFormLayout" name="formLayout_8">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_17">
+              <property name="text">
+               <string>Mangrove landcover classes</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="mangrove_lc_classes"/>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_66">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name">
+              <property name="text">
+               <string>soil_carbon</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_67">
+              <property name="text">
+               <string>Urban landcover classes</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_68">
+              <property name="text">
+               <string>Non-soil landcover classes</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="urban_lc_classes"/>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="nonsoil_lc_classes"/>
+            </item>
+            <item row="4" column="1">
+             <widget class="QgsDoubleSpinBox" name="SEAL_ADJUST"/>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_69">
+              <property name="text">
+               <string>seal adjust</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_70">
+              <property name="text">
+               <string>Soil Organic Carbon</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_71">
+              <property name="text">
+               <string>Mangrove Soil Organic Carbon</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QgsFileWidget" name="SOC"/>
+            </item>
+            <item row="6" column="1">
+             <widget class="QgsFileWidget" name="SOC_MANGROVES"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="CARBON_SOIL_EROSION">
+           <layout class="QFormLayout" name="formLayout_9">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_58">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name">
+              <property name="text">
+               <string>soil_erosion_carbon</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_72">
+              <property name="text">
+               <string>R factor (1km resolution)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_73">
+              <property name="text">
+               <string>R factor (25km resolution)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_74">
+              <property name="text">
+               <string>Soil Carbon (10cm)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_75">
+              <property name="text">
+               <string>Soil Carbon (20cm)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_76">
+              <property name="text">
+               <string>Soil Carbon (30cm)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_77">
+              <property name="text">
+               <string>Soil Loss (2001)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_78">
+              <property name="text">
+               <string>Soil Loss (2021)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="R_factor_1km"/>
+            </item>
+            <item row="2" column="1">
+             <widget class="QgsFileWidget" name="R_factor_25km"/>
+            </item>
+            <item row="3" column="1">
+             <widget class="QgsFileWidget" name="soil_carbon_10cm"/>
+            </item>
+            <item row="4" column="1">
+             <widget class="QgsFileWidget" name="soil_carbon_20cm"/>
+            </item>
+            <item row="5" column="1">
+             <widget class="QgsFileWidget" name="soil_carbon_30cm"/>
+            </item>
+            <item row="6" column="1">
+             <widget class="QgsFileWidget" name="soil_loss_2001"/>
+            </item>
+            <item row="7" column="1">
+             <widget class="QgsFileWidget" name="soil_loss_2012"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="CARBON_LIVESTOCK">
+           <layout class="QFormLayout" name="formLayout_14">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_59">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="2">
+             <widget class="QGroupBox" name="livestock_distribution">
+              <property name="title">
+               <string>Livestock distribution</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="2">
+             <widget class="QGroupBox" name="livestock_carbon">
+              <property name="title">
+               <string>Livestock Carbon</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name">
+              <property name="text">
+               <string>carbon_livestock</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0" colspan="2">
+             <widget class="QGroupBox" name="weights">
+              <property name="title">
+               <string>Livestock Weight</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="CARBON_FIRE_VULNERABILITY">
+           <layout class="QFormLayout" name="formLayout_10">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_60">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name">
+              <property name="text">
+               <string>fire_vulnerability</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_79">
+              <property name="text">
+               <string>Daily Severity Rating</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="dsr"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="CARBON_AGRICULTURE">
+           <layout class="QFormLayout" name="formLayout_11">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_61">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_80">
+              <property name="text">
+               <string>Agriculture distribution</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_81">
+              <property name="text">
+               <string>Agriculture statistics</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="agriculture_distribution"/>
+            </item>
+            <item row="2" column="1">
+             <widget class="QgsFileWidget" name="agriculture_stats"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="CARBON_FIRE">
+           <layout class="QFormLayout" name="formLayout_12">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_62">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_82">
+              <property name="text">
+               <string>Forest Biomass</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_83">
+              <property name="text">
+               <string>Burnt Areas</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="forest_biomass"/>
+            </item>
+            <item row="2" column="1">
+             <widget class="QgsFileWidget" name="burnt_areas"/>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="CARBON_FOREST">
+           <layout class="QFormLayout" name="formLayout_13">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_63">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_84">
+              <property name="text">
+               <string>Forest land cover fraction</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_85">
+              <property name="text">
+               <string>Litter</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_86">
+              <property name="text">
+               <string>Above ground biomass</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_87">
+              <property name="text">
+               <string>Wood removal limit</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_88">
+              <property name="text">
+               <string>Below ground biomass</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QgsFileWidget" name="land_cover_fraction"/>
+            </item>
+            <item row="3" column="1">
+             <widget class="QgsFileWidget" name="wood_removal_limitation"/>
+            </item>
+            <item row="4" column="1">
+             <widget class="QgsFileWidget" name="faofra_agb"/>
+            </item>
+            <item row="5" column="1">
+             <widget class="QgsFileWidget" name="faofra_bgb"/>
+            </item>
+            <item row="7" column="1">
+             <widget class="QgsFileWidget" name="faofra_litter"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_89">
+              <property name="text">
+               <string>Forest land cover classes</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="forest_lc_classes"/>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_90">
+              <property name="text">
+               <string>Wood removals</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QgsFileWidget" name="faofra_wood_removals"/>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="component_tab">
+      <widget class="QWidget" name="ENCA">
        <attribute name="title">
         <string>Components</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QComboBox" name="component">
-          <item>
-           <property name="text">
-            <string>LEAC</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>INFRA</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>CARBON</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>WATER</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="component"/>
         </item>
         <item>
          <widget class="QScrollArea" name="scrollArea">
@@ -738,28 +1110,17 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="accounts_tab">
+      <widget class="QWidget" name="ACCOUNT">
        <attribute name="title">
         <string>Accounts</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QComboBox" name="comboBox_3">
-          <item>
-           <property name="text">
-            <string>Yearly total</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Trend</string>
-           </property>
-          </item>
-         </widget>
+         <widget class="QComboBox" name="component"/>
         </item>
         <item>
-         <widget class="QStackedWidget" name="stackedWidget_2">
-          <widget class="QWidget" name="page">
+         <widget class="QStackedWidget" name="components_stack">
+          <widget class="QWidget" name="TOTAL">
            <widget class="QLabel" name="label_18">
             <property name="geometry">
              <rect>
@@ -774,7 +1135,7 @@
             </property>
            </widget>
           </widget>
-          <widget class="QWidget" name="page_2"/>
+          <widget class="QWidget" name="TREND"/>
          </widget>
         </item>
        </layout>
@@ -785,6 +1146,11 @@
   </widget>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsDoubleSpinBox</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>qgsdoublespinbox.h</header>
+  </customwidget>
   <customwidget>
    <class>QgsFileWidget</class>
    <extends>QWidget</extends>
@@ -804,32 +1170,12 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>comboBox_3</tabstop>
   <tabstop>tier</tabstop>
   <tabstop>aoi_name</tabstop>
-  <tabstop>tabWidget</tabstop>
-  <tabstop>component</tabstop>
+  <tabstop>run_types</tabstop>
   <tabstop>base_year</tabstop>
   <tabstop>year</tabstop>
-  <tabstop>comboBox_4</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>component</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>components_stack</receiver>
-   <slot>setCurrentIndex(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>95</x>
-     <y>524</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>131</x>
-     <y>545</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
