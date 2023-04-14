@@ -631,7 +631,7 @@
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="INFRA">
+              <widget class="QWidget" name="infra">
                <layout class="QFormLayout" name="formLayout_5">
                 <item row="0" column="0">
                  <widget class="QLabel" name="label_11">
@@ -647,22 +647,178 @@
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="0">
+                <item row="1" column="0" colspan="2">
+                 <widget class="QGroupBox" name="paths_indices">
+                  <property name="title">
+                   <string>Indices</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0" colspan="2">
+                 <widget class="QGroupBox" name="general">
+                  <property name="title">
+                   <string>General</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_15">
+                   <item row="0" column="1">
+                    <widget class="QgsDoubleSpinBox" name="gaussian_kernel_radius"/>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_91">
+                     <property name="text">
+                      <string>Gaussian radius</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QgsDoubleSpinBox" name="gaussian_sigma"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_92">
+                     <property name="text">
+                      <string>Gaussian sigma</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_93">
+                     <property name="text">
+                      <string>Urban land cover classes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_94">
+                     <property name="text">
+                      <string>Water land cover classes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QLineEdit" name="lc_urban"/>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="lc_water"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="3" column="0" colspan="2">
+                 <widget class="QGroupBox" name="nlep">
+                  <property name="title">
+                   <string>nlep</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_16">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_95">
+                     <property name="text">
+                      <string>LUT GBLI</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsFileWidget" name="lut_gbli"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_96">
+                     <property name="text">
+                      <string>Naturalis</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QgsFileWidget" name="naturalis"/>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_97">
+                     <property name="text">
+                      <string>OSM</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QgsFileWidget" name="osm"/>
+                   </item>
+                   <item row="2" column="0" colspan="2">
+                    <widget class="QGroupBox" name="catchments">
+                     <property name="title">
+                      <string>Catchments</string>
+                     </property>
+                     <layout class="QFormLayout" name="formLayout_17">
+                      <item row="0" column="0">
+                       <widget class="QLabel" name="label_98">
+                        <property name="text">
+                         <string>6</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0">
+                       <widget class="QLabel" name="label_99">
+                        <property name="text">
+                         <string>8</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="0">
+                       <widget class="QLabel" name="label_100">
+                        <property name="text">
+                         <string>12</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="1">
+                       <widget class="QgsFileWidget" name="catchment_6"/>
+                      </item>
+                      <item row="1" column="1">
+                       <widget class="QgsFileWidget" name="catchment_8"/>
+                      </item>
+                      <item row="2" column="1">
+                       <widget class="QgsFileWidget" name="catchment_12"/>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="4" column="0" colspan="2">
+                 <widget class="QGroupBox" name="nrep">
+                  <property name="title">
+                   <string>nrep</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_18">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_101">
+                     <property name="text">
+                      <string>DAMS</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_102">
+                     <property name="text">
+                      <string>GLORIC</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsFileWidget" name="dams"/>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QgsFileWidget" name="gloric"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="5" column="0">
                  <widget class="QLabel" name="label_12">
                   <property name="text">
                    <string>LEAC result</string>
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="leac_result"/>
-                </item>
-                <item row="2" column="0">
-                 <widget class="QLabel" name="label_13">
-                  <property name="text">
-                   <string>other INFRA inputs...</string>
-                  </property>
-                 </widget>
+                <item row="5" column="1">
+                 <widget class="QgsFileWidget" name="leac"/>
                 </item>
                </layout>
               </widget>

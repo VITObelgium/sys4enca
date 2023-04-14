@@ -23,6 +23,7 @@ import enca.carbon.forest as carbon_forest
 import enca.components
 import enca.framework
 import enca.water as water
+import enca.infra as infra
 from enca.framework.errors import Error
 from enca.framework.config_check import ConfigError
 from enca.framework.run import Cancelled
@@ -122,8 +123,6 @@ component_input_widgets = [
         carbon_forest.LAND_COVER_FRACTION,
         carbon_forest.WOOD_REMOVAL_LIMIT
     ]),
-    ('INFRA', ['leac_result']),
-    ('LEAC', ['base_year'])
 ]
 
 #: vector output files to be loaded after a run, with visualization parameters (keyword arguments for
@@ -171,6 +170,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.set_up_component_dropdowns()
         self.set_up_carbon_livestock()
+        self.set_up_infra()
 
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setIconSize(iface.iconSize(dockedToolbar=True))
@@ -247,6 +247,14 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             widget_weight = QgsDoubleSpinBox(self, objectName=key)
             widget_weight.setRange(0., 1000.)
             self.weights.layout().addRow(key, widget_weight)
+
+    def set_up_infra(self):
+        """Set up Infra indices input widgets."""
+        widget_infra = self.findChild(QtWidgets.QWidget, infra.Infra.component)
+        widget_infra_indices = widget_infra.findChild(QtWidgets.QGroupBox, 'paths_indices')
+        widget_infra_indices.setLayout(QtWidgets.QFormLayout())
+        for idx in infra.INDICES:
+            widget_infra_indices.layout().addRow(idx, QgsFileWidget(self, objectName=idx))
 
     def saveConfig(self):
         """Save current ui state as a yaml config file."""
