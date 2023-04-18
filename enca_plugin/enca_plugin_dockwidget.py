@@ -25,7 +25,7 @@ import enca.framework
 import enca.water as water
 import enca.infra as infra
 from enca.framework.errors import Error
-from enca.framework.config_check import ConfigError
+from enca.framework.config_check import ConfigError, YEARLY
 from enca.framework.run import Cancelled
 
 from .help import show_help
@@ -123,6 +123,29 @@ component_input_widgets = [
         carbon_forest.LAND_COVER_FRACTION,
         carbon_forest.WOOD_REMOVAL_LIMIT
     ]),
+    (infra.Infra.component, [
+        ('paths_indices', infra.INDICES),
+        ('general', [
+            'gaussian_kernel_radius',
+            'gaussian_sigma',
+            'lc_urban',
+            'lc_water']),
+        ('nlep', [
+            'lut_gbli',
+            'naturalis',
+            'osm',
+            ('catchments', [
+                'catchment_6',
+                'catchment_8',
+                'catchment_12'
+            ])
+        ]),
+        ('nrep', [
+            'dams',
+            'gloric'
+        ]),
+        ('leac', [YEARLY])
+    ])
 ]
 
 #: vector output files to be loaded after a run, with visualization parameters (keyword arguments for
@@ -370,6 +393,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def build_template_tree(self, widget_names: list, root_widget: QtWidgets.QWidget):
         result = {}
+        # special case: Yearly inputs
+        if widget_names == [YEARLY]:
+            return {self.year: root_widget}
         for entry in widget_names:
             if isinstance(entry, tuple):
                 name, children = entry
