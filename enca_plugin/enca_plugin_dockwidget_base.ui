@@ -189,7 +189,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QLineEdit" name="mangrove_lc_classes_"/>
+             <widget class="IntList" name="mangrove_lc_classes_"/>
             </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label_66">
@@ -220,10 +220,10 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QLineEdit" name="urban_lc_classes_"/>
+             <widget class="IntList" name="urban_lc_classes_"/>
             </item>
             <item row="3" column="1">
-             <widget class="QLineEdit" name="nonsoil_lc_classes_"/>
+             <widget class="IntList" name="nonsoil_lc_classes_"/>
             </item>
             <item row="4" column="1">
              <widget class="QgsDoubleSpinBox" name="SEAL_ADJUST_"/>
@@ -549,9 +549,6 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QgsFileWidget" name="forest_lc_classes_"/>
-            </item>
             <item row="6" column="0">
              <widget class="QLabel" name="label_90">
               <property name="text">
@@ -561,6 +558,9 @@
             </item>
             <item row="6" column="1">
              <widget class="QgsFileWidget" name="faofra_wood_removals_"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="IntList" name="forest_lc_classes_"/>
             </item>
            </layout>
           </widget>
@@ -695,10 +695,10 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QLineEdit" name="lc_urban_"/>
+                    <widget class="IntList" name="lc_urban_"/>
                    </item>
                    <item row="3" column="1">
-                    <widget class="QLineEdit" name="lc_water_"/>
+                    <widget class="IntList" name="lc_water_"/>
                    </item>
                   </layout>
                  </widget>
@@ -1324,10 +1324,16 @@
    <header>enca_plugin/region_picker.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>IntList</class>
+   <extends>QLineEdit</extends>
+   <header location="global">enca_plugin/integerlist.h</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>tier</tabstop>
   <tabstop>aoi_name</tabstop>
+  <tabstop>run_types</tabstop>
   <tabstop>year</tabstop>
  </tabstops>
  <resources/>

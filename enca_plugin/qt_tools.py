@@ -21,7 +21,7 @@ from qgis.PyQt import QtWidgets, QtCore
 from qgis.core import QgsMessageLog, Qgis
 from qgis.gui import QgsFileWidget, QgsCheckableComboBox, QgsFilterLineEdit,  QgsSpinBox
 
-from .region_picker import RegionPicker
+from .integerlist import IntList
 from .keyvalue_files import KeyValueFiles
 
 def expand_template(template):
@@ -44,6 +44,8 @@ def expand_template(template):
             return user_data
         # no user data -> return currentText()
         return template.currentText()
+    if isinstance(template, IntList):
+        return template.value()
     if isinstance(template, QgsFilterLineEdit):
         return template.value()
     if isinstance(template, QtWidgets.QLineEdit):
@@ -69,6 +71,8 @@ def writeWidget(widget, value):
         if value == '':
             value = None
         widget.lineEdit().setValue(value)
+    elif isinstance(widget, IntList):
+        widget.setValue(value)
     elif isinstance(widget, QgsFilterLineEdit):
         widget.setValue(value)
     elif isinstance(widget, QtWidgets.QLineEdit):
