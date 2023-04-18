@@ -41,9 +41,9 @@ class Infra(enca.ENCARun):
                 'nlep' : {
                     "lut_gbli" : ConfigItem(),
                     "naturalis": ConfigRaster(), #should be changed to shape however can't seem to find original file
-                    "catchments" : {6 : ConfigShape(),
-                                8 : ConfigShape(),
-                                12 : ConfigShape()},
+                    "catchments" : {'catchment_6' : ConfigShape(),
+                                    'catchment_8' : ConfigShape(),
+                                    'catchment_12' : ConfigShape()},
                     "osm" : ConfigShape()
                 },
                 'nrep' : {

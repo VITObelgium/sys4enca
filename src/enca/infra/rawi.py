@@ -38,7 +38,7 @@ class RAWI(object):
         self.lc = config["infra"]["leac"]
         self.dams = config["infra"]["nrep"]["dams"]
         self.gloric = config["infra"]["nrep"]["gloric"]
-        self.shapefile_catchment= config["infra"]["nlep"]["catchments"][12]
+        self.shapefile_catchment= config["infra"]["nlep"]["catchments"]['catchment_12']
         self.lc_water = config["infra"]["general"]["lc_water"]
         self.years = runObject.years
         self.block_shape = (2048,2048)
