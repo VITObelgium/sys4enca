@@ -24,6 +24,7 @@ import enca.components
 import enca.framework
 import enca.water as water
 import enca.infra as infra
+import enca.leac as leac
 from enca.framework.errors import Error
 from enca.framework.config_check import ConfigError, YEARLY
 from enca.framework.run import Cancelled
@@ -144,7 +145,20 @@ component_input_widgets = [
             'dams',
             'gloric'
         ]),
-        ('leac', [YEARLY])
+        ('leac_result', [YEARLY])
+    ]),
+    (leac.Leac.component, [
+        'lut_ct_lc',
+        'lut_ct_lcf',
+        'lut_lc',
+        'lut_lc2psclc',
+        'lut_lcc',
+        'lut_lcflow_C',
+        'lut_lcflow_F',
+        'lut_lcflows',
+        ('general', [
+            'max_lc_classes'
+        ])
     ])
 ]
 

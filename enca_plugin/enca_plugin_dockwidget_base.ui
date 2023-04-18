@@ -596,7 +596,7 @@
               <property name="currentIndex">
                <number>0</number>
               </property>
-              <widget class="QWidget" name="LEAC_">
+              <widget class="QWidget" name="leac_">
                <layout class="QFormLayout" name="formLayout_4">
                 <item row="0" column="0">
                  <widget class="QLabel" name="label_8">
@@ -615,19 +615,101 @@
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_9">
                   <property name="text">
-                   <string>Base year</string>
+                   <string>LUT ct lc</string>
                   </property>
                  </widget>
                 </item>
                 <item row="2" column="0">
                  <widget class="QLabel" name="label_10">
                   <property name="text">
-                   <string>other LEAC inputs...</string>
+                   <string>LUT ct lcf</string>
                   </property>
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsSpinBox" name="base_year_"/>
+                 <widget class="QgsFileWidget" name="lut_ct_lc_"/>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="lut_ct_lcf_"/>
+                </item>
+                <item row="10" column="0" colspan="2">
+                 <widget class="QGroupBox" name="general_1">
+                  <property name="title">
+                   <string>General</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_19">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_13">
+                     <property name="text">
+                      <string>max lc classes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsSpinBox" name="max_lc_classes_"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QLabel" name="label_103">
+                  <property name="text">
+                   <string>LUT lc</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QLabel" name="label_105">
+                  <property name="text">
+                   <string>LUT lcflow_F</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QLabel" name="label_106">
+                  <property name="text">
+                   <string>LUT lcflow_C</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QLabel" name="label_107">
+                  <property name="text">
+                   <string>LUT lc2psclc</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QgsFileWidget" name="lut_lc_"/>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QgsFileWidget" name="lut_lc2psclc_"/>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcflow_C_"/>
+                </item>
+                <item row="7" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcflow_F_"/>
+                </item>
+                <item row="8" column="0">
+                 <widget class="QLabel" name="label_108">
+                  <property name="text">
+                   <string>LUT lcflows</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="8" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcflows_"/>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QLabel" name="label_104">
+                  <property name="text">
+                   <string>LUT lcc</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcc_"/>
                 </item>
                </layout>
               </widget>
@@ -818,7 +900,7 @@
                  </widget>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QgsFileWidget" name="leac_"/>
+                 <widget class="QgsFileWidget" name="leac_result_"/>
                 </item>
                </layout>
               </widget>

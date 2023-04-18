@@ -48,7 +48,7 @@ class Infra(enca.ENCARun):
                     "gloric" : ConfigShape()
 
                 },
-                'leac' : {YEARLY : ConfigRaster(optional = True)},
+                'leac_result' : {YEARLY : ConfigRaster(optional = True)},
             }})
         self.check_leac()
         self.make_output_filenames()
@@ -432,9 +432,9 @@ class Infra(enca.ENCARun):
     def check_leac(self):
         logger.info("Checking if LEAC is available")
         for year in self.years:
-            if year in self.config["infra"]["leac"]:
+            if year in self.config["infra"]["leac_result"]:
                 logger.info("leac information was manual added")
-                # basename = os.path.basename(self.config["infra"]["leac"][year])
+                # basename = os.path.basename(self.config["infra"]["leac_result"][year])
                 continue
             expected_path = os.path.join(self.temp_dir.replace(self.component, 'leac'),
                                          f'cci_LC_{year}_100m_3857_PSCLC.tif')
@@ -442,7 +442,7 @@ class Infra(enca.ENCARun):
                 logger.error('It seems that no input leac location was given and that the default location ' +\
                              f'{expected_path} does not contain a valid raster. please run leac module first.' )
             else:
-                self.config.update({self.component : {'leac' : {year : expected_path}}})
+                self.config.update({self.component : {'leac_result' : {year : expected_path}}})
 
     def make_output_filenames(self):
         #easier typing
@@ -457,7 +457,7 @@ class Infra(enca.ENCARun):
         self.leac_gbli_diff = dict()
 
         for idx, year in enumerate(self.years):
-            psclc = self.config["infra"]["leac"][year]
+            psclc = self.config["infra"]["leac_result"][year]
             basic_file = os.path.splitext(os.path.basename(psclc))[0]
             file = f'{basic_file}_gbli_nosm.tif'
             self.leac_gbli_nosm[year] = os.path.join(self.temp_dir(),file)

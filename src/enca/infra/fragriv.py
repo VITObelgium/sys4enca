@@ -26,7 +26,7 @@ class FRAGRIV(object):
         '''
         config = runObject.config
         self.years = runObject.years
-        self.lc = config["infra"]["leac"]
+        self.lc = config["infra"]["leac_result"]
         self.hybas = config["infra"]["nlep"]["catchments"]
         self.dams = config["infra"]["nrep"]["dams"]
         self.fragriv = runObject.fragriv

@@ -138,7 +138,7 @@ class LFI(object):
             for year in self.years:
                 self.landcover[year] = '/data/nca_vol1/aux_input/preprocessed_data/NLEP/PNMB/PNMB_Urban_'+str(year)+'_3857.sdat'
         else:
-            self.landcover = runObject.config["infra"]["leac"]
+            self.landcover = runObject.config["infra"]["leac_result"]
     
     def intersect_Catchment_OSM(self,basin,merged_roadrails):
 
