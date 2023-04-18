@@ -22,9 +22,6 @@ class Infra(enca.ENCARun):
     component = 'infra'
     #id_col_reporting = "GID_0"
 
-
-
-
     def __init__(self, config):
         super().__init__(config)
 
@@ -57,7 +54,6 @@ class Infra(enca.ENCARun):
         self.make_output_filenames()
 
     def _start(self):
-
 
         logger.debug('Hello from ENCA Infra')
 
@@ -93,7 +89,7 @@ class Infra(enca.ENCARun):
         logger.info('* Indices available')
 
         # group INFRA account per reporting area -> done in TEC
-        print('* Create INFRA account table')
+        logger.debug('* Create INFRA account table')
         for year in self.years:
             #5s
             logger.info('** processing year {} ...'.format(year))
@@ -229,13 +225,13 @@ class Infra(enca.ENCARun):
         df['EIIUV']= df['EISUI']  * df['EIH']
 
         # save to disk
-        print('** save to disk shapefile')
+        logger.debug('** save to disk shapefile')
         df.to_file(self.path_results_infra[year], driver='ESRI Shapefile')
 
         # now drop geometry polygons to write out csv
         df.drop('geometry', axis=1)
 
-        print('** save to disk csv for year: {}'.format(year))
+        logger.debug('** save to disk csv for year: %s', year)
         df.to_csv(self.path_results_infra_csv[year], na_rep=0, index=False)
 
 
@@ -284,7 +280,7 @@ class Infra(enca.ENCARun):
 
         #2. loop over all regions
         for pArea in self.reporting_shape.index:
-            print('**** {}'.format(pArea))
+            logger.debug('**** %s', pArea)
             #first special case
             if pArea == 'all':
                 #df_grouped = df.merge(df_ad, on=ID_FIELD)
@@ -395,7 +391,7 @@ class Infra(enca.ENCARun):
         df['Area_delta'] = (df['Area_poly'] - df["Area_rast"]*m2_2ha) * 100.0 / df['Area_poly']
 
         #create final pandas dataframe to save to disk
-        print('** generate result table...')
+        logger.debug('** generate result table...')
         df['EIP1_12'] = df['EIP1_11'] * df['Area_rast']
         df['EIP1_12_ha'] = df['EIP1_12'] / df['Area_poly']
         df['EIP2'] = df['EIP1_12'] * df['EIP1_2'] * df['EIP1_3']
@@ -417,18 +413,16 @@ class Infra(enca.ENCARun):
             if list(col.keys())[0] in df.columns:
                 df = df.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
 
-
         df.crs = self.accord.reporting_profile.get('crs')
 
         # save to disk
-        print('** save to disk shapefile')
+        logger.debug('** save to disk shapefile')
         df.to_file(self.path_results_eip[year], driver='ESRI Shapefile')
 
         #now drop geometry polygons to write out csv
         df = df.drop('geometry', axis=1).drop('Area_delta', axis=1)
 
-
-        print('** save to disk csv for year: {}'.format(year))
+        logger.debug('** save to disk csv for year: %s', year)
         #get list of columns specific for given year
         #dees snap ik niet goed want alle columns zijn net hernamed
         #lExtract = [x for x in df.columns if '_'+str(year) in x]
@@ -549,8 +543,6 @@ class Infra(enca.ENCARun):
             file = os.path.splitext(os.path.basename(self.config["infra"]["nlep"]["catchments"][basin]))[0]
             self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + 'fragriv.tif')
 
-
-
         #accounting results
 
         self.path_results_eip = {year:os.path.join(self.temp_dir(), 'NCA_INFRA-EIP_{}_SELU_{}.shp'.format(self.aoi_name, year))
@@ -561,26 +553,3 @@ class Infra(enca.ENCARun):
                                    for year in self.years}
 
         self.report = {year:os.path.join(self.reports, 'CECN_infra_report_year-{}_for_{}.csv'.format(year, '{}')) for year in self.years}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
