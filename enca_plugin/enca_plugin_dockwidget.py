@@ -169,7 +169,7 @@ def findChild(widget: QtWidgets.QWidget, name: str):
     """
     try:
         result, = widget.findChildren(QtWidgets.QWidget,
-                                      QtCore.QRegularExpression(f'^{QtCore.QRegularExpression.escape(name)}\\d*$'))
+                                      QtCore.QRegularExpression(f'^{QtCore.QRegularExpression.escape(name)}_\\d*$'))
     except ValueError:
         QgsMessageLog.logMessage(f'findChildren() did not find a unique result for widget name "{name}"',
                                  level=Qgis.Critical)
@@ -256,28 +256,30 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             dropdown = findChild(tab, 'component')
             components_stack = findChild(tab, 'components_stack')
             for j in range(components_stack.count()):
-                dropdown.addItem(components_stack.widget(j).objectName())
+                # TODO use separate internal values and display values (using Qt.User data)
+                dropdown.addItem(components_stack.widget(j).objectName()[:-1])  # cut off trailing '_'
             dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
     def set_up_carbon_livestock(self):
         """Set up Carbon livestock key-value widgets."""
-        self.livestock_carbon.setLayout(QtWidgets.QFormLayout())
-        self.livestock_distribution.setLayout(QtWidgets.QFormLayout())
-        self.weights.setLayout(QtWidgets.QFormLayout())
+        self.livestock_carbon_.setLayout(QtWidgets.QFormLayout())
+        self.livestock_distribution_.setLayout(QtWidgets.QFormLayout())
+        self.weights_.setLayout(QtWidgets.QFormLayout())
         for key in enca.carbon.livestock._livestock_types:
-            self.livestock_carbon.layout().addRow(key, QgsFileWidget(self, objectName=key))
-            self.livestock_distribution.layout().addRow(key, QgsFileWidget(self, objectName=key))
-            widget_weight = QgsDoubleSpinBox(self, objectName=key)
+            self.livestock_carbon_.layout().addRow(key, QgsFileWidget(self, objectName=key + '_'))
+            self.livestock_distribution_.layout().addRow(key, QgsFileWidget(self, objectName=key + '_'))
+            widget_weight = QgsDoubleSpinBox(self, objectName=key + '_')
             widget_weight.setRange(0., 1000.)
-            self.weights.layout().addRow(key, widget_weight)
+            self.weights_.layout().addRow(key, widget_weight)
 
     def set_up_infra(self):
         """Set up Infra indices input widgets."""
-        widget_infra = self.findChild(QtWidgets.QWidget, infra.Infra.component)
-        widget_infra_indices = widget_infra.findChild(QtWidgets.QGroupBox, 'paths_indices')
+        widget_infra = self.findChild(QtWidgets.QWidget, infra.Infra.component + '_')
+        widget_infra_indices = widget_infra.findChild(QtWidgets.QGroupBox, 'paths_indices_')
         widget_infra_indices.setLayout(QtWidgets.QFormLayout())
         for idx in infra.INDICES:
-            widget_infra_indices.layout().addRow(idx, QgsFileWidget(self, objectName=idx))
+            # Add suffix '_' to index widget object names because they end in an integer
+            widget_infra_indices.layout().addRow(idx, QgsFileWidget(self, objectName=idx + '_'))
 
     def saveConfig(self):
         """Save current ui state as a yaml config file."""
