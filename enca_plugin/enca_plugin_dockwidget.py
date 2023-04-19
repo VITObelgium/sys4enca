@@ -23,8 +23,10 @@ import enca.carbon.forest as carbon_forest
 import enca.components
 import enca.framework
 import enca.water as water
+import enca.infra as infra
+import enca.leac as leac
 from enca.framework.errors import Error
-from enca.framework.config_check import ConfigError
+from enca.framework.config_check import ConfigError, YEARLY
 from enca.framework.run import Cancelled
 
 from .help import show_help
@@ -105,15 +107,15 @@ component_input_widgets = [
         (carbon_livestock.LIVESTOCK_CARBON, carbon.livestock._livestock_types),
         (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),
         (carbon_livestock.WEIGHTS, carbon.livestock._livestock_types)]),
-    (carbon_fire_vuln, [
+    (carbon_fire_vuln.CarbonFireVulnerability.component, [
        carbon_fire_vuln.DAILY_SEVERITY_RATING]),
-    (carbon_agriculture, [
+    (carbon_agriculture.CarbonAgriculture.component, [
         carbon_agriculture.AGRICULTURE_DISTRIBUTION,
         carbon_agriculture.AGRICULTURE_STATS]),
-    (carbon_fire, [
+    (carbon_fire.CarbonFire.component, [
         carbon_fire.BURNT_AREAS,
         carbon_fire.FOREST_BIOMASS]),
-    (carbon_forest, [
+    (carbon_forest.CarbonForest.component, [
         carbon_forest.FAOFRA_AGB,
         carbon_forest.FAOFRA_BGB,
         carbon_forest.FAOFRA_LITTER,
@@ -122,8 +124,43 @@ component_input_widgets = [
         carbon_forest.LAND_COVER_FRACTION,
         carbon_forest.WOOD_REMOVAL_LIMIT
     ]),
-    ('INFRA', ['leac_result']),
-    ('LEAC', ['base_year'])
+    (infra.Infra.component, [
+        ('paths_indices', infra.INDICES),
+        ('general', [
+            'gaussian_kernel_radius',
+            'gaussian_sigma',
+            'lc_urban',
+            'lc_water']),
+        ('nlep', [
+            'lut_gbli',
+            'naturalis',
+            'osm',
+            ('catchments', [
+                'catchment_6',
+                'catchment_8',
+                'catchment_12'
+            ])
+        ]),
+        ('nrep', [
+            'dams',
+            'gloric'
+        ]),
+        ('leac_result', [YEARLY]),
+        'lut_infra',
+    ]),
+    (leac.Leac.component, [
+        'lut_ct_lc',
+        'lut_ct_lcf',
+        'lut_lc',
+        'lut_lc2psclc',
+        'lut_lcc',
+        'lut_lcflow_C',
+        'lut_lcflow_F',
+        'lut_lcflows',
+        ('general', [
+            'max_lc_classes'
+        ])
+    ])
 ]
 
 #: vector output files to be loaded after a run, with visualization parameters (keyword arguments for
@@ -147,7 +184,7 @@ def findChild(widget: QtWidgets.QWidget, name: str):
     """
     try:
         result, = widget.findChildren(QtWidgets.QWidget,
-                                      QtCore.QRegularExpression(f'^{QtCore.QRegularExpression.escape(name)}\\d*$'))
+                                      QtCore.QRegularExpression(f'^{QtCore.QRegularExpression.escape(name)}_\\d*$'))
     except ValueError:
         QgsMessageLog.logMessage(f'findChildren() did not find a unique result for widget name "{name}"',
                                  level=Qgis.Critical)
@@ -171,6 +208,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.set_up_component_dropdowns()
         self.set_up_carbon_livestock()
+        self.set_up_infra()
 
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setIconSize(iface.iconSize(dockedToolbar=True))
@@ -233,20 +271,30 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             dropdown = findChild(tab, 'component')
             components_stack = findChild(tab, 'components_stack')
             for j in range(components_stack.count()):
-                dropdown.addItem(components_stack.widget(j).objectName())
+                # TODO use separate internal values and display values (using Qt.User data)
+                dropdown.addItem(components_stack.widget(j).objectName()[:-1])  # cut off trailing '_'
             dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
     def set_up_carbon_livestock(self):
         """Set up Carbon livestock key-value widgets."""
-        self.livestock_carbon.setLayout(QtWidgets.QFormLayout())
-        self.livestock_distribution.setLayout(QtWidgets.QFormLayout())
-        self.weights.setLayout(QtWidgets.QFormLayout())
+        self.livestock_carbon_.setLayout(QtWidgets.QFormLayout())
+        self.livestock_distribution_.setLayout(QtWidgets.QFormLayout())
+        self.weights_.setLayout(QtWidgets.QFormLayout())
         for key in enca.carbon.livestock._livestock_types:
-            self.livestock_carbon.layout().addRow(key, QgsFileWidget(self, objectName=key))
-            self.livestock_distribution.layout().addRow(key, QgsFileWidget(self, objectName=key))
-            widget_weight = QgsDoubleSpinBox(self, objectName=key)
+            self.livestock_carbon_.layout().addRow(key, QgsFileWidget(self, objectName=key + '_'))
+            self.livestock_distribution_.layout().addRow(key, QgsFileWidget(self, objectName=key + '_'))
+            widget_weight = QgsDoubleSpinBox(self, objectName=key + '_')
             widget_weight.setRange(0., 1000.)
-            self.weights.layout().addRow(key, widget_weight)
+            self.weights_.layout().addRow(key, widget_weight)
+
+    def set_up_infra(self):
+        """Set up Infra indices input widgets."""
+        widget_infra = self.findChild(QtWidgets.QWidget, infra.Infra.component + '_')
+        widget_infra_indices = widget_infra.findChild(QtWidgets.QGroupBox, 'paths_indices_')
+        widget_infra_indices.setLayout(QtWidgets.QFormLayout())
+        for idx in infra.INDICES:
+            # Add suffix '_' to index widget object names because they end in an integer
+            widget_infra_indices.layout().addRow(idx, QgsFileWidget(self, objectName=idx + '_'))
 
     def saveConfig(self):
         """Save current ui state as a yaml config file."""
@@ -351,7 +399,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def run(self):
         template = self.make_template()
         taskname = f'{template["component"].currentText()} run {template["run_name"].text()}'
-        task = Task(taskname, template, output_vectors=component_vector_layers[self.component.currentText()])
+        task = Task(taskname, template, output_vectors=component_vector_layers.get(template["component"].currentText(), []))
         _tasks.append(task)
         QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
         QgsApplication.taskManager().addTask(task)
@@ -362,6 +410,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def build_template_tree(self, widget_names: list, root_widget: QtWidgets.QWidget):
         result = {}
+        # special case: Yearly inputs
+        if widget_names == [YEARLY]:
+            return {self.year: root_widget}
         for entry in widget_names:
             if isinstance(entry, tuple):
                 name, children = entry

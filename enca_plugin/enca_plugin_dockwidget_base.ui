@@ -124,20 +124,20 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="PREPROCESS">
+      <widget class="QWidget" name="PREPROCESS_">
        <attribute name="title">
         <string>Preprocessing</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QComboBox" name="component"/>
+         <widget class="QComboBox" name="component_"/>
         </item>
         <item>
-         <widget class="QStackedWidget" name="components_stack">
+         <widget class="QStackedWidget" name="components_stack_">
           <property name="currentIndex">
            <number>0</number>
           </property>
-          <widget class="QWidget" name="CARBON_NPP">
+          <widget class="QWidget" name="CARBON_NPP_">
            <layout class="QFormLayout" name="formLayout_7">
             <item row="1" column="0">
              <widget class="QLabel" name="label_57">
@@ -147,14 +147,14 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QgsFileWidget" name="GDMP_DIR">
+             <widget class="QgsFileWidget" name="GDMP_DIR_">
               <property name="storageMode">
                <enum>QgsFileWidget::GetDirectory</enum>
               </property>
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QgsDoubleSpinBox" name="GDMP_2_NPP"/>
+             <widget class="QgsDoubleSpinBox" name="GDMP_2_NPP_"/>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="label_64">
@@ -164,7 +164,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name">
+             <widget class="QLineEdit" name="run_name_">
               <property name="text">
                <string>carbon_npp</string>
               </property>
@@ -179,7 +179,7 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="CARBON_SOIL">
+          <widget class="QWidget" name="CARBON_SOIL_">
            <layout class="QFormLayout" name="formLayout_8">
             <item row="1" column="0">
              <widget class="QLabel" name="label_17">
@@ -189,7 +189,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QLineEdit" name="mangrove_lc_classes"/>
+             <widget class="IntList" name="mangrove_lc_classes_"/>
             </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label_66">
@@ -199,7 +199,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name">
+             <widget class="QLineEdit" name="run_name_">
               <property name="text">
                <string>soil_carbon</string>
               </property>
@@ -220,13 +220,13 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QLineEdit" name="urban_lc_classes"/>
+             <widget class="IntList" name="urban_lc_classes_"/>
             </item>
             <item row="3" column="1">
-             <widget class="QLineEdit" name="nonsoil_lc_classes"/>
+             <widget class="IntList" name="nonsoil_lc_classes_"/>
             </item>
             <item row="4" column="1">
-             <widget class="QgsDoubleSpinBox" name="SEAL_ADJUST"/>
+             <widget class="QgsDoubleSpinBox" name="SEAL_ADJUST_"/>
             </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_69">
@@ -250,14 +250,14 @@
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="QgsFileWidget" name="SOC"/>
+             <widget class="QgsFileWidget" name="SOC_"/>
             </item>
             <item row="6" column="1">
-             <widget class="QgsFileWidget" name="SOC_MANGROVES"/>
+             <widget class="QgsFileWidget" name="SOC_MANGROVES_"/>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="CARBON_SOIL_EROSION">
+          <widget class="QWidget" name="CARBON_SOIL_EROSION_">
            <layout class="QFormLayout" name="formLayout_9">
             <item row="0" column="0">
              <widget class="QLabel" name="label_58">
@@ -267,7 +267,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name">
+             <widget class="QLineEdit" name="run_name_2">
               <property name="text">
                <string>soil_erosion_carbon</string>
               </property>
@@ -323,29 +323,29 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QgsFileWidget" name="R_factor_1km"/>
+             <widget class="QgsFileWidget" name="R_factor_1km_"/>
             </item>
             <item row="2" column="1">
-             <widget class="QgsFileWidget" name="R_factor_25km"/>
+             <widget class="QgsFileWidget" name="R_factor_25km_"/>
             </item>
             <item row="3" column="1">
-             <widget class="QgsFileWidget" name="soil_carbon_10cm"/>
+             <widget class="QgsFileWidget" name="soil_carbon_10cm_"/>
             </item>
             <item row="4" column="1">
-             <widget class="QgsFileWidget" name="soil_carbon_20cm"/>
+             <widget class="QgsFileWidget" name="soil_carbon_20cm_"/>
             </item>
             <item row="5" column="1">
-             <widget class="QgsFileWidget" name="soil_carbon_30cm"/>
+             <widget class="QgsFileWidget" name="soil_carbon_30cm_"/>
             </item>
             <item row="6" column="1">
-             <widget class="QgsFileWidget" name="soil_loss_2001"/>
+             <widget class="QgsFileWidget" name="soil_loss_2001_"/>
             </item>
             <item row="7" column="1">
-             <widget class="QgsFileWidget" name="soil_loss_2012"/>
+             <widget class="QgsFileWidget" name="soil_loss_2012_"/>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="CARBON_LIVESTOCK">
+          <widget class="QWidget" name="CARBON_LIVESTOCK_">
            <layout class="QFormLayout" name="formLayout_14">
             <item row="0" column="0">
              <widget class="QLabel" name="label_59">
@@ -355,28 +355,28 @@
              </widget>
             </item>
             <item row="1" column="0" colspan="2">
-             <widget class="QGroupBox" name="livestock_distribution">
+             <widget class="QGroupBox" name="livestock_distribution_">
               <property name="title">
                <string>Livestock distribution</string>
               </property>
              </widget>
             </item>
             <item row="2" column="0" colspan="2">
-             <widget class="QGroupBox" name="livestock_carbon">
+             <widget class="QGroupBox" name="livestock_carbon_">
               <property name="title">
                <string>Livestock Carbon</string>
               </property>
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name">
+             <widget class="QLineEdit" name="run_name_">
               <property name="text">
                <string>carbon_livestock</string>
               </property>
              </widget>
             </item>
             <item row="3" column="0" colspan="2">
-             <widget class="QGroupBox" name="weights">
+             <widget class="QGroupBox" name="weights_">
               <property name="title">
                <string>Livestock Weight</string>
               </property>
@@ -384,7 +384,7 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="CARBON_FIRE_VULNERABILITY">
+          <widget class="QWidget" name="CARBON_FIRE_VULNERABILITY_">
            <layout class="QFormLayout" name="formLayout_10">
             <item row="0" column="0">
              <widget class="QLabel" name="label_60">
@@ -394,7 +394,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name">
+             <widget class="QLineEdit" name="run_name_">
               <property name="text">
                <string>fire_vulnerability</string>
               </property>
@@ -408,11 +408,11 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QgsFileWidget" name="dsr"/>
+             <widget class="QgsFileWidget" name="dsr_"/>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="CARBON_AGRICULTURE">
+          <widget class="QWidget" name="CARBON_AGRICULTURE_">
            <layout class="QFormLayout" name="formLayout_11">
             <item row="0" column="0">
              <widget class="QLabel" name="label_61">
@@ -436,17 +436,17 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name"/>
+             <widget class="QLineEdit" name="run_name_"/>
             </item>
             <item row="1" column="1">
-             <widget class="QgsFileWidget" name="agriculture_distribution"/>
+             <widget class="QgsFileWidget" name="agriculture_distribution_"/>
             </item>
             <item row="2" column="1">
-             <widget class="QgsFileWidget" name="agriculture_stats"/>
+             <widget class="QgsFileWidget" name="agriculture_stats_"/>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="CARBON_FIRE">
+          <widget class="QWidget" name="CARBON_FIRE_">
            <layout class="QFormLayout" name="formLayout_12">
             <item row="0" column="0">
              <widget class="QLabel" name="label_62">
@@ -470,17 +470,17 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name"/>
+             <widget class="QLineEdit" name="run_name_"/>
             </item>
             <item row="1" column="1">
-             <widget class="QgsFileWidget" name="forest_biomass"/>
+             <widget class="QgsFileWidget" name="forest_biomass_"/>
             </item>
             <item row="2" column="1">
-             <widget class="QgsFileWidget" name="burnt_areas"/>
+             <widget class="QgsFileWidget" name="burnt_areas_"/>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="CARBON_FOREST">
+          <widget class="QWidget" name="CARBON_FOREST_">
            <layout class="QFormLayout" name="formLayout_13">
             <item row="0" column="0">
              <widget class="QLabel" name="label_63">
@@ -490,7 +490,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name"/>
+             <widget class="QLineEdit" name="run_name_"/>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="label_84">
@@ -528,19 +528,19 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QgsFileWidget" name="land_cover_fraction"/>
+             <widget class="QgsFileWidget" name="land_cover_fraction_"/>
             </item>
             <item row="3" column="1">
-             <widget class="QgsFileWidget" name="wood_removal_limitation"/>
+             <widget class="QgsFileWidget" name="wood_removal_limitation_"/>
             </item>
             <item row="4" column="1">
-             <widget class="QgsFileWidget" name="faofra_agb"/>
+             <widget class="QgsFileWidget" name="faofra_agb_"/>
             </item>
             <item row="5" column="1">
-             <widget class="QgsFileWidget" name="faofra_bgb"/>
+             <widget class="QgsFileWidget" name="faofra_bgb_"/>
             </item>
             <item row="7" column="1">
-             <widget class="QgsFileWidget" name="faofra_litter"/>
+             <widget class="QgsFileWidget" name="faofra_litter_"/>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_89">
@@ -548,9 +548,6 @@
                <string>Forest land cover classes</string>
               </property>
              </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QgsFileWidget" name="forest_lc_classes"/>
             </item>
             <item row="6" column="0">
              <widget class="QLabel" name="label_90">
@@ -560,7 +557,10 @@
              </widget>
             </item>
             <item row="6" column="1">
-             <widget class="QgsFileWidget" name="faofra_wood_removals"/>
+             <widget class="QgsFileWidget" name="faofra_wood_removals_"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="IntList" name="forest_lc_classes_"/>
             </item>
            </layout>
           </widget>
@@ -568,13 +568,13 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="ENCA">
+      <widget class="QWidget" name="ENCA_">
        <attribute name="title">
         <string>Components</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QComboBox" name="component"/>
+         <widget class="QComboBox" name="component_"/>
         </item>
         <item>
          <widget class="QScrollArea" name="scrollArea">
@@ -592,11 +592,11 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
             <item>
-             <widget class="QStackedWidget" name="components_stack">
+             <widget class="QStackedWidget" name="components_stack_">
               <property name="currentIndex">
                <number>0</number>
               </property>
-              <widget class="QWidget" name="LEAC">
+              <widget class="QWidget" name="leac_">
                <layout class="QFormLayout" name="formLayout_4">
                 <item row="0" column="0">
                  <widget class="QLabel" name="label_8">
@@ -606,7 +606,7 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QLineEdit" name="run_name">
+                 <widget class="QLineEdit" name="run_name_">
                   <property name="text">
                    <string>leac</string>
                   </property>
@@ -615,23 +615,105 @@
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_9">
                   <property name="text">
-                   <string>Base year</string>
+                   <string>LUT ct lc</string>
                   </property>
                  </widget>
                 </item>
                 <item row="2" column="0">
                  <widget class="QLabel" name="label_10">
                   <property name="text">
-                   <string>other LEAC inputs...</string>
+                   <string>LUT ct lcf</string>
                   </property>
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsSpinBox" name="base_year"/>
+                 <widget class="QgsFileWidget" name="lut_ct_lc_"/>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="lut_ct_lcf_"/>
+                </item>
+                <item row="10" column="0" colspan="2">
+                 <widget class="QGroupBox" name="general_1">
+                  <property name="title">
+                   <string>General</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_19">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_13">
+                     <property name="text">
+                      <string>max lc classes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsSpinBox" name="max_lc_classes_"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QLabel" name="label_103">
+                  <property name="text">
+                   <string>LUT lc</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QLabel" name="label_105">
+                  <property name="text">
+                   <string>LUT lcflow_F</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QLabel" name="label_106">
+                  <property name="text">
+                   <string>LUT lcflow_C</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QLabel" name="label_107">
+                  <property name="text">
+                   <string>LUT lc2psclc</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QgsFileWidget" name="lut_lc_"/>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QgsFileWidget" name="lut_lc2psclc_"/>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcflow_C_"/>
+                </item>
+                <item row="7" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcflow_F_"/>
+                </item>
+                <item row="8" column="0">
+                 <widget class="QLabel" name="label_108">
+                  <property name="text">
+                   <string>LUT lcflows</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="8" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcflows_"/>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QLabel" name="label_104">
+                  <property name="text">
+                   <string>LUT lcc</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QgsFileWidget" name="lut_lcc_"/>
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="INFRA">
+              <widget class="QWidget" name="infra_">
                <layout class="QFormLayout" name="formLayout_5">
                 <item row="0" column="0">
                  <widget class="QLabel" name="label_11">
@@ -641,32 +723,198 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QLineEdit" name="run_name">
+                 <widget class="QLineEdit" name="run_name_">
                   <property name="text">
                    <string>infra</string>
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="0">
+                <item row="1" column="0" colspan="2">
+                 <widget class="QGroupBox" name="paths_indices_">
+                  <property name="title">
+                   <string>Indices</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0" colspan="2">
+                 <widget class="QGroupBox" name="general_">
+                  <property name="title">
+                   <string>General</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_15">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_91">
+                     <property name="text">
+                      <string>Gaussian radius</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_92">
+                     <property name="text">
+                      <string>Gaussian sigma</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_93">
+                     <property name="text">
+                      <string>Urban land cover class</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_94">
+                     <property name="text">
+                      <string>Water land cover classes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="IntList" name="lc_water_"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsSpinBox" name="gaussian_kernel_radius_"/>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QgsSpinBox" name="gaussian_sigma_"/>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QgsSpinBox" name="lc_urban_"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="3" column="0" colspan="2">
+                 <widget class="QGroupBox" name="nlep_">
+                  <property name="title">
+                   <string>nlep</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_16">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_95">
+                     <property name="text">
+                      <string>LUT GBLI</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsFileWidget" name="lut_gbli_"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_96">
+                     <property name="text">
+                      <string>Naturalis</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QgsFileWidget" name="naturalis_"/>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_97">
+                     <property name="text">
+                      <string>OSM</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QgsFileWidget" name="osm_"/>
+                   </item>
+                   <item row="2" column="0" colspan="2">
+                    <widget class="QGroupBox" name="catchments_">
+                     <property name="title">
+                      <string>Catchments</string>
+                     </property>
+                     <layout class="QFormLayout" name="formLayout_17">
+                      <item row="0" column="0">
+                       <widget class="QLabel" name="label_98">
+                        <property name="text">
+                         <string>6</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0">
+                       <widget class="QLabel" name="label_99">
+                        <property name="text">
+                         <string>8</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="0">
+                       <widget class="QLabel" name="label_100">
+                        <property name="text">
+                         <string>12</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="1">
+                       <widget class="QgsFileWidget" name="catchment_6_"/>
+                      </item>
+                      <item row="1" column="1">
+                       <widget class="QgsFileWidget" name="catchment_8_"/>
+                      </item>
+                      <item row="2" column="1">
+                       <widget class="QgsFileWidget" name="catchment_12_"/>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="4" column="0" colspan="2">
+                 <widget class="QGroupBox" name="nrep_">
+                  <property name="title">
+                   <string>nrep</string>
+                  </property>
+                  <layout class="QFormLayout" name="formLayout_18">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_101">
+                     <property name="text">
+                      <string>DAMS</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_102">
+                     <property name="text">
+                      <string>GLORIC</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsFileWidget" name="dams_"/>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QgsFileWidget" name="gloric_"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="5" column="0">
                  <widget class="QLabel" name="label_12">
                   <property name="text">
                    <string>LEAC result</string>
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="leac_result"/>
+                <item row="5" column="1">
+                 <widget class="QgsFileWidget" name="leac_result_"/>
                 </item>
-                <item row="2" column="0">
-                 <widget class="QLabel" name="label_13">
+                <item row="6" column="0">
+                 <widget class="QLabel" name="label_109">
                   <property name="text">
-                   <string>other INFRA inputs...</string>
+                   <string>LUT infra</string>
                   </property>
                  </widget>
                 </item>
+                <item row="6" column="1">
+                 <widget class="QgsFileWidget" name="lut_infra_"/>
+                </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="CARBON">
+              <widget class="QWidget" name="CARBON_">
                <layout class="QFormLayout" name="formLayout_6">
                 <item row="0" column="0">
                  <widget class="QLabel" name="label_14">
@@ -676,7 +924,7 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QLineEdit" name="run_name">
+                 <widget class="QLineEdit" name="run_name_">
                   <property name="text">
                    <string>carbon</string>
                   </property>
@@ -690,7 +938,7 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="ForestLitter"/>
+                 <widget class="QgsFileWidget" name="ForestLitter_"/>
                 </item>
                 <item row="2" column="0">
                  <widget class="QLabel" name="label_16">
@@ -700,7 +948,7 @@
                  </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="ForestAGB"/>
+                 <widget class="QgsFileWidget" name="ForestAGB_"/>
                 </item>
                 <item row="3" column="0">
                  <widget class="QLabel" name="label_5">
@@ -808,49 +1056,49 @@
                  </widget>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QgsFileWidget" name="ForestBGB"/>
+                 <widget class="QgsFileWidget" name="ForestBGB_"/>
                 </item>
                 <item row="4" column="1">
-                 <widget class="QgsFileWidget" name="Soil"/>
+                 <widget class="QgsFileWidget" name="Soil_"/>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QgsFileWidget" name="Livestock"/>
+                 <widget class="QgsFileWidget" name="Livestock_"/>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QgsFileWidget" name="NPP"/>
+                 <widget class="QgsFileWidget" name="NPP_"/>
                 </item>
                 <item row="7" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_cereals"/>
+                 <widget class="QgsFileWidget" name="Agriculture_cereals_"/>
                 </item>
                 <item row="8" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_fiber"/>
+                 <widget class="QgsFileWidget" name="Agriculture_fiber_"/>
                 </item>
                 <item row="9" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_oilcrop"/>
+                 <widget class="QgsFileWidget" name="Agriculture_oilcrop_"/>
                 </item>
                 <item row="10" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_pulses"/>
+                 <widget class="QgsFileWidget" name="Agriculture_pulses_"/>
                 </item>
                 <item row="11" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_roots"/>
+                 <widget class="QgsFileWidget" name="Agriculture_roots_"/>
                 </item>
                 <item row="12" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_cafe"/>
+                 <widget class="QgsFileWidget" name="Agriculture_cafe_"/>
                 </item>
                 <item row="15" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_sugar"/>
+                 <widget class="QgsFileWidget" name="Agriculture_sugar_"/>
                 </item>
                 <item row="14" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_vegetables"/>
+                 <widget class="QgsFileWidget" name="Agriculture_vegetables_"/>
                 </item>
                 <item row="16" column="1">
-                 <widget class="QgsFileWidget" name="WoodRemoval"/>
+                 <widget class="QgsFileWidget" name="WoodRemoval_"/>
                 </item>
                 <item row="17" column="1">
-                 <widget class="QgsFileWidget" name="SoilErosion"/>
+                 <widget class="QgsFileWidget" name="SoilErosion_"/>
                 </item>
                 <item row="18" column="1">
-                 <widget class="QgsFileWidget" name="ILUP"/>
+                 <widget class="QgsFileWidget" name="ILUP_"/>
                 </item>
                 <item row="19" column="0">
                  <widget class="QLabel" name="label_33">
@@ -909,28 +1157,28 @@
                  </widget>
                 </item>
                 <item row="19" column="1">
-                 <widget class="QgsFileWidget" name="CEH1"/>
+                 <widget class="QgsFileWidget" name="CEH1_"/>
                 </item>
                 <item row="20" column="1">
-                 <widget class="QgsFileWidget" name="CEH4"/>
+                 <widget class="QgsFileWidget" name="CEH4_"/>
                 </item>
                 <item row="21" column="1">
-                 <widget class="QgsFileWidget" name="CEH6"/>
+                 <widget class="QgsFileWidget" name="CEH6_"/>
                 </item>
                 <item row="22" column="1">
-                 <widget class="QgsFileWidget" name="CEH7"/>
+                 <widget class="QgsFileWidget" name="CEH7_"/>
                 </item>
                 <item row="23" column="1">
-                 <widget class="QgsFileWidget" name="Cow"/>
+                 <widget class="QgsFileWidget" name="Cow_"/>
                 </item>
                 <item row="24" column="1">
-                 <widget class="QgsFileWidget" name="Fire"/>
+                 <widget class="QgsFileWidget" name="Fire_"/>
                 </item>
                 <item row="25" column="1">
-                 <widget class="QgsFileWidget" name="FireSplit"/>
+                 <widget class="QgsFileWidget" name="FireSplit_"/>
                 </item>
                 <item row="26" column="1">
-                 <widget class="QgsFileWidget" name="FireInten"/>
+                 <widget class="QgsFileWidget" name="FireInten_"/>
                 </item>
                 <item row="13" column="0">
                  <widget class="QLabel" name="label_42">
@@ -940,11 +1188,11 @@
                  </widget>
                 </item>
                 <item row="13" column="1">
-                 <widget class="QgsFileWidget" name="Agriculture_fruit"/>
+                 <widget class="QgsFileWidget" name="Agriculture_fruit_"/>
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="WATER">
+              <widget class="QWidget" name="WATER_">
                <layout class="QFormLayout" name="formLayout">
                 <item row="0" column="0">
                  <widget class="QLabel" name="label_41">
@@ -954,7 +1202,7 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QLineEdit" name="run_name">
+                 <widget class="QLineEdit" name="run_name_">
                   <property name="text">
                    <string>water</string>
                   </property>
@@ -1059,46 +1307,46 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="AGRIusage"/>
+                 <widget class="QgsFileWidget" name="AGRIusage_"/>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="MUNIusage"/>
+                 <widget class="QgsFileWidget" name="MUNIusage_"/>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QgsFileWidget" name="ET_rainfed_agriculture"/>
+                 <widget class="QgsFileWidget" name="ET_rainfed_agriculture_"/>
                 </item>
                 <item row="4" column="1">
-                 <widget class="QgsFileWidget" name="precipitation"/>
+                 <widget class="QgsFileWidget" name="precipitation_"/>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QgsFileWidget" name="evapotranspiration"/>
+                 <widget class="QgsFileWidget" name="evapotranspiration_"/>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QgsFileWidget" name="LTA_precipitation"/>
+                 <widget class="QgsFileWidget" name="LTA_precipitation_"/>
                 </item>
                 <item row="7" column="1">
-                 <widget class="QgsFileWidget" name="LTA_evapotranspiration"/>
+                 <widget class="QgsFileWidget" name="LTA_evapotranspiration_"/>
                 </item>
                 <item row="8" column="1">
-                 <widget class="QgsFileWidget" name="drought_vulnerability"/>
+                 <widget class="QgsFileWidget" name="drought_vulnerability_"/>
                 </item>
                 <item row="9" column="1">
-                 <widget class="QgsFileWidget" name="river_length"/>
+                 <widget class="QgsFileWidget" name="river_length_"/>
                 </item>
                 <item row="10" column="1">
-                 <widget class="QgsFileWidget" name="LTA_river_outflow"/>
+                 <widget class="QgsFileWidget" name="LTA_river_outflow_"/>
                 </item>
                 <item row="11" column="1">
-                 <widget class="QgsFileWidget" name="aquifer"/>
+                 <widget class="QgsFileWidget" name="aquifer_"/>
                 </item>
                 <item row="12" column="1">
-                 <widget class="QgsFileWidget" name="salinity"/>
+                 <widget class="QgsFileWidget" name="salinity_"/>
                 </item>
                 <item row="13" column="1">
-                 <widget class="QgsFileWidget" name="HYDROlakes"/>
+                 <widget class="QgsFileWidget" name="HYDROlakes_"/>
                 </item>
                 <item row="14" column="1">
-                 <widget class="QgsFileWidget" name="GLORIC_adapted"/>
+                 <widget class="QgsFileWidget" name="GLORIC_adapted_"/>
                 </item>
                </layout>
               </widget>
@@ -1110,17 +1358,17 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="ACCOUNT">
+      <widget class="QWidget" name="ACCOUNT_">
        <attribute name="title">
         <string>Accounts</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QComboBox" name="component"/>
+         <widget class="QComboBox" name="component_"/>
         </item>
         <item>
-         <widget class="QStackedWidget" name="components_stack">
-          <widget class="QWidget" name="TOTAL">
+         <widget class="QStackedWidget" name="components_stack_">
+          <widget class="QWidget" name="TOTAL_">
            <widget class="QLabel" name="label_18">
             <property name="geometry">
              <rect>
@@ -1135,7 +1383,7 @@
             </property>
            </widget>
           </widget>
-          <widget class="QWidget" name="TREND"/>
+          <widget class="QWidget" name="TREND_"/>
          </widget>
         </item>
        </layout>
@@ -1168,12 +1416,16 @@
    <header>enca_plugin/region_picker.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>IntList</class>
+   <extends>QLineEdit</extends>
+   <header location="global">enca_plugin/integerlist.h</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>tier</tabstop>
   <tabstop>aoi_name</tabstop>
   <tabstop>run_types</tabstop>
-  <tabstop>base_year</tabstop>
   <tabstop>year</tabstop>
  </tabstops>
  <resources/>

@@ -24,7 +24,7 @@ class GBLI(object):
         self.lut_gbli = config["infra"]["nlep"]["lut_gbli"]
         self.gaussian_kernel_radius = config["infra"]["general"]["gaussian_kernel_radius"]
         self.gaussian_sigma = config["infra"]["general"]["gaussian_sigma"]
-        self.leac = config["infra"]["leac"]
+        self.leac = config["infra"]["leac_result"]
         self.years = runObject.years
         self.leac_gbli_nosm = runObject.leac_gbli_nosm
         self.leac_gbli_sm = runObject.leac_gbli_sm

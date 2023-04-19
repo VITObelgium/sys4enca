@@ -86,7 +86,7 @@ class ENCARun(Run):
             }
         )
 
-        self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), str(self.run_type), self.component,
+        self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), self.run_type.name, self.component,
                                     self.run_name)
         self.maps = os.path.join(self.run_dir, 'maps')
         self.reports = os.path.join(self.run_dir, 'reports')

@@ -12,7 +12,7 @@ import os.path
 import datetime
 import logging
 import platform
-from enca.framework.run import set_up_logfile
+from enca.framework.run import set_up_logfile, remove_logfile_handler
 
 _revision = '$Format:%h$'  # Use git archive with export-subst attributes to insert short hash here.
 
@@ -185,6 +185,7 @@ class ENCAPlugin:
         """Removes the plugin menu item and icon from QGIS GUI."""
 
         #print "** UNLOAD ENCAPlugin"
+        remove_logfile_handler()  # Remove ENCA log file handler to avoid duplicate logs after reloading the plugin.
 
         for action in self.actions:
             self.iface.removePluginMenu(

@@ -26,7 +26,7 @@ class FRAGRIV(object):
         '''
         config = runObject.config
         self.years = runObject.years
-        self.lc = config["infra"]["leac"]
+        self.lc = config["infra"]["leac_result"]
         self.hybas = config["infra"]["nlep"]["catchments"]
         self.dams = config["infra"]["nrep"]["dams"]
         self.fragriv = runObject.fragriv
@@ -73,8 +73,8 @@ class FRAGRIV(object):
 
 
         #add number of points for each poly to the dataframe
-        polygons['dams'] = gpd.GeoSeries(pts_in_polys)
-        polygons['fragriv'] = gpd.GeoSeries(fragriv_in_polys)
+        polygons['dams'] =pts_in_polys
+        polygons['fragriv'] = fragriv_in_polys
 
         #polygons.to_file(outfile, drivers='ESRI Shapefile')
 

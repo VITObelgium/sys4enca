@@ -146,7 +146,7 @@ def create_lfi(lfi):
                 lfi.calc_meff(year, basin, lc)
 
                 #rasterize fragmentation index, need pixel based for NLEP (frag mef data is in catchemtn shape
-                # lfi_frag_meff_raster = lfi.rasterize_MEFF(year,basin)
+                lfi_frag_meff_raster = lfi.rasterize_MEFF(year,basin)
 
             except Error as e:
                 raise Error(e)

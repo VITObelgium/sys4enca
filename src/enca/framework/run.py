@@ -200,6 +200,7 @@ class Run:
 
     def _dump_config(self):
         """Write a YAML dump of the current config in our run directory."""
+        logger.debug('Dump config at %s', self.run_dir)
         with open(os.path.join(self.run_dir, 'config.yaml'), 'w') as f:
             f.write(yaml.dump(self.config))
 

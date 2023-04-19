@@ -95,7 +95,7 @@ class OSM(object):
     
     def inverse_RR(self):
         self.accord.rasterize_burn(self.merged_trunkroads_railways,self.merged_trunkroads_railways_inv, nodata_value=0,
-                                   burn_value=0, dtype='uByte')
+                                   burn_value=0, dtype='Byte')
     
     def vectorize_RR(self):
         self.accord.vectorize(self.merged_trunkroads_railways_inv, self.temp_dir)
@@ -138,7 +138,7 @@ class LFI(object):
             for year in self.years:
                 self.landcover[year] = '/data/nca_vol1/aux_input/preprocessed_data/NLEP/PNMB/PNMB_Urban_'+str(year)+'_3857.sdat'
         else:
-            self.landcover = runObject.config["infra"]["leac"]
+            self.landcover = runObject.config["infra"]["leac_result"]
     
     def intersect_Catchment_OSM(self,basin,merged_roadrails):
 

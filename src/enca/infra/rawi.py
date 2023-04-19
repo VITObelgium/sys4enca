@@ -35,10 +35,10 @@ class RAWI(object):
         self.resolution = sqrt(self.accord.pixel_area_m2())
         self.river_buffer = runObject.river_buffer  #gloric represents 100m TODO, what if 10m landcover
         self.level = runObject.tier
-        self.lc = config["infra"]["leac"]
+        self.lc = config["infra"]["leac_result"]
         self.dams = config["infra"]["nrep"]["dams"]
         self.gloric = config["infra"]["nrep"]["gloric"]
-        self.shapefile_catchment= config["infra"]["nlep"]["catchments"][12]
+        self.shapefile_catchment= config["infra"]["nlep"]["catchments"]['catchment_12']
         self.lc_water = config["infra"]["general"]["lc_water"]
         self.years = runObject.years
         self.block_shape = (2048,2048)
