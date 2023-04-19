@@ -107,8 +107,8 @@ class Infra(enca.ENCARun):
         # lPaths = []
         lColumns = []
 
-        #remove keys with none value
-        self.config["infra"]["paths_indices"] = {k: v for k, v in self.config["infra"]["paths_indices"].items() if v is not None}
+        #remove keys with none or empty value
+        self.config["infra"]["paths_indices"] = {k: v for k, v in self.config["infra"]["paths_indices"].items() if v}
 
         #TODO move to yaml incl key to indicate layer for indexing
         #note indexing the layer starts from 0
@@ -142,7 +142,7 @@ class Infra(enca.ENCARun):
         for idx,path in enumerate(paths):
             stats = statistics_byArea(path, self.statistics_raster,
                                       {row[0] : row[1]['SHAPE_ID'] for row in self.statistics_shape.iterrows()}
-                                      , transformation = function[keys[idx]])
+                                      , transform=function[keys[idx]])
             if keys[idx] == 'l5':
                 stats["sum"] = stats["sum"] *1.5
             elif keys[idx] == 'l11':
