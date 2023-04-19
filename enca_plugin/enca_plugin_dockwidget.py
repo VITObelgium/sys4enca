@@ -145,7 +145,8 @@ component_input_widgets = [
             'dams',
             'gloric'
         ]),
-        ('leac_result', [YEARLY])
+        ('leac_result', [YEARLY]),
+        'lut_infra',
     ]),
     (leac.Leac.component, [
         'lut_ct_lc',
