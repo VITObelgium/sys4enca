@@ -73,8 +73,8 @@ class FRAGRIV(object):
 
 
         #add number of points for each poly to the dataframe
-        polygons['dams'] = gpd.GeoSeries(pts_in_polys)
-        polygons['fragriv'] = gpd.GeoSeries(fragriv_in_polys)
+        polygons['dams'] =pts_in_polys
+        polygons['fragriv'] = fragriv_in_polys
 
         #polygons.to_file(outfile, drivers='ESRI Shapefile')
 
