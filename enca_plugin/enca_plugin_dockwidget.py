@@ -399,7 +399,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def run(self):
         template = self.make_template()
         taskname = f'{template["component"].currentText()} run {template["run_name"].text()}'
-        task = Task(taskname, template, output_vectors=component_vector_layers[self.component.currentText()])
+        task = Task(taskname, template, output_vectors=component_vector_layers.get(template["component"].currentText(), []))
         _tasks.append(task)
         QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
         QgsApplication.taskManager().addTask(task)
