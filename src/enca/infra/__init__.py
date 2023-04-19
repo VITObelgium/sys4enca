@@ -436,7 +436,7 @@ class Infra(enca.ENCARun):
                 logger.info("leac information was manual added")
                 # basename = os.path.basename(self.config["infra"]["leac_result"][year])
                 continue
-            expected_path = os.path.join(self.temp_dir.replace(self.component, 'leac'),
+            expected_path = os.path.join(self.temp_dir().replace(self.component, 'leac'),
                                          f'cci_LC_{year}_100m_3857_PSCLC.tif')
             if not os.path.exists(expected_path):
                 logger.error('It seems that no input leac location was given and that the default location ' +\
