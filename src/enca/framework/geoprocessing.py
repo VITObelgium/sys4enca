@@ -302,7 +302,7 @@ class GeoProcessing(object):
         return out_path
 
     def rasterize_burn(self, path_in: str, path_out: str, nodata_value=0,
-                       burn_value=1, dtype='uByte', mode='statistical'):
+                       burn_value=1, dtype='Byte', mode='statistical'):
         """Rasterize a given geopandas dataframe with a specified `column_name`.
 
         :param path_in: directory for input file.
