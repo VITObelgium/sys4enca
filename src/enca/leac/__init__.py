@@ -45,12 +45,12 @@ class Leac(enca.ENCARun):
         print('Hello from ENCA Leac')
 
         #1. Clip land cover maps for region and reclassify
-        #self.clip_reclassify()
+        self.clip_reclassify()
         print("** LANDCOVER clipped ready ...\n\n")
 
         #2. Calculate land cover change in ha
         #options.overwrite = True
-        #self.calc_lc_changes()
+        self.calc_lc_changes()
         print("** LANDCOVER changes calculated  ...\n\n")
 
         #3. Calculate land cover stocks and flows on total area_of_interest
@@ -159,13 +159,12 @@ class Leac(enca.ENCARun):
             lc = 'lc'+str(year)
 
 
-            self.accord.AutomaticBring2AOI(self.config["land_cover"][year], path_out = self.leac_clipped[year])
-            #self.accord.crop_2_reporting_AOI(self.config["land_cover"][year], self.leac_out[year], self.statistics_raster)
+            self.leac_clipped[year] = self.accord.AutomaticBring2AOI(self.config["land_cover"][year], path_out = self.leac_clipped[year])
 
 
             #let's now translate to colored geotiff
             ctfile = self.config['leac']['lut_ct_lc']  #'/data/nca_vol1/qgis/legend_CGLOPS_NCA_L2-fr.txt'
-            tiffile = add_color(self.leac_out[year], ctfile, self.leac_out[year].replace('.tif','_color.tif'), 'Byte')
+            tiffile = add_color(self.leac_clipped[year], ctfile, self.leac_clipped[year].replace('.tif','_color.tif'), 'Byte')
 
             #2 - reclassify
             #perform first a reclassification to LCEU (PS-CLC) if data source not yet prepared
@@ -182,6 +181,8 @@ class Leac(enca.ENCARun):
 
             with rasterio.open(self.leac_clipped[year], 'r') as ds_open:
                 profile = ds_open.profile
+                #from here driver should allways be gtiff
+                profile['driver'] = 'GTiff'
                 if profile["nodata"]:
                     nodata = profile["nodata"]
                 else: nodata = 0
@@ -381,10 +382,10 @@ class Leac(enca.ENCARun):
 
         for idx,year in enumerate(self.years):
             self.leac_clipped[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year]))
-            self.leac_out[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year])\
-                                               .replace('.tif','_PSCLC.tif'))
-            self.leac_recl[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year]) \
-                                                .replace('.tif','_reclassified.tif'))
+            self.leac_out[year] = os.path.splitext(os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year])))[0]\
+                                                + '_PSCLC.tif'
+            self.leac_recl[year] = os.path.splitext(os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year])))[0] \
+                                                + '_reclassified.tif'
             if year != self.years[-1]:
                 self.leac_change[year] = os.path.join(self.temp_dir(),f'LEAC-change_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}.tif')
                 self.final_tab[year] = os.path.join(self.reports,f'LEAC-change_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}_final.csv')

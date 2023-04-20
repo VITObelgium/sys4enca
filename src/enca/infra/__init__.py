@@ -343,7 +343,7 @@ class Infra(enca.ENCARun):
             results_all.index.name = 'I_CODE'
 
             #write out as csv
-            path_report = self.report[year].replace('.csv',f'_for_{pArea}.csv')
+            path_report = self.report[year].format(pArea)
             results_all.to_csv(path_report, index_label = 'I_CODE'.format(year))
 
         return
