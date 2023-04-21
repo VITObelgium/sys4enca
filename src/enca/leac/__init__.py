@@ -19,9 +19,6 @@ class Leac(enca.ENCARun):
     component = 'leac'
     #id_col_reporting = "GID_0"
 
-
-
-
     def __init__(self, config):
         super().__init__(config)
 
@@ -42,23 +39,20 @@ class Leac(enca.ENCARun):
         self.make_output_filenames()
 
     def _start(self):
-        print('Hello from ENCA Leac')
+        logger.debug('Hello from ENCA Leac')
 
         #1. Clip land cover maps for region and reclassify
         self.clip_reclassify()
-        print("** LANDCOVER clipped ready ...\n\n")
+        logger.debug("** LANDCOVER clipped ready ...\n\n")
 
         #2. Calculate land cover change in ha
         #options.overwrite = True
         self.calc_lc_changes()
-        print("** LANDCOVER changes calculated  ...\n\n")
+        logger.debug("** LANDCOVER changes calculated  ...\n\n")
 
         #3. Calculate land cover stocks and flows on total area_of_interest
         self.calc_lc_flows()
-        print("** LANDCOVER flows calculated ...\n\n")
-
-
-
+        logger.debug("** LANDCOVER flows calculated ...\n\n")
 
         ######################################################################################################################
     def format_LCC_table(self, df, path_out):
@@ -106,8 +100,6 @@ class Leac(enca.ENCARun):
 
         df.to_csv(table_out, sep=',')
         return table_out
-
-
 
     ######################################################################################################################
     def format_LCF_table(self, table_consumption, table_formation, table_out):
@@ -158,9 +150,7 @@ class Leac(enca.ENCARun):
             grid_out = self.leac_out[year]
             lc = 'lc'+str(year)
 
-
             self.leac_clipped[year] = self.accord.AutomaticBring2AOI(self.config["land_cover"][year], path_out = self.leac_clipped[year])
-
 
             #let's now translate to colored geotiff
             ctfile = self.config['leac']['lut_ct_lc']  #'/data/nca_vol1/qgis/legend_CGLOPS_NCA_L2-fr.txt'
@@ -200,11 +190,7 @@ class Leac(enca.ENCARun):
                             leac_outdata = aBlock
                         ds_out2.write(leac_outdata, window=window, indexes=1)
 
-
-
-
-
-        print("** Land cover clipped and reclassified ...")
+        logger.debug("** Land cover clipped and reclassified ...")
 
     def calc_lc_changes(self):
         #function to calculate the land cover changes by creating tabular output and change map
@@ -243,7 +229,7 @@ class Leac(enca.ENCARun):
             #format table : convert pixels to ha & TODO move no_change in separate col/row
             table_out_formatted = self.format_LCC_table(pivot_count, path_out = self.final_tab[year])
 
-            print("** LEAC change matrix ready ...")
+            logger.debug("** LEAC change matrix ready ...")
 
         return
 
