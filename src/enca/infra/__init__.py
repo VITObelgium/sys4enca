@@ -545,11 +545,11 @@ class Infra(enca.ENCARun):
 
         #accounting results
 
-        self.path_results_eip = {year:os.path.join(self.temp_dir(), 'NCA_INFRA-EIP_{}_SELU_{}.shp'.format(self.aoi_name, year))
+        self.path_results_eip = {year: os.path.join(self.temp_dir(), 'NCA_INFRA-EIP_SELU_{}.shp'.format(year))
                                  for year in self.years}
-        self.path_results_infra = {year:os.path.join(self.maps, 'NCA_INFRA_{}_SELU_{}.shp'.format(self.aoi_name, year))
-                                 for year in self.years}
-        self.path_results_infra_csv = {year:os.path.join(self.temp_dir(), 'NCA_INFRA_{}_SELU_{}.csv'.format(self.aoi_name, year))
+        self.path_results_infra = {year: os.path.join(self.maps, 'NCA_INFRA_SELU_{}.shp'.format(year))
                                    for year in self.years}
-
-        self.report = {year:os.path.join(self.reports, 'CECN_infra_report_year-{}_for_{}.csv'.format(year, '{}')) for year in self.years}
+        self.path_results_infra_csv = {year: os.path.join(self.temp_dir(), 'NCA_INFRA_SELU_{}.csv'.format(year))
+                                       for year in self.years}
+        self.report = {year: os.path.join(self.reports, 'CECN_infra_report_year-{}_for_{}.csv'.format(year, '{}'))
+                       for year in self.years}
