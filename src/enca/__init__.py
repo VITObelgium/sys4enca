@@ -67,8 +67,7 @@ class ENCARun(Run):
     id_col_reporting = GID_0
 
     epsg = 3857
-    _indices_avarage = None  #: List of SELU-wide indicators, to be defined in each subclass
-
+    _indices_average = None  #: List of SELU-wide indicators, to be defined in each subclass
 
     def __init__(self, config):
         """Initialize an ENCA run."""
@@ -105,7 +104,7 @@ class ENCARun(Run):
     def _configure(self):
         """Add extra configure steps for ENCA.
 
-        - Update default paramters with custom parameters provided by the user.
+        - Update default parameters with custom parameters provided by the user.
         """
         super()._configure()
 

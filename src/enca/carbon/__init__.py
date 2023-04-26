@@ -148,7 +148,7 @@ class Carbon(enca.ENCARun):
             selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
             indices = self.indices(selu_stats, year)
-            indices.to_csv(os.path.join(self.statistics, f'CARBON_indices_{year}.csv'))
+            indices.to_csv(os.path.join(self.statistics, f'{self.component}_indices_{year}.csv'))
             stats_shape_selu = self.statistics_shape.join(indices)
             stats_shape_selu.to_file(
                 os.path.join(self.temp_dir(), f'{self.component}_Indices_SELU_{year}.gpkg'))
@@ -410,4 +410,3 @@ class Carbon(enca.ENCARun):
 
         logger.debug('Indices for %s:\n%s', year, df)
         return df
-

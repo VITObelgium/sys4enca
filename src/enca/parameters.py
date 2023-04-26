@@ -31,7 +31,10 @@ defaults = dict(
     W3_7=0.7,
     W3_81=0.8,
     W8_1=10.,
-    W8_5=0.5
+    W8_5=0.5,
+    ECUadj_Carbon=10,  # normalize to 10 tC/Yr/ha
+    ECUadj_Water=10000,  # rc7*100, #normalize to 10000m3
+    ECUadj_Infra=1
 )  #: Default parameters.
 
 
