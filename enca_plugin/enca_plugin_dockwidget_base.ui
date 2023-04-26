@@ -1369,19 +1369,60 @@
         <item>
          <widget class="QStackedWidget" name="components_stack_">
           <widget class="QWidget" name="TOTAL_">
-           <widget class="QLabel" name="label_18">
-            <property name="geometry">
-             <rect>
-              <x>130</x>
-              <y>180</y>
-              <width>241</width>
-              <height>16</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Yearly total or trend calculation settings here...</string>
-            </property>
-           </widget>
+           <layout class="QFormLayout" name="formLayout_20">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_111">
+              <property name="text">
+               <string>Infra result</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="infra_result_">
+              <property name="storageMode">
+               <enum>QgsFileWidget::GetDirectory</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QgsFileWidget" name="carbon_result_">
+              <property name="storageMode">
+               <enum>QgsFileWidget::GetDirectory</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>Carbon result</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_110">
+              <property name="text">
+               <string>Water result</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QgsFileWidget" name="water_result_">
+              <property name="storageMode">
+               <enum>QgsFileWidget::GetDirectory</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_112">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name_"/>
+            </item>
+           </layout>
           </widget>
           <widget class="QWidget" name="TREND_"/>
          </widget>

@@ -1,0 +1,27 @@
+CODE;SHORT NAME;LABEL
+Area_poly;Area_polygones_ha;area calculated from the polygones [ha]
+Area_rast;Area_raster;area calculated from raster pixels [ha]
+AREA_ha;AREA_ha;Area in hectares
+delta_ha;delta Area_poly to Area_rast;delta between the area calculation of vector and raster [ha]
+num_SELU;number of SELU;number of SELU units combined
+NECP;NEACP_potential;Net Ecosystem Carbon Potential (tonnes C)
+NECP_n;NEACP_norm;Net Ecosystem Carbon Potential_normalized
+SCU;SCU_SustUseIndex;Sustainable Itensity of Carbon Use Index
+CEH;CEH_CarbHealthIndex;Carbon Ecosystem Health Index
+C_IUV;CIUV_InternUnitValue;Carbon Internal Unit Value
+NEWP;NEAWP_potential;Net Ecosystem Water Potential (m3)
+NEWP_n;NEAWP_norm;Net Ecosystem Water Potential_normalized
+SIWU;SIWU_SustUseIndex;Sustainable Intensity of Water Use Index
+EWH;EWH_WatHealthIndex;Ecosystem Water Health Index
+W_IUV;WIUV_InternUnitValue;Water Internal Unit Value
+TEIP;TEIP_potential;Total Ecosystem Infrastructure Potential (weighted ha)
+TEIP_n;TEIP_norm;Total Ecosystem Infrastructure Potential_normalized
+EISUI;EISUI_SustUseIndex;Ecosystem Infrastructure Sustainable Use Index
+EHI;EHI_EcoHealthIndex;Ecosystem Infrastructure Health Index
+EI_IUV;EIIUV_InternUnitValue;Ecosystem Infrastructure Internal Unit Value
+ECU;ECUprice_SELUavg;Ecosystem Capability Unit
+C_EC;C_EC_capab;Carbon Ecosystem Capability
+W_EC;W_EC_capab;Water Ecosystem Capability
+EI_EC;EI_EC_capab;Ecosystem Infrastructure Capability
+TEC;TEC_capability;Total Ecosystem Capability
+TEC_ha;TEC_capab_ha;Total Ecosystem Capability per hectare
