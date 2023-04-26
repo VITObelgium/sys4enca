@@ -25,6 +25,7 @@ import enca.framework
 import enca.water as water
 import enca.infra as infra
 import enca.leac as leac
+import enca.total as total
 from enca.framework.errors import Error
 from enca.framework.config_check import ConfigError, YEARLY
 from enca.framework.run import Cancelled
@@ -160,6 +161,11 @@ component_input_widgets = [
         ('general', [
             'max_lc_classes'
         ])
+    ]),
+    (total.Total.component, [
+        'infra_result',
+        'carbon_result',
+        'water_result'
     ])
 ]
 
@@ -289,7 +295,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def set_up_infra(self):
         """Set up Infra indices input widgets."""
-        widget_infra = self.findChild(QtWidgets.QWidget, infra.Infra.component + '_')
+        widget_infra = self.ENCA_.findChild(QtWidgets.QWidget, infra.Infra.component + '_')
         widget_infra_indices = widget_infra.findChild(QtWidgets.QGroupBox, 'paths_indices_')
         widget_infra_indices.setLayout(QtWidgets.QFormLayout())
         for idx in infra.INDICES:

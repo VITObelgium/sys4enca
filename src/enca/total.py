@@ -55,9 +55,9 @@ class Total(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
-                Carbon.component: ConfigItem(),
-                Water.component: ConfigItem(),
-                Infra.component: ConfigItem(),
+                'carbon_result': ConfigItem(),
+                'water_result': ConfigItem(),
+                'infra_result': ConfigItem(),
             }
         })
 
@@ -76,9 +76,9 @@ class Total(enca.ENCARun):
 
     def indices(self, year, base=False):
         config = self.config[self.component]
-        carbon_indices = os.path.join(config[Carbon.component], 'statistics', f'{Carbon.component}_indices_{year}.csv')
-        water_indices = os.path.join(config[Water.component], 'statistics', f'{Water.component}_indices_{year}.csv')
-        infra_indices = os.path.join(config[Infra.component], 'temp', f'NCA_INFRA_SELU_{year}.csv')
+        carbon_indices = os.path.join(config['carbon_result'], 'statistics', f'{Carbon.component}_indices_{year}.csv')
+        water_indices = os.path.join(config['water_result'], 'statistics', f'{Water.component}_indices_{year}.csv')
+        infra_indices = os.path.join(config['infra_result'], 'temp', f'NCA_INFRA_SELU_{year}.csv')
 
         df_carbon = pd.read_csv(carbon_indices)
         df_water = pd.read_csv(water_indices)
