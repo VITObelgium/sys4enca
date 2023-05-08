@@ -13,13 +13,14 @@ from .infra import Infra
 from .leac import Leac
 from .water import Water
 from .total import Total
+from .trend import Trend
 from enca.framework.config_check import ConfigError
 
 COMPONENT = 'component'
 _run_components = {CarbonAgriculture, CarbonFire, CarbonFireVulnerability, CarbonForest, CarbonLivestock, CarbonNPP,
                    CarbonSoil, CarbonErosion,
                    Carbon, Infra, Leac, Water,
-                   Total}  #: List of all ENCA components we can run.
+                   Total, Trend}  #: List of all ENCA components we can run.
 
 # Build a dict of {'component name': class} for all run components, so we can easily start a run given it's component
 # name.
