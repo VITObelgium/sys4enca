@@ -1420,11 +1420,46 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="run_name_"/>
+             <widget class="QLineEdit" name="run_name_">
+              <property name="text">
+               <string>total</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="TREND_"/>
+          <widget class="QWidget" name="TREND_">
+           <layout class="QFormLayout" name="formLayout_21">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_113">
+              <property name="text">
+               <string>Run name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="run_name_">
+              <property name="text">
+               <string>trend</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_114">
+              <property name="text">
+               <string>Total results</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QgsFileWidget" name="total_result_">
+              <property name="storageMode">
+               <enum>QgsFileWidget::GetDirectory</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>

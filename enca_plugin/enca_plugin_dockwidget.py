@@ -26,6 +26,7 @@ import enca.water as water
 import enca.infra as infra
 import enca.leac as leac
 import enca.total as total
+import enca.trend as trend
 from enca.framework.errors import Error
 from enca.framework.config_check import ConfigError, YEARLY
 from enca.framework.run import Cancelled
@@ -166,6 +167,9 @@ component_input_widgets = [
         'infra_result',
         'carbon_result',
         'water_result'
+    ]),
+    (trend.Trend.component, [
+        'total_result'
     ])
 ]
 
