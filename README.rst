@@ -2,8 +2,21 @@
 sys4enca
 ========
 
+Checkout marvin_qgis_tools submodule
+====================================
+Make sure the ``qgis_tools`` submodule is checked out as well.  If it is not, run ::
+
+  git submodule init
+  git submodule update
+
+
 Building a plugin zip
 =====================
+
+Before you distribute the plugin, make sure the files resources.qrc and pip_install_dialog_base.ui are compiled.  This
+is done using ``pyrcc5`` and ``pyuic5`` respectively (in Ubuntu, these are part of the pyqt5-dev-tools, on Windows,
+these are included in your QGIS installation).  If you use the plugin builder tool, it will compile when your run the
+'zip' or 'deploy' commands. 
 
 To build a plugin zip for distribution, I recommend using the following two steps:
 
@@ -18,10 +31,13 @@ To build a plugin zip for distribution, I recommend using the following two step
 2. Extract the resulting archive and use `pb_tool <https://pypi.org/project/pb-tool>`_ to build an installable plugin
    zip file.  ``pb_tool`` will compile resources, .ui, translation and help files.  Due to a limitation in the official
    ``pb_tool`` version, I recommend using the verison from
-   https://github.com/tdanckaert/plugin_build_tool/tree/qgis3_version for now.  From the ``enca_plugin`` directory of
-   the unzipped git archive, run ::
+   https://github.com/tdanckaert/plugin_build_tool/tree/qgis3_version for now,  which you can install using pip ::
+
+     python -m pip install git+https://github.com/tdanckaert/plugin_build_tool.git@qgis3_version
+
+   From the ``enca_plugin`` directory of the unzipped git archive, run ::
 
      pb_tool translate
      pb_tool zip
 
-See the script ``release_plugin.bat`` for an example.
+See the scripts ``release_plugin.bat`` and ``release_plugin.sh`` for an example.
