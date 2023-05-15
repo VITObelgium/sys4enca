@@ -83,6 +83,7 @@ def check_dependencies():
     # First try to install packages available from OSGeo4W
     if not osgeo4w.check_packages({'geopandas': 'python3-geopandas',
                                    'matplotlib': 'python3-matplotlib',
+                                   'netCDF4': 'python3-netcdf4',
                                    'rasterio': 'python3-rasterio',
                                    'rtree': 'python3-rtree',
                                    'sklearn': 'python3-scikit-learn',

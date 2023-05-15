@@ -12,7 +12,7 @@ from .carbon import Carbon
 from .infra import Infra
 from .leac import Leac
 from .water import Water
-from .water.lta import WaterLTA
+from .water.precipitation_evapotranspiration import WaterPrecipEvapo
 from .total import Total
 from .trend import Trend
 from enca.framework.config_check import ConfigError
@@ -20,7 +20,7 @@ from enca.framework.config_check import ConfigError
 COMPONENT = 'component'
 _run_components = {CarbonAgriculture, CarbonFire, CarbonFireVulnerability, CarbonForest, CarbonLivestock, CarbonNPP,
                    CarbonSoil, CarbonErosion,
-                   WaterLTA,
+                   WaterPrecipEvapo,
                    Carbon, Infra, Leac, Water,
                    Total, Trend}  #: List of all ENCA components we can run.
 
