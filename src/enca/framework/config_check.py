@@ -364,7 +364,7 @@ def check_exists(file):
         raise Error(f'File "{file}" does not exist.')
 
 
-def check_csv(file, required_columns=[], unique_columns=[], allow_missing=True, dtypes=None):
+def check_csv(file, required_columns=[], unique_columns=[], allow_missing=True, dtypes=None, delimiter=None):
     """Check if ``file`` can be read using :func:`pandas.read_csv`.
 
     Use the optional arguments to perform additional checks.
@@ -378,7 +378,7 @@ def check_csv(file, required_columns=[], unique_columns=[], allow_missing=True, 
     try:
         # TODO more elaborate checks for valid separator etc?
         # TODO inspect file size first, and skip the check (with a warning) for very large files?
-        data = pd.read_csv(file, comment='#')
+        data = pd.read_csv(file, comment='#', delimiter=delimiter)
     except ParserError as e:
         raise Error(f'{file} is not a valid CSV file: {e}.')
 
