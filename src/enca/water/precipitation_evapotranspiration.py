@@ -48,20 +48,20 @@ class WaterPrecipEvapo(enca.ENCARun):
         # precipitation:
         lta_precip_aoi = self.lta_annual_precipitation()  # [mm]
         self.lta_precip = os.path.join(self.maps, 'NCA_WATER_LTA-precipitation_m3.tif')
-        self.mm_to_m3(lta_precip_aoi, 'LTA Annual precipitation in m3 per pixel.', self.lta_precip)
+        mm_to_m3(lta_precip_aoi, 'LTA Annual precipitation in m3 per pixel.', self.lta_precip)
 
         # evapotranspiration:
         self.lta_evapo = os.path.join(self.maps, 'NCA_WATER_LTA-evapotranspiration_m3.tif')
-        self.mm_to_m3(self.config[self.component][_CGIAR_AET],
-                      'LTA Annual evapotranspiration in m3 per pixel.', self.lta_evapo)
+        mm_to_m3(self.config[self.component][_CGIAR_AET],
+                 'LTA Annual evapotranspiration in m3 per pixel.', self.lta_evapo)
 
         for year in self.years:
             precipitation_mm = self.convert_copernicus_netcdf(year)
             precipitation_mm_aoi = self.accord.AutomaticBring2AOI(precipitation_mm, RasterType.ABSOLUTE_POINT,
                                                                   secure_run=True)
             precipitation_m3 = os.path.join(self.maps, f'NCA_WATER_precipitation_m3_{year}.tif')
-            self.mm_to_m3(precipitation_mm_aoi, f'Annual precipitation in m3 per pixel for year {year}',
-                          precipitation_m3)
+            mm_to_m3(precipitation_mm_aoi, f'Annual precipitation in m3 per pixel for year {year}',
+                     precipitation_m3)
             self.evapotranspiration(year, precipitation_m3)
 
     def evapotranspiration(self, year, annual_precipitation):
@@ -116,29 +116,6 @@ class WaterPrecipEvapo(enca.ENCARun):
             ds_out.write(data, 1)
 
         return self.accord.AutomaticBring2AOI(annual_precip, RasterType.ABSOLUTE_POINT, secure_run=True)
-
-    def mm_to_m3(self, input, title, output):
-        # TODO use block processing
-        with rasterio.open(input) as ds_in, \
-             rasterio.open(output, 'w', **dict(ds_in.profile,
-                                               nodata=np.nan,
-                                               compress='lzw',
-                                               dtype=rasterio.float32,
-                                               driver='GTiff',
-                                               bigtiff='yes',
-                                               tiled=True,
-                                               blockysize=_block_shape[0],
-                                               blockxsize=_block_shape[1])) as ds_out:
-            ds_out.update_tags(file_creation=time.asctime(),
-                               creator='sys4enca',
-                               Info=title,
-                               NODATA_value=ds_out.nodata,
-                               VALUES='valid: > 0',
-                               PIXEL_UNIT='m3 water')
-            data = ds_in.read(1).astype(float)
-            data *= _precipitation_2_m * float(ds_in.profile['transform'].a) * float(abs(ds_in.profile['transform'].e))
-            data[data < 0] = np.nan
-            ds_out.write(data.astype(rasterio.float32), 1)
 
     def convert_copernicus_netcdf(self, year):
         # open dataset
@@ -239,3 +216,27 @@ class WaterPrecipEvapo(enca.ENCARun):
             dst.write(aOut, 1)
 
         return path_out_file
+
+
+def mm_to_m3(input, title, output):
+    # TODO use block processing
+    with rasterio.open(input) as ds_in, \
+         rasterio.open(output, 'w', **dict(ds_in.profile,
+                                           nodata=np.nan,
+                                           compress='lzw',
+                                           dtype=rasterio.float32,
+                                           driver='GTiff',
+                                           bigtiff='yes',
+                                           tiled=True,
+                                           blockysize=_block_shape[0],
+                                           blockxsize=_block_shape[1])) as ds_out:
+        ds_out.update_tags(file_creation=time.asctime(),
+                           creator='sys4enca',
+                           Info=title,
+                           NODATA_value=ds_out.nodata,
+                           VALUES='valid: > 0',
+                           PIXEL_UNIT='m3 water')
+        data = ds_in.read(1).astype(float)
+        data *= _precipitation_2_m * float(ds_in.profile['transform'].a) * float(abs(ds_in.profile['transform'].e))
+        data[data < 0] = np.nan
+        ds_out.write(data.astype(rasterio.float32), 1)
