@@ -20,6 +20,7 @@ _WORLDCLIM = 'worldclim'
 _CGIAR_AET = 'CGIAR_AET'
 _PRECIPITATION = 'precipitation'
 _COPERNICUS_PRECIPITATION = 'copernicus_precipitation'
+_LC_RAINFED_AGRI = 'LC_rainfed_agri'
 
 _block_shape = (256, 256)
 
@@ -40,6 +41,7 @@ class WaterPrecipEvapo(enca.ENCARun):
                 _WORLDCLIM: ConfigItem(),  # Worldclim data directory.  Sum monthly data and then bring2aoi
                 _CGIAR_AET: ConfigRaster(raster_type=RasterType.ABSOLUTE_POINT),  # configraster -> will be automatically adjusted
                 _COPERNICUS_PRECIPITATION: {YEARLY: ConfigItem()},  # netCDF files with Copernicus global precipitation
+                _LC_RAINFED_AGRI: ConfigItem(default=[10, 11, 12, 30])
             }})
         self.lta_precip = None
         self.lta_evapo = None
@@ -62,13 +64,15 @@ class WaterPrecipEvapo(enca.ENCARun):
             precipitation_m3 = os.path.join(self.maps, f'NCA_WATER_precipitation_m3_{year}.tif')
             mm_to_m3(precipitation_mm_aoi, f'Annual precipitation in m3 per pixel for year {year}',
                      precipitation_m3)
-            self.evapotranspiration(year, precipitation_m3)
+            evapotranspiration = self.evapotranspiration(year, precipitation_m3)
+            self.et_rainfed_agriculture(year, evapotranspiration)
 
     def evapotranspiration(self, year, annual_precipitation):
+        out_file = os.path.join(self.maps, f'NCA_WATER_evapotranspiration_m3_{year}.tif')
         with rasterio.open(self.lta_evapo) as ds_lta_evapo, \
              rasterio.open(self.lta_precip) as ds_lta_precip, \
              rasterio.open(annual_precipitation) as ds_precip, \
-             rasterio.open(os.path.join(self.maps, f'NCA_WATER_evapotranspiration_m3_{year}.tif'), 'w',
+             rasterio.open(out_file, 'w',
                            **ds_lta_precip.profile) as ds_out:
             ds_out.update_tags(file_creation=time.asctime(),
                                creator='sys4enca',
@@ -85,6 +89,7 @@ class WaterPrecipEvapo(enca.ENCARun):
                 data = lta_evapo * (precip / lta_precip)
 
                 ds_out.write(data.filled(np.nan).astype(rasterio.float32), 1, window=window)
+        return out_file
 
     def lta_annual_precipitation(self):
         worldclim_dir = self.config[self.component][_WORLDCLIM]
@@ -117,7 +122,27 @@ class WaterPrecipEvapo(enca.ENCARun):
 
         return self.accord.AutomaticBring2AOI(annual_precip, RasterType.ABSOLUTE_POINT, secure_run=True)
 
+    def et_rainfed_agriculture(self, year, evapotranspiration):
+        """Create raster of evapotranspiration in areas with rainfed agriculture."""
+        out_file = os.path.join(self.maps, f'NCA_WATER_ET-rainfed-agriculture_m3_{year}.tif')
+        with rasterio.open(self.config[enca.LAND_COVER][year]) as ds_lc, \
+             rasterio.open(evapotranspiration) as ds_evapo, \
+             rasterio.open(out_file, 'w', **ds_evapo.profile) as ds_out:
+            lc = ds_lc.read(1)
+            is_rainfed = np.isin(lc, self.config[self.component][_LC_RAINFED_AGRI])
+            data = ds_evapo.read(1, masked=True)
+            data[~is_rainfed & ~data.mask] = 0
+            ds_out.write(data.filled(np.nan).astype(rasterio.float32), 1)
+            ds_out.update_tags(file_creation=time.asctime(),
+                               creator='sys4enca',
+                               Info='Annual evapotranspiration of rainfed agriculture land and pasture '
+                               f'in m3 per pixel for year {year}.',
+                               NODATA_value=np.nan,
+                               VALUES='valid: > 0',
+                               PIXEL_UNIT='m3 water')
+
     def convert_copernicus_netcdf(self, year):
+        """Convert Copernicus precipitation data from netCDF4 format to GeoTiff."""
         # open dataset
         ncfile = netCDF4.Dataset(self.config[self.component][_COPERNICUS_PRECIPITATION][year], 'r')
         # getting all variables
