@@ -44,7 +44,12 @@ class DroughtVuln(enca.ENCARun):
                                   interleave='band')) as dst:
             sum = 0
             count = 0
-            for i in range(src.count - int(40 * 365.24), src.count):
+            index_start = src.count - int(40 * 365.24)
+            if index_start < 0:
+                logger.warning('Drought vulnerability file does not contain 40 years of data.  '
+                               'Using all %s available bands for the long-term average', src.count)
+                index_start = 0
+            for i in range(index_start, src.count):
                 data = src.read(i + 1)
                 valid = data != src.nodata
                 count += valid
