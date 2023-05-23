@@ -31,7 +31,15 @@ class Usage(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
-                _GHS_POP: ConfigItem(),
+                # User can provide a set of GHS POP input files.   Not all years must be provided, we check later on if
+                # we have data for the years we need.
+                _GHS_POP: {'y1990': ConfigItem(optional=True),
+                           'y1995': ConfigItem(optional=True),
+                           'y2000': ConfigItem(optional=True),
+                           'y2005': ConfigItem(optional=True),
+                           'y2010': ConfigItem(optional=True),
+                           'y2015': ConfigItem(optional=True),
+                           'y2020': ConfigItem(optional=True),},
                 _MUNICIPAL: ConfigItem(check_function=check_csv, delimiter=';'),
                 _AGRICULTURAL: ConfigItem(check_function=check_csv, delimiter=';'),
                 _LC_AGRI: ConfigItem(default=[20])
@@ -94,7 +102,15 @@ class Usage(enca.ENCARun):
         # warping GHS_POP accurately is an expensive operation, so first find out which input rasters we actually need
         # for the years we want to process.
         logger.debug('Preparing GHS POP rasters for account AOI.')
-        years_input = sorted(self.config[self.component][_GHS_POP].keys())
+        # Convert 'y1995', 'y2000', ... config keys to year integers 1995, 2000, ... for all provided GHS_POP files:
+        ghs_pop_input = {}
+        for key in self.config_template[self.component][_GHS_POP].keys():
+            val = self.config[self.component][_GHS_POP].get(key)
+            if val:
+                year = key[1:]
+                ghs_pop_input[year] = val
+
+        years_input = sorted(ghs_pop_input.keys())
         years_needed = set()
         for year in self.years:
             if year in years_input:
@@ -114,7 +130,7 @@ class Usage(enca.ENCARun):
         epsg = self.accord.ref_profile['crs'].to_epsg()
         ghs_pop_aoi = {}
         for year in years_needed:
-            input_file = self.config[self.component][_GHS_POP][year]
+            input_file = ghs_pop_input[year]
             name = os.path.splitext(os.path.basename(input_file))[0]
             output_file = os.path.join(self.maps, f'{name}_{res}m_EPSG{epsg}.tif')
             ghs_pop_aoi[year] = self.accord.AutomaticBring2AOI(input_file, RasterType.ABSOLUTE_VOLUME,
