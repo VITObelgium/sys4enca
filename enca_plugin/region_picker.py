@@ -14,6 +14,7 @@ class RegionPicker(QtWidgets.QGroupBox):
         layout = QtWidgets.QFormLayout()
 
         self._filewidget = QgsFileWidget(self)
+        self._filewidget.setFilter('Vector Files (*.shp *.gpkg);; All Files (*.*)')
         self._selected_regions = QgsCheckableComboBox(self)
         layout.insertRow(0, 'Shape file', self._filewidget)
         layout.insertRow(1, 'Selected regions', self._selected_regions)
