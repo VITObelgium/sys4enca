@@ -3,10 +3,11 @@
 On a Windows installation based on OSGeo4W, we run the OSGeo4W installer to install rasterio, geopandas, scipy, etc.
 On other systems, we present a warning message and expect the user to take care of this installation.
 """
-import os
 import importlib
+import os
 import subprocess
-from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
+import tempfile
+from importlib.metadata import PackageNotFoundError, version, distributions  # pragma: no cover
 
 from PyQt5.QtWidgets import QMessageBox, QDialog
 from pkg_resources import parse_version
@@ -62,9 +63,20 @@ def install_pip_deps():
 
     python = get_python_interpreter()
 
+    # Generate a constraints file for pip, to prevent pip from *downgrading* existing packages
+    # (except existing sys4enca installations):
+    with tempfile.NamedTemporaryFile(mode='w+t', delete=False, prefix='sys4enca_constraints') as cf:
+        for dist in distributions():
+            dist_name = dist.metadata['name']
+            if dist_name == _package_dist_name:
+                # sys4enca may be downgraded if the user wants to install an older plugin version
+                continue
+            cf.write(f'{dist_name}>={dist.version}\n')
+
     try:
         # now install our package
         subprocess.run([f'{python}', '-m', 'pip', 'install', '-U',
+                        '-c', cf.name,  # use constraints file to prevent downgrades
                         f'{_package_dist_name}>={_min_version},<{_version_next}',
                         '--index-url', f'{_repo_url}',
                         '--extra-index-url', 'https://pypi.org/simple'] + proxy_option,
@@ -75,6 +87,9 @@ def install_pip_deps():
                                                        f'Exit status: {e.returncode}, see message log for output.')
         QgsMessageLog.logMessage(f'pip install failed, stdout: {e.stdout}, stderr: {e.stderr}.', level=Qgis.Critical)
         return False
+    finally:
+        # Clean up the constraints file
+        os.remove(cf.name)
     return True
 
 
