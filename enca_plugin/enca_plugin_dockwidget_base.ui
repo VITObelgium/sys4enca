@@ -265,10 +265,18 @@
                  </widget>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QgsFileWidget" name="SOC_"/>
+                 <widget class="QgsFileWidget" name="SOC_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QgsFileWidget" name="SOC_MANGROVES_"/>
+                 <widget class="QgsFileWidget" name="SOC_MANGROVES_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -338,25 +346,53 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="R_factor_1km_"/>
+                 <widget class="QgsFileWidget" name="R_factor_1km_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="R_factor_25km_"/>
+                 <widget class="QgsFileWidget" name="R_factor_25km_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QgsFileWidget" name="soil_carbon_10cm_"/>
+                 <widget class="QgsFileWidget" name="soil_carbon_10cm_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="4" column="1">
-                 <widget class="QgsFileWidget" name="soil_carbon_20cm_"/>
+                 <widget class="QgsFileWidget" name="soil_carbon_20cm_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QgsFileWidget" name="soil_carbon_30cm_"/>
+                 <widget class="QgsFileWidget" name="soil_carbon_30cm_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QgsFileWidget" name="soil_loss_2001_"/>
+                 <widget class="QgsFileWidget" name="soil_loss_2001_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="7" column="1">
-                 <widget class="QgsFileWidget" name="soil_loss_2012_"/>
+                 <widget class="QgsFileWidget" name="soil_loss_2012_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -423,7 +459,11 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="dsr_"/>
+                 <widget class="QgsFileWidget" name="dsr_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -451,13 +491,25 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QLineEdit" name="run_name_"/>
+                 <widget class="QLineEdit" name="run_name_">
+                  <property name="text">
+                   <string>carbon_agriculture</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="agriculture_distribution_"/>
+                 <widget class="QgsFileWidget" name="agriculture_distribution_">
+                  <property name="storageMode">
+                   <enum>QgsFileWidget::GetDirectory</enum>
+                  </property>
+                 </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="agriculture_stats_"/>
+                 <widget class="QgsFileWidget" name="agriculture_stats_">
+                  <property name="storageMode">
+                   <enum>QgsFileWidget::GetDirectory</enum>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -485,13 +537,25 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QLineEdit" name="run_name_"/>
+                 <widget class="QLineEdit" name="run_name_">
+                  <property name="text">
+                   <string>carbon_fire</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="forest_biomass_"/>
+                 <widget class="QgsFileWidget" name="forest_biomass_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="burnt_areas_"/>
+                 <widget class="QgsFileWidget" name="burnt_areas_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -543,19 +607,39 @@
                  </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="land_cover_fraction_"/>
+                 <widget class="QgsFileWidget" name="land_cover_fraction_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QgsFileWidget" name="wood_removal_limitation_"/>
+                 <widget class="QgsFileWidget" name="wood_removal_limitation_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="4" column="1">
-                 <widget class="QgsFileWidget" name="faofra_agb_"/>
+                 <widget class="QgsFileWidget" name="faofra_agb_">
+                  <property name="filter">
+                   <string>CSV (*.csv);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QgsFileWidget" name="faofra_bgb_"/>
+                 <widget class="QgsFileWidget" name="faofra_bgb_">
+                  <property name="filter">
+                   <string>CSV (*.csv);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="7" column="1">
-                 <widget class="QgsFileWidget" name="faofra_litter_"/>
+                 <widget class="QgsFileWidget" name="faofra_litter_">
+                  <property name="filter">
+                   <string>CSV (*.csv);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_89">
@@ -572,7 +656,11 @@
                  </widget>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QgsFileWidget" name="faofra_wood_removals_"/>
+                 <widget class="QgsFileWidget" name="faofra_wood_removals_">
+                  <property name="filter">
+                   <string>CSV (*.csv);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="1" column="1">
                  <widget class="IntList" name="forest_lc_classes_"/>
