@@ -88,7 +88,7 @@ component_input_widgets = [
         water.HYDRO_LAKES,
         water.GLORIC_ADAPTED]),
     (carbon_npp.CarbonNPP.component, [
-        carbon_npp.GDMP_DIR,
+        (carbon_npp.GDMP_DIR, [YEARLY]),
         carbon_npp.GDMP_2_NPP]),
     (carbon_soil.CarbonSoil.component, [
         carbon_soil.SEAL_ADJUST,
