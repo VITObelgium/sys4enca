@@ -88,7 +88,7 @@ component_input_widgets = [
         water.HYDRO_LAKES,
         water.GLORIC_ADAPTED]),
     (carbon_npp.CarbonNPP.component, [
-        carbon_npp.GDMP_DIR,
+        (carbon_npp.GDMP_DIR, [YEARLY]),
         carbon_npp.GDMP_2_NPP]),
     (carbon_soil.CarbonSoil.component, [
         carbon_soil.SEAL_ADJUST,
@@ -115,7 +115,7 @@ component_input_widgets = [
         carbon_agriculture.AGRICULTURE_DISTRIBUTION,
         carbon_agriculture.AGRICULTURE_STATS]),
     (carbon_fire.CarbonFire.component, [
-        carbon_fire.BURNT_AREAS,
+        (carbon_fire.BURNT_AREAS, [YEARLY]),
         carbon_fire.FOREST_BIOMASS]),
     (carbon_forest.CarbonForest.component, [
         carbon_forest.FAOFRA_AGB,
@@ -291,8 +291,12 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.livestock_distribution_.setLayout(QtWidgets.QFormLayout())
         self.weights_.setLayout(QtWidgets.QFormLayout())
         for key in enca.carbon.livestock._livestock_types:
-            self.livestock_carbon_.layout().addRow(key, QgsFileWidget(self, objectName=key + '_'))
-            self.livestock_distribution_.layout().addRow(key, QgsFileWidget(self, objectName=key + '_'))
+            carbon_widget = QgsFileWidget(self, objectName=key + '_')
+            carbon_widget.setFilter('CSV (*.csv);; All Files (*.*)')
+            self.livestock_carbon_.layout().addRow(key, carbon_widget)
+            distribution_widget = QgsFileWidget(self, objectName=key + '_')
+            distribution_widget.setFilter('Geotiff (*.tiff *.tif);; All Files (*.*)')
+            self.livestock_distribution_.layout().addRow(key, distribution_widget)
             widget_weight = QgsDoubleSpinBox(self, objectName=key + '_')
             widget_weight.setRange(0., 1000.)
             self.weights_.layout().addRow(key, widget_weight)
