@@ -96,7 +96,11 @@
           </widget>
          </item>
          <item row="3" column="1">
-          <widget class="QgsFileWidget" name="land_cover"/>
+          <widget class="QgsFileWidget" name="land_cover">
+           <property name="filter">
+            <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+           </property>
+          </widget>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="label_6">
