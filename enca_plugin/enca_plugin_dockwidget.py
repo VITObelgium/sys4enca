@@ -115,7 +115,7 @@ component_input_widgets = [
         carbon_agriculture.AGRICULTURE_DISTRIBUTION,
         carbon_agriculture.AGRICULTURE_STATS]),
     (carbon_fire.CarbonFire.component, [
-        carbon_fire.BURNT_AREAS,
+        (carbon_fire.BURNT_AREAS, [YEARLY]),
         carbon_fire.FOREST_BIOMASS]),
     (carbon_forest.CarbonForest.component, [
         carbon_forest.FAOFRA_AGB,
