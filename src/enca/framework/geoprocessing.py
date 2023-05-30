@@ -35,6 +35,8 @@ DIC_KNOWN_WKT_STRINGS = {'ETRS_1989_LAEA': 3035,
                          'ETRS89-extended / LAEA Europe': 3035,
                          'ETRS89_ETRS_LAEA': 3035,
                          'ETRS89 / ETRS_LAEA': 3035,
+                         'GRS_1980_IUGG_1980_Lambert_Azimuthal_Equal_Area': 3035,
+                         'ETRS89_extended_LAEA_Europe': 3035,
                          'World_Mollweide': 54009}   # Note: 54009 is an ESRI identifier so add to ESRI id CONSTANT
 ESRI_IDENTIFIER = [54009]
 MINIMUM_RESOLUTION = 100.
@@ -50,7 +52,11 @@ SUM = 'sum'
 COUNT = 'px_count'
 
 # Map rasterio dtypes to GDAL command line dtypes names:
+# Note: For signed int8, we use a workaround to make GDAL do the right thing. g
+# Plugging in output type 'Byte -co PIXELTYPE-SIGNEDBYTE' in our external GDAL command lines will only work as long as
+# we run them from a single string, with shell=True.
 _dtype_map = {
+    rasterio.int8: 'Byte -co PIXELTYPE=SIGNEDBYTE',  # TODO change this to 'Int8' from GDAL 3.7 onwards...
     rasterio.uint8: 'Byte',
     rasterio.uint16: 'UInt16',
     rasterio.int16: 'Int16',
@@ -211,9 +217,11 @@ class GeoProcessing(object):
                 raise Error('Currently the GeoProcessing object only supports reference files with projected '
                             'coordinate systems in the following units: ' + ', '.join(LIST_UNITS))
 
+            if param['overwrite_s_srs'] is True:
+                param['profile'].update(crs=rasterio.crs.CRS.from_epsg(param['epsg']))
+
             self.ref_profile = param['profile']
             self.ref_extent = param['bbox']  # tuple: (lower left x, lower left y, upper right x, upper right y)
-            self.epsg = param['epsg']
 
         self.reporting_profile = None  # mainly the profile of the reporting raster processing file
         self.reporting_extent = None
@@ -1283,8 +1291,19 @@ class GeoProcessing(object):
                     f'Raster map ({raster_path}) coordinate system unit is not supported. Currently the tool' +
                     ' only supports projected coordinate systems in the following units: ' + ', '.join(LIST_UNITS))
 
+        # extract BBOX of raster and densify to avoid nonlinear transformations along the bounding box edges
+        bbox = shapely.geometry.box(*self.src_parameters['bbox'])
+        if self.src_parameters['geographic']:
+            max_distance = 0.01
+        elif self.src_parameters['unit'] in LIST_UNITS:
+            max_distance = 1000
+        else:
+            raise NotImplementedError(f"for the unit ({self.src_parameters['unit']}) no maximum distance between 2 "
+                                      f"nodes in the BBOX densification is implemented")
+        bbox_seg = bbox.segmentize(max_distance)
+
         # bring bbox of raster into a geopandas DataFrame for easier handling
-        df_raster = gpd.GeoDataFrame({"id": 1, "geometry": [shapely.geometry.box(*self.src_parameters['bbox'])]})
+        df_raster = gpd.GeoDataFrame({"id": 1, "geometry": [bbox_seg]})
         # assign the GeoDataFrame the input EPSG code
         df_raster.crs = 'EPSG:{}'.format(self.src_parameters['epsg'])
 

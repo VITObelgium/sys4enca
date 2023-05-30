@@ -30,7 +30,7 @@ dependencies = [
     'scikit-learn',
     'openpyxl',
     'Rtree',
-    'pyshp',
+    'shapely>=2.0.0',
     'pyyaml'
 ]
 dynamic = ["version"]
