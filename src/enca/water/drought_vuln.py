@@ -39,9 +39,11 @@ class DroughtVuln(enca.ENCARun):
         with rasterio.open(self.config[self.component][_DROUGHT_VULNERABILITY_INDICATOR]) as src, \
              rasterio.open(drought_lta, 'w',
                            **dict(src.profile,
+                                  crs='EPSG:4326',
                                   count=1,
                                   dtype=np.float64,
                                   interleave='band')) as dst:
+            profile = dst.profile
             sum = 0
             count = 0
             index_start = src.count - int(40 * 365.24)
@@ -83,11 +85,7 @@ class DroughtVuln(enca.ENCARun):
 
                 annual = np.divide(sum, count, where=count != 0, out=sum)
                 path_out = os.path.join(self.temp_dir(), f'drought_code_annual-average_{year}.tif')
-                with rasterio.open(path_out, 'w',
-                                   **dict(src.profile,
-                                          count=1,
-                                          dtype=np.float64,
-                                          interleave='band')) as dst:
+                with rasterio.open(path_out, 'w', **profile) as dst:
                     dst.update_tags(creator='sys4enca', info=f'annual average of the drought code for year {year}')
                     dst.write(annual, 1)
 
@@ -95,9 +93,7 @@ class DroughtVuln(enca.ENCARun):
                 # ratio < 1 means lower vulnerability than LTA; > 1 means ihgher vulnerability / decrease in health
                 dvi = annual / lta
                 path_out = os.path.join(self.temp_dir(), f'drought_vulnerability_ratio_{year}.tif')
-                with rasterio.open(path_out, 'w',
-                                   **dict(src.profile,
-                                          count=1, dtype=np.float64, interleave='band')) as dst:
+                with rasterio.open(path_out, 'w', **profile) as dst:
                     dst.update_tags(creator='sys4enca',
                                     info='drought vulnerability as ratio between annual average and long-term average, '
                                     f'i.e % of normal drought level, for year {year}')
@@ -128,8 +124,7 @@ class DroughtVuln(enca.ENCARun):
 
                 path_out = os.path.join(self.temp_dir(), f'drought-vulnerability-health-index_{year}.tif')
                 with rasterio.open(path_out, 'w',
-                                   **dict(src.profile,
-                                          count=1, dtype=np.float32, interleave='band')) as dst:
+                                   **dict(profile, dtype=np.float32)) as dst:
                     dst.update_tags(creator='sys4enca', info=f'drought vulnerability health indicator for year {year}, '
                                     'generated out of the drought code ratio.')
                     dst.write(aAnnualDVHI, 1)
