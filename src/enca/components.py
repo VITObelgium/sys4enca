@@ -12,6 +12,10 @@ from .carbon import Carbon
 from .infra import Infra
 from .leac import Leac
 from .water import Water
+from .water.precipitation_evapotranspiration import WaterPrecipEvapo
+from .water.usage import Usage
+from .water.drought_vuln import DroughtVuln
+from .water.river_length_pixel import RiverLength
 from .total import Total
 from .trend import Trend
 from enca.framework.config_check import ConfigError
@@ -19,6 +23,7 @@ from enca.framework.config_check import ConfigError
 COMPONENT = 'component'
 _run_components = {CarbonAgriculture, CarbonFire, CarbonFireVulnerability, CarbonForest, CarbonLivestock, CarbonNPP,
                    CarbonSoil, CarbonErosion,
+                   WaterPrecipEvapo, Usage, RiverLength, DroughtVuln,
                    Carbon, Infra, Leac, Water,
                    Total, Trend}  #: List of all ENCA components we can run.
 

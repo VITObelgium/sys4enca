@@ -23,6 +23,10 @@ import enca.carbon.forest as carbon_forest
 import enca.components
 import enca.framework
 import enca.water as water
+import enca.water.precipitation_evapotranspiration as water_precip_evapo
+import enca.water.usage as water_usage
+import enca.water.drought_vuln as water_drought_vuln
+import enca.water.river_length_pixel as water_river_length_px
 import enca.infra as infra
 import enca.leac as leac
 import enca.total as total
@@ -87,6 +91,26 @@ component_input_widgets = [
         water.SALINITY,
         water.HYDRO_LAKES,
         water.GLORIC_ADAPTED]),
+    (water_precip_evapo.WaterPrecipEvapo.component, [
+        water_precip_evapo._WORLDCLIM,
+        water_precip_evapo._CGIAR_AET,
+        (water_precip_evapo._COPERNICUS_PRECIPITATION, [YEARLY]),
+        water_precip_evapo._LC_RAINFED_AGRI]),
+    (water_usage.Usage.component, [
+        (water_usage._GHS_POP, ['y1990',
+                                'y1995',
+                                'y2000',
+                                'y2005',
+                                'y2010',
+                                'y2015',
+                                'y2020']),
+        water_usage._MUNICIPAL,
+        water_usage._AGRICULTURAL,
+        water_usage._LC_AGRI]),
+    (water_drought_vuln.DroughtVuln.component, [
+        water_drought_vuln._DROUGHT_VULNERABILITY_INDICATOR]),
+    (water_river_length_px.RiverLength.component, [
+        water_river_length_px._GLORIC]),
     (carbon_npp.CarbonNPP.component, [
         (carbon_npp.GDMP_DIR, [YEARLY]),
         carbon_npp.GDMP_2_NPP]),

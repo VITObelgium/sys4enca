@@ -22,15 +22,15 @@ dependencies = [
     'GDAL>=3.1.0',
     'pandas',
     'matplotlib',
+    'netCDF4',
     'numpy',
     'geopandas>=0.9',
     'rasterio',
-    'richdem',
     'scipy',
     'scikit-learn',
     'openpyxl',
     'Rtree',
-    'pyshp',
+    'shapely>=2.0.0',
     'pyyaml'
 ]
 dynamic = ["version"]

@@ -1,5 +1,6 @@
 import bisect
 import datetime
+import logging
 import os
 
 import numpy as np
@@ -10,6 +11,10 @@ from enca.framework.config_check import ConfigItem
 from enca.framework.geoprocessing import RasterType
 
 DAILY_SEVERITY_RATING = 'dsr'
+
+
+logger = logging.getLogger(__name__)
+
 
 class CarbonFireVulnerability(enca.ENCARun):
 
@@ -46,7 +51,12 @@ class CarbonFireVulnerability(enca.ENCARun):
 
             total = np.zeros((ds_dsr.height, ds_dsr.width), dtype=np.float64)
             count = np.zeros((ds_dsr.height, ds_dsr.width), dtype=int)
-            for band in range(1 + ds_dsr.count - int(40 * 365.24), 1 + ds_dsr.count):
+            band_start = 1 + ds_dsr.count - int(40 * 365.24)
+            if band_start < 1:
+                logger.warning('Fire severity input file does not contain 40 years of data.  '
+                               'Using all %s available bands for long-term average.', ds_dsr.count)
+                band_start = 1
+            for band in range(band_start, 1 + ds_dsr.count):
                 data = ds_dsr.read(band)
                 valid = data != ds_dsr.nodata
                 total[valid] += data[valid]

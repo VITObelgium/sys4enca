@@ -3,10 +3,11 @@
 On a Windows installation based on OSGeo4W, we run the OSGeo4W installer to install rasterio, geopandas, scipy, etc.
 On other systems, we present a warning message and expect the user to take care of this installation.
 """
-import os
 import importlib
+import os
 import subprocess
-from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
+import tempfile
+from importlib.metadata import PackageNotFoundError, version, distributions  # pragma: no cover
 
 from PyQt5.QtWidgets import QMessageBox, QDialog
 from pkg_resources import parse_version
@@ -16,7 +17,7 @@ from .pip_install_dialog import PipInstallDialog
 from .marvin_qgis_tools import osgeo4w
 
 _package_dist_name = 'sys4enca'  # Python package with core functionality
-_min_version = '0.2.2'  # Minimum required package version for the plugin.
+_min_version = '0.2.3'  # Minimum required package version for the plugin.
 _version_next = '0.3.0'  # Next package version which may no longer be compatible with this version of the plugin.
 _repo_url = 'https://artifactory.vgt.vito.be/api/pypi/python-packages/simple'
 
@@ -62,9 +63,20 @@ def install_pip_deps():
 
     python = get_python_interpreter()
 
+    # Generate a constraints file for pip, to prevent pip from *downgrading* existing packages
+    # (except existing sys4enca installations):
+    with tempfile.NamedTemporaryFile(mode='w+t', delete=False, prefix='sys4enca_constraints') as cf:
+        for dist in distributions():
+            dist_name = dist.metadata['name']
+            if dist_name == _package_dist_name:
+                # sys4enca may be downgraded if the user wants to install an older plugin version
+                continue
+            cf.write(f'{dist_name}>={dist.version}\n')
+
     try:
         # now install our package
         subprocess.run([f'{python}', '-m', 'pip', 'install', '-U',
+                        '-c', cf.name,  # use constraints file to prevent downgrades
                         f'{_package_dist_name}>={_min_version},<{_version_next}',
                         '--index-url', f'{_repo_url}',
                         '--extra-index-url', 'https://pypi.org/simple'] + proxy_option,
@@ -75,6 +87,9 @@ def install_pip_deps():
                                                        f'Exit status: {e.returncode}, see message log for output.')
         QgsMessageLog.logMessage(f'pip install failed, stdout: {e.stdout}, stderr: {e.stderr}.', level=Qgis.Critical)
         return False
+    finally:
+        # Clean up the constraints file
+        os.remove(cf.name)
     return True
 
 
@@ -83,6 +98,7 @@ def check_dependencies():
     # First try to install packages available from OSGeo4W
     if not osgeo4w.check_packages({'geopandas': 'python3-geopandas',
                                    'matplotlib': 'python3-matplotlib',
+                                   'netCDF4': 'python3-netcdf4',
                                    'rasterio': 'python3-rasterio',
                                    'rtree': 'python3-rtree',
                                    'sklearn': 'python3-scikit-learn',
