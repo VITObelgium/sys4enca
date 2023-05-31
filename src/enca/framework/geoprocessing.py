@@ -1317,8 +1317,8 @@ class GeoProcessing(object):
         if stand_alone:
             self.src_parameters = {}
 
-        # now we finally can check if all polygons in the GeoDataFrame are within the raster bbox
-        if not gdf.geometry.within(df_raster.loc[0, 'geometry']).all():
+        # now we finally can check if all (valid) polygons in the GeoDataFrame are within the raster bbox
+        if not gdf.geometry[gdf.is_valid].within(df_raster.loc[0, 'geometry']).all():
             logger.warning('Not all needed shapes specified by the GeoDataFrame are included in ' +
                            'the provided raster file {}'.format(raster_path))
             return False
