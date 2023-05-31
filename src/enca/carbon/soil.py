@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 import rasterio
@@ -47,17 +48,30 @@ class CarbonSoil(enca.ENCARun):
              rasterio.open(soil_config[SOC_MANGROVES]) as ds_SOCm, \
              rasterio.open(self.config[enca.LAND_COVER][year]) as ds_LC, \
              rasterio.open(os.path.join(self.maps, f'NCA_{self.component}_tons_{year}.tif'), 'w',
-                           **dict(self.accord.ref_profile,
-                                  dtype=ds_SOC.profile['dtype'])) as ds_out:
+                           **dict(ds_SOC.profile,
+                                  compress='lzw',
+                                  bigtiff='yes',
+                                  tiled=True,
+                                  nodata=-9999,
+                                  dtype=np.float32,
+                                  blockysize=block_shape[0],
+                                  blockxsize=block_shape[1])) as ds_out:
+            ds_out.update_tags(file_creation=time.asctime(),
+                               Info=f'Soil carbon in tons per pixel for year {year}.',
+                               NODATA_value=ds_out.nodata,
+                               VALUES=f'valid: > 0, nodata: {ds_out.nodata}',
+                               PIXEL_UNIT='tons carbon')
             for _, window in block_window_generator(block_shape, ds_SOC.profile['height'], ds_SOC.profile['width']):
                 lc = ds_LC.read(1, window=window)
                 soc = ds_SOC.read(1, window=window)
                 socm = ds_SOCm.read(1, window=window)
 
+                soc[np.isnan[soc]] = 0
+                socm[np.isnan[socm]] = 0
                 soc[soc == ds_SOC.nodata] = 0
                 socm[socm == ds_SOCm.nodata] = 0
 
-                result = soc.copy()
+                result = soc.astype(np.float32)
 
                 mangrove = np.isin(lc, soil_config[MANGROVE_CLASSES])
                 result[mangrove] = (soc[mangrove] + socm[mangrove]) / 2.
