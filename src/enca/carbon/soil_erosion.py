@@ -202,7 +202,7 @@ class CarbonErosion(enca.ENCARun):
 def Cut2AOI(path_in, path_out, bbox):
     """Cut raster to AOI when in same coordinate system."""
     # get extent, resolution and projection from AOI raster file
-    cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=LZW -projwin {} {} {} {} {} {}'.format(
+    cmd = 'gdal_translate --config GDAL_CACHEMAX 256 -co COMPRESS=LZW -projwin {} {} {} {} "{}" "{}"'.format(
                                                                   bbox[0], bbox[3], bbox[2], bbox[1],
                                                                   path_in, path_out)
     subprocess.check_call(cmd, shell=True)
@@ -211,7 +211,7 @@ def Cut2AOI(path_in, path_out, bbox):
 def Resample2AOI(path_in, path_out, target_crs, bbox, tresolution, wResampling='bilinear'):
     """Resample a file to an AOI without any checks."""
     cmd = ('gdalwarp --config GDAL_CACHEMAX 256 -overwrite -t_srs "{}" '
-           '-te {} {} {} {} -tr {} {} -r {} -co COMPRESS=LZW -co BIGTIFF=YES -multi {} {}').format(
+           '-te {} {} {} {} -tr {} {} -r {} -co COMPRESS=LZW -co BIGTIFF=YES -multi "{}" "{}"').format(
                str(target_crs).replace('"', '\\"'), bbox.left, bbox.bottom, bbox.right, bbox.top,
                tresolution, tresolution, wResampling, path_in, path_out)
     subprocess.check_call(cmd, shell=True)
@@ -219,10 +219,10 @@ def Resample2AOI(path_in, path_out, target_crs, bbox, tresolution, wResampling='
 
 def FillHoles(path_in, path_out):
     """Fill nodata holes."""
-    cmd = 'gdal_fillnodata.py -md 25 {} {}'.format(path_in, path_out)
+    cmd = 'gdal_fillnodata.py -md 25 "{}" "{}"'.format(path_in, path_out)
     subprocess.check_call(cmd, shell=True)
     # bring back the nodata value in the file
     with rasterio.open(path_in) as src:
         nodata = src.nodata
-    cmd = 'gdal_edit.py -a_nodata {} {}'.format(nodata, path_out)
+    cmd = 'gdal_edit.py -a_nodata "{}" "{}"'.format(nodata, path_out)
     subprocess.check_call(cmd, shell=True)
