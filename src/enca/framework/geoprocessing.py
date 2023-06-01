@@ -1871,7 +1871,7 @@ def average_rasters(output_file, *rasters, block_shape=(1024, 1024), **profile_a
     :param profile_args: Additional options for the output raster profile.
 
     """
-    sum_rasters(output_file, rasters, weight=1./len(rasters), block_shape=block_shape, **profile_args)
+    sum_rasters(output_file, *rasters, weight=1./len(rasters), block_shape=block_shape, **profile_args)
 
 
 def sum_rasters(output_file, *rasters,
