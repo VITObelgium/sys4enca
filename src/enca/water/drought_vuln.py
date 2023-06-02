@@ -1,5 +1,4 @@
-import bisect
-import datetime
+import glob
 import logging
 import os
 
@@ -7,12 +6,15 @@ import numpy as np
 import rasterio
 
 import enca
-from enca.framework.config_check import ConfigItem
-from enca.framework.geoprocessing import RasterType
+from enca.framework.config_check import YEARLY, ConfigItem
+from enca.framework.geoprocessing import RasterType, block_window_generator
 
-_DROUGHT_VULNERABILITY_INDICATOR = 'drought_vulnerability_indicator'
+DROUGHT_CODE_LTA = 'drought_code_lta'
+DROUGHT_CODE = 'drought_code'
 
 logger = logging.getLogger(__name__)
+
+_block_shape = (1024, 1024)
 
 class DroughtVuln(enca.ENCARun):
 
@@ -26,119 +28,91 @@ class DroughtVuln(enca.ENCARun):
         self.config_template.update({
             self.component: {
                 # use ConfigItem, not ConfigRaster, becase we don't want automatic warping
-                _DROUGHT_VULNERABILITY_INDICATOR: ConfigItem()}})
-
-        # TODO dates should match the dates of bands in the drought vulnerability indicator input raster?
-        d1 = datetime.date(1980, 1, 1)
-        d2 = datetime.date(2022, 1, 1)
-        self.dates = [d1 + datetime.timedelta(days=x) for x in range((d2-d1).days + 1)]
+                DROUGHT_CODE_LTA: ConfigItem(),
+                DROUGHT_CODE: {YEARLY: ConfigItem()}}})
 
     def _start(self):
-        drought_lta = os.path.join(self.temp_dir(), 'drought_code_long-term_average.tif')
-        # Calculate 40-year average of drought vulnearability indicator:
-        with rasterio.open(self.config[self.component][_DROUGHT_VULNERABILITY_INDICATOR]) as src, \
-             rasterio.open(drought_lta, 'w',
-                           **dict(src.profile,
-                                  crs='EPSG:4326',
-                                  count=1,
-                                  dtype=np.float64,
-                                  interleave='band')) as dst:
-            profile = dst.profile
+        for year in self.years:
+            # calculate annual average:
             sum = 0
             count = 0
-            index_start = src.count - int(40 * 365.24)
-            if index_start < 0:
-                logger.warning('Drought vulnerability file does not contain 40 years of data.  '
-                               'Using all %s available bands for the long-term average', src.count)
-                index_start = 0
-            for i in range(index_start, src.count):
-                data = src.read(i + 1)
-                valid = data != src.nodata
-                count += valid
-                sum += np.where(valid, data, 0)
 
-            lta = np.divide(sum, count, where=count != 0, out=sum)
-            dst.update_tags(creator='sys4enca', info='long-term average of the drought code')
-            dst.write(lta, 1)
+            profile = None
 
-        # Next, calculate annual average for all years:
-        with rasterio.open(self.config[self.component][_DROUGHT_VULNERABILITY_INDICATOR]) as src:
-            # small test:
-            if len(self.dates) == src.profile['count']:
-                logger.info('Number of drought vulnerability bands matches number of dates.')
-            elif len(self.dates) < src.profile['count']:
-                logger.warning('Number of drought vulnerability bands exceeds number of dates.  Expected mismatch.')
-            else:
-                logger.error('Number of drought vulnerability bands smaller than number of dates.  Unexpected mismatch.')
-
-            for year in self.years:
-                sum = 0
-                count = 0
-
-                i_start = self.get_date_index(datetime.date(year, 1, 1))
-                i_end = self.get_date_index(datetime.date(year, 12, 31))
-                for idx in range(i_start, 1 + i_end):
-                    data = src.read(1 + idx)
+            nc_files = glob.glob(os.path.join(self.config[self.component][DROUGHT_CODE][year], '*.nc'))
+            logger.debug('Calculate drought code average for year %s.  Found %s netCDF input files.',
+                         year, len(nc_files))
+            for f in nc_files:
+                with rasterio.open(f) as src:
+                    data = src.read(1)
                     valid = data != src.nodata
                     count += valid
                     sum += np.where(valid, data, 0)
+                    if profile is None:
+                        profile = src.profile
 
-                annual = np.divide(sum, count, where=count != 0, out=sum)
-                path_out = os.path.join(self.temp_dir(), f'drought_code_annual-average_{year}.tif')
-                with rasterio.open(path_out, 'w', **profile) as dst:
-                    dst.update_tags(creator='sys4enca', info=f'annual average of the drought code for year {year}')
-                    dst.write(annual, 1)
+            annual = np.divide(sum, count, where=count != 0, out=sum)
+            path_out = os.path.join(self.temp_dir(), f'drought_code_annual-average_{year}.tif')
+            with rasterio.open(path_out, 'w', **dict(profile,
+                                                     driver='Gtiff',
+                                                     crs='EPSG:4326',
+                                                     dtype=np.float32)) as dst:
+                dst.update_tags(creator='sys4enca', info=f'annual average of the drought code for year {year}')
+                dst.write(annual, 1)
 
-                # Now calculate annual drought vulnerability as ratio between annual and LTA
-                # ratio < 1 means lower vulnerability than LTA; > 1 means ihgher vulnerability / decrease in health
-                dvi = annual / lta
-                path_out = os.path.join(self.temp_dir(), f'drought_vulnerability_ratio_{year}.tif')
-                with rasterio.open(path_out, 'w', **profile) as dst:
-                    dst.update_tags(creator='sys4enca',
-                                    info='drought vulnerability as ratio between annual average and long-term average, '
-                                    f'i.e % of normal drought level, for year {year}')
-                    dst.write(dvi, 1)
+            # Now warp drought code to our AOI
+            logger.debug('Warp drought code annual average to AOI.')
+            path_out_aoi = os.path.join(self.temp_dir(), f'drought_code_annual-average_{year}_ENCA.tif')
+            self.accord.AutomaticBring2AOI(path_out, RasterType.ABSOLUTE_POINT, secure_run=True, path_out=path_out_aoi)
 
-                # Now we have to calculate a meaningful health indicator for the table work from the vulnerability idea
-                # is that the vulnerability against drought is mainly the change against the normal state. meaning: the
-                # vegetation is adapted to the normal state of the water availability (plants are adapted to their area)
-                # which is represented by our 40year average in drought code the higher the % above normal state the
-                # higher is the vulnerability and the lower the health status
+            logger.debug('Warp drought code long-term average to AOI.')
+            drought_lta_aoi = os.path.join(self.temp_dir(), 'drought_code_LTA_ENCA.tif')
+            self.accord.AutomaticBring2AOI(self.config[self.component][DROUGHT_CODE_LTA],
+                                           RasterType.ABSOLUTE_POINT, secure_run=True, path_out=drought_lta_aoi)
 
-                # now we have to take into account the annual % of normal  which we have to categorize
-                aAnnualDVHI = np.full_like(dvi, 1, dtype=np.float32)
-                # >1.05 - 1.5
-                aAnnualDVHI[(dvi > 1.05) & (dvi < 1.25)] -= 0.05
-                aAnnualDVHI[(dvi >= 1.25) & (dvi < 1.5)] -= 0.1
-                # >1.5 - 2
-                aAnnualDVHI[(dvi >= 1.5) & (dvi < 1.75)] -= 0.15
-                aAnnualDVHI[(dvi >= 1.75) & (dvi < 2)] -= 0.2
-                # >2 - 2.5
-                aAnnualDVHI[(dvi >= 2) & (dvi < 2.25)] -= 0.25
-                aAnnualDVHI[(dvi >= 2.25) & (dvi < 2.5)] -= 0.3
-                # >2.5 - 3
-                aAnnualDVHI[(dvi >= 2.5) & (dvi < 2.75)] -= 0.35
-                aAnnualDVHI[(dvi >= 2.75) & (dvi < 3)] -= 0.4
-                # >3
-                aAnnualDVHI[(dvi >= 3) & (~np.isnan(dvi))] -= 0.5
+            # Now calculate annual drought vulnerability as ratio between annual and LTA
+            # ratio < 1 means lower vulnerability than LTA; > 1 means ihgher vulnerability / decrease in health
+            with rasterio.open(path_out_aoi) as ds_annual, \
+                 rasterio.open(drought_lta_aoi) as ds_lta, \
+                 rasterio.open(os.path.join(self.temp_dir(), f'drought_vulnerability_ratio_{year}.tif'), 'w',
+                               **ds_annual.profile) as ds_ratio, \
+                 rasterio.open(os.path.join(self.maps, f'drought-vulnerability-health-index_{year}.tif'), 'w',
+                               **ds_annual.profile) as ds_index:
+                ds_ratio.update_tags(
+                    creator='sys4enca',
+                    info='drought vulnerability as ratio between annual average and long-term average, '
+                    f'i.e % of normal drought level, for year {year}')
+                ds_index.update_tags(
+                    creator='sys4enca',
+                    info=f'drought vulnerability health indicator for year {year}, '
+                    'generated out of the drought code ratio.')
 
-                path_out = os.path.join(self.temp_dir(), f'drought-vulnerability-health-index_{year}.tif')
-                with rasterio.open(path_out, 'w',
-                                   **dict(profile, dtype=np.float32)) as dst:
-                    dst.update_tags(creator='sys4enca', info=f'drought vulnerability health indicator for year {year}, '
-                                    'generated out of the drought code ratio.')
-                    dst.write(aAnnualDVHI, 1)
+                for _, window in block_window_generator(_block_shape, ds_lta.profile['height'], ds_lta.profile['width']):
+                    dvi = ds_annual.read(1, window=window) / ds_lta.read(1, window=window)
 
-                # warp to AOI
-                # TODO check if we still need original multi-stage warp
-                path_out_aoi = os.path.join(self.maps, f'NCA_WATER_drought-vulnerability_factor_{year}.tif')
-                self.accord.AutomaticBring2AOI(path_out, RasterType.ABSOLUTE_POINT,
-                                               secure_run=True, path_out=path_out_aoi)
+                    ds_ratio.write(dvi, window=window, indexes=1)
 
-    def get_date_index(self, date):
-        """Get the index of a date in the list self.dates."""
-        i = bisect.bisect_right(self.dates, date)
-        if i and (self.dates[0] <= date <= self.dates[-1]):
-            return i-1
-        else:
-            raise ValueError(f'Date {date} outside of range [{self.dates[0]}, {self.dates[-1]}].')
+                    # Now we have to calculate a meaningful health indicator for the table work from the vulnerability idea
+                    # is that the vulnerability against drought is mainly the change against the normal state. meaning: the
+                    # vegetation is adapted to the normal state of the water availability (plants are adapted to their area)
+                    # which is represented by our 40year average in drought code the higher the % above normal state the
+                    # higher is the vulnerability and the lower the health status
+
+                    # now we have to take into account the annual % of normal  which we have to categorize
+                    aAnnualDVHI = np.full_like(dvi, 1, dtype=np.float32)
+                    # >1.05 - 1.5
+                    aAnnualDVHI[(dvi > 1.05) & (dvi < 1.25)] -= 0.05
+                    aAnnualDVHI[(dvi >= 1.25) & (dvi < 1.5)] -= 0.1
+                    # >1.5 - 2
+                    aAnnualDVHI[(dvi >= 1.5) & (dvi < 1.75)] -= 0.15
+                    aAnnualDVHI[(dvi >= 1.75) & (dvi < 2)] -= 0.2
+                    # >2 - 2.5
+                    aAnnualDVHI[(dvi >= 2) & (dvi < 2.25)] -= 0.25
+                    aAnnualDVHI[(dvi >= 2.25) & (dvi < 2.5)] -= 0.3
+                    # >2.5 - 3
+                    aAnnualDVHI[(dvi >= 2.5) & (dvi < 2.75)] -= 0.35
+                    aAnnualDVHI[(dvi >= 2.75) & (dvi < 3)] -= 0.4
+                    # >3
+                    aAnnualDVHI[(dvi >= 3) & (~np.isnan(dvi))] -= 0.5
+
+                    ds_index.write(aAnnualDVHI, window=window, indexes=1)
