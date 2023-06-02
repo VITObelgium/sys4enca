@@ -459,15 +459,32 @@
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="0">
+                <item row="2" column="0">
                  <widget class="QLabel" name="label_79">
                   <property name="text">
-                   <string>Daily Severity Rating</string>
+                   <string>ECMWF daily fire severity</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="fire_severity_">
+                  <property name="filter">
+                   <string/>
+                  </property>
+                  <property name="storageMode">
+                   <enum>QgsFileWidget::GetDirectory</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_135">
+                  <property name="text">
+                   <string>Long-term average fire severity</string>
                   </property>
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="dsr_">
+                 <widget class="QgsFileWidget" name="fire_severity_lta_">
                   <property name="filter">
                    <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
                   </property>
@@ -920,15 +937,32 @@
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="0">
+                <item row="2" column="0">
                  <widget class="QLabel" name="label_133">
                   <property name="text">
-                   <string>drought vulnerability indicator</string>
+                   <string>ECMWF daily drought code</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="drought_code_">
+                  <property name="filter">
+                   <string/>
+                  </property>
+                  <property name="storageMode">
+                   <enum>QgsFileWidget::GetDirectory</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_136">
+                  <property name="text">
+                   <string>Long-term average drought code</string>
                   </property>
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="drought_vulnerability_indicator_">
+                 <widget class="QgsFileWidget" name="drought_code_lta_">
                   <property name="filter">
                    <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
                   </property>
