@@ -210,7 +210,7 @@ class Run:
         The resulting :class:`geopandas.GeoDataFrame` is indexed by NUTS_ID, and has an additional column SHAPE_ID,
         which contains an integer identifier for each shape.  This column can be used when rasterizing shapefiles.
         """
-        assert self.id_col_reporting is not None
+        assert self.id_col_statistics is not None
         assert self.id_col_reporting is not None
         file_statistics = self.config.get(_STATISTICS_SHAPE)
         if not file_statistics:
