@@ -97,6 +97,9 @@ class ENCARun(Run):
         self.statistics = os.path.join(self.run_dir, 'statistics')
         self.parameters = enca.parameters.defaults
 
+        self.admin_shape = None
+        self.admin_raster = None
+
         logger.debug('Running with config:\n%s', config)
 
     def _create_dirs(self):
@@ -196,6 +199,15 @@ class ENCARun(Run):
             logger.debug('Warped administrative boundaries vector file.')
 
         self.admin_shape[SHAPE_ID] = range(1, 1 + self.admin_shape.shape[0])
+
+    def _StudyScopeCheck(self):
+        """Extend _StudyScopeCheck to rasterize the administrative boundary file.
+
+        By default, we rasterize the admin boundaries shapefile for the same extent as the statistics (=SELU) shapes.
+        """
+        super()._StudyScopeCheck()
+        self.admin_raster = os.path.join(self.temp_dir(), 'admin_shape_rasterized.tif')
+        self.accord.rasterize(self.admin_shape, SHAPE_ID, self.admin_raster, guess_dtype=True, mode='statistical')
 
     def selu_stats(self, raster_files):
         """Calculate sum of raster values per SELU region for a dict of input rasters.
