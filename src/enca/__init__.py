@@ -10,6 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
+import geopandas as gpd
 import pandas as pd
 import pyproj
 import rasterio
@@ -19,6 +20,7 @@ import enca.parameters
 from enca.framework.config_check import YEARLY, ConfigError, ConfigItem, ConfigRaster, check_csv
 from enca.framework.run import Run
 from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea, RasterType
+from enca.framework.errors import Error
 
 try:
     dist_name = 'sys4enca'
@@ -43,10 +45,13 @@ class RunType(Enum):
     PREPROCESS = 2  #: Preprocessing.
 
 HYBAS_ID = 'HYBAS_ID'
+ADMIN_ID = 'ADMIN_ID'  # id attribute for administrative boundaries shapefile
 #should also be possible to be GID_1
 GID_0 = 'GID_0'
 C_CODE = 'C_CODE'
 CODE = 'CODE'
+
+_ADMIN_BOUNDS = 'admin_boundaries'  # Administrative boundaries shapefile
 
 AREA_RAST = 'Area_rast'
 
@@ -164,6 +169,33 @@ class ENCARun(Run):
 
         return df_overlap
 
+    def _load_region_shapes(self):
+        """Extend _load_region_shapes to also load the administrative boundaries file."""
+        super()._load_region_shapes()
+
+        file_admin_boundaries = self.config.get(_ADMIN_BOUNDS)
+        if not file_admin_boundaries:
+            raise ConfigError('Please provide a vector file describing the adminstrative boundaries '
+                              'used in regional statistics data.', [_ADMIN_BOUNDS])
+
+        try:
+            self.admin_shape = gpd.read_file(file_admin_boundaries).set_index(ADMIN_ID)
+        except KeyError:
+            raise ConfigError(f'The provided file "{file_admin_boundaries}" for administrative boundaries does not have '
+                              f'a column {ADMIN_ID}.', [_ADMIN_BOUNDS])
+        except Exception as e:
+            raise Error(f'Failed to read administrative boundaries input file "{file_admin_boundaries}": {e}.')
+
+        try:
+            check_epsg = self.admin_shape.crs.to_epsg()
+        except Exception:
+            raise ConfigError('Please provide an administrative boundaries shapefile with a valid EPSG projection.',
+                              [_ADMIN_BOUNDS])
+        if check_epsg != self.epsg:
+            self.admin_shape.to_crs(epsg=self.epsg, inplace=True)
+            logger.debug('Warped administrative boundaries vector file.')
+
+        self.admin_shape[SHAPE_ID] = range(1, 1 + self.admin_shape.shape[0])
 
     def selu_stats(self, raster_files):
         """Calculate sum of raster values per SELU region for a dict of input rasters.

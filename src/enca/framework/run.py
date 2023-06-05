@@ -236,6 +236,27 @@ class Run:
         except Exception as e:
             raise Error(f'Failed to read reporting geographical regions file "{file_reporting}": {e}.')
 
+        logger.debug('Check if statistics and reporting vector files have correct EPSG')
+        # reporting vector file
+        try:
+            check_epsg = self.reporting_shape.crs.to_epsg()
+        except Exception:
+            raise ConfigError('Please provide a reporting shapefile with a valid EPSG projection.',
+                              [_REPORTING_SHAPE])
+        if check_epsg != self.epsg:
+            self.reporting_shape.to_crs(epsg=self.epsg, inplace=True)
+            logger.debug('** reporting vector file had to be warped')
+
+        # statistics vector file
+        try:
+            check_epsg = self.statistics_shape.crs.to_epsg()
+        except Exception:
+            raise ConfigError('Please provide a statistics shapefile with a valid EPSG projection.',
+                              [_STATISTICS_SHAPE])
+        if check_epsg != self.epsg:
+            self.statistics_shape.to_crs(epsg=self.epsg, inplace=True)
+            logger.debug('** statistics vector file had to be warped')
+
         # SHAPE_ID: integer number to be used as identifier when rasterizing .
         self.statistics_shape[SHAPE_ID] = range(1, 1 + self.statistics_shape.shape[0])
         self.reporting_shape[SHAPE_ID] = range(1, 1 + self.reporting_shape.shape[0])
@@ -251,29 +272,7 @@ class Run:
         - Generate raster masks of the reporting_regions and statistics_regions, which can be used for
           block-processing.
         """
-        # 1. check if reporting and statistic vectors have the right EPSG
-        logger.debug('* check if provided vector files have correct EPSG')
-        # reporting vector file
-        try:
-            check_epsg = self.reporting_shape.crs.to_epsg()
-        except BaseException:
-            raise ConfigError('Please provide a reporting shapefile with a valid EPSG projection.',
-                              [_REPORTING_SHAPE])
-        if check_epsg != self.epsg:
-            self.reporting_shape.to_crs(epsg=self.epsg, inplace=True)
-            logger.debug('** reporting vector file had to be warped')
-
-        # statistics vector file
-        try:
-            check_epsg = self.statistics_shape.crs.to_epsg()
-        except BaseException:
-            raise ConfigError('Please provide a statistics shapefile with a valid EPSG projection.',
-                              [_STATISTICS_SHAPE])
-        if check_epsg != self.epsg:
-            self.statistics_shape.to_crs(epsg=self.epsg, inplace=True)
-            logger.debug('** statistics vector file had to be warped')
-
-        # 2. Get the resolution of the first land cover raster.
+        # Get the resolution of the first land cover raster.
         try:
             land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
         except KeyError:
@@ -295,7 +294,7 @@ class Run:
                 'produces non-desired results.')
             src_res = (MINIMUM_RESOLUTION, MINIMUM_RESOLUTION)
 
-        # 3. Get the "statistics_regions" needed to cover the selected "reporting_regions"
+        # Get the "statistics_regions" needed to cover the selected "reporting_regions"
         logger.debug('* get the reporting regions')
         # first we check the given "selected_regions" from  config all exist in reporting_shape
         # mainly needed when tool is run in command line mode
@@ -330,7 +329,7 @@ class Run:
         # extract the identifier to get the reporting_regions
         self.statistics_shape = self.statistics_shape.reindex(df_check.index.unique()).sort_index()
 
-        # 4. Generate the bounds for the statistical AOI
+        # Generate the bounds for the statistical AOI
         logger.debug('* calculate the raster statistical AOI')
         # first get total bounds for selected regions in statistical vector file
         # format: minx, miny, maxx, maxy
@@ -343,14 +342,14 @@ class Run:
                                                right=math.ceil(bbox[2]) * MINIMUM_RESOLUTION,
                                                top=math.ceil(bbox[3]) * MINIMUM_RESOLUTION)
 
-        # 5. Set up the accord object with the needed extent
+        # Set up the accord object with the needed extent
         logger.debug('* initialize the global raster AccoRD object')
         # Note: since we do not give a reference raster file to GeoProcessing object we have to fill some info manual
         self.accord = GeoProcessing(self.software_name, self.component, self.temp_dir())
         # set the extent for the raster files using the statistical domain
         self.accord.ref_extent = AOI_bbox
 
-        # 6. Set the reference profile in the accord GeoProcessing object
+        # Set the reference profile in the accord GeoProcessing object
         logger.debug('** give statistic raster info as reference file to the AccoRD object (profile, extent)')
         # we set up the standard raster profile
         self.accord.ref_profile = {'driver': 'GTiff',
@@ -372,7 +371,7 @@ class Run:
         logger.debug('** set up the raster profile and extent for the reporting regions')
         self._create_reporting_profile()
 
-        # 7. Generate a raster version of stats and reporting vector file for blockprocessing tasks
+        # Generate a raster version of stats and reporting vector file for blockprocessing tasks
         logger.debug('* create raster versions of statistic and reporting vectors for block processing tasks')
         # first, reporting vector file
         # output file name
@@ -388,7 +387,7 @@ class Run:
         self.accord.rasterize(self.statistics_shape, SHAPE_ID, self.statistics_raster,
                               guess_dtype=True, mode='statistical')
 
-        # 8. Check if input land cover map covers the required AOI
+        # Check if input land cover map covers the required AOI
         logger.debug(
             '** pre-check the provided MASTER land cover raster file if all statistical regions are covered')
         try:
