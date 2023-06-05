@@ -108,7 +108,8 @@ component_input_widgets = [
         water_usage._AGRICULTURAL,
         water_usage._LC_AGRI]),
     (water_drought_vuln.DroughtVuln.component, [
-        water_drought_vuln._DROUGHT_VULNERABILITY_INDICATOR]),
+        (water_drought_vuln.DROUGHT_CODE, [YEARLY]),
+        water_drought_vuln.DROUGHT_CODE_LTA]),
     (water_river_length_px.RiverLength.component, [
         water_river_length_px._GLORIC]),
     (carbon_npp.CarbonNPP.component, [
@@ -134,7 +135,8 @@ component_input_widgets = [
         (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),
         (carbon_livestock.WEIGHTS, carbon.livestock._livestock_types)]),
     (carbon_fire_vuln.CarbonFireVulnerability.component, [
-       carbon_fire_vuln.DAILY_SEVERITY_RATING]),
+        (carbon_fire_vuln.SEVERITY_RATING, [YEARLY]),
+        carbon_fire_vuln.SEVERITY_RATING_LTA]),
     (carbon_agriculture.CarbonAgriculture.component, [
         carbon_agriculture.AGRICULTURE_DISTRIBUTION,
         carbon_agriculture.AGRICULTURE_STATS]),
