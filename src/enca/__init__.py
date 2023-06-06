@@ -1,5 +1,6 @@
 import gettext
 import logging
+import math
 import os
 from enum import Enum
 
@@ -18,8 +19,9 @@ import rasterio
 import enca
 import enca.parameters
 from enca.framework.config_check import YEARLY, ConfigError, ConfigItem, ConfigRaster, check_csv
-from enca.framework.run import Run
-from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea, RasterType, POLY_MIN_SIZE
+from enca.framework.run import Run, _LAND_COVER
+from enca.framework.geoprocessing import number_blocks, block_window_generator, statistics_byArea, RasterType, \
+    SHAPE_ID, POLY_MIN_SIZE, MINIMUM_RESOLUTION, GeoProcessing
 from enca.framework.errors import Error
 
 try:
@@ -37,6 +39,7 @@ with as_file(files(__name__).joinpath('locale')) as path:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class RunType(Enum):
     """ENCA runs belong to one of these types."""
 
@@ -44,9 +47,10 @@ class RunType(Enum):
     ACCOUNT = 1  #: Yearly account or trend.
     PREPROCESS = 2  #: Preprocessing.
 
+
 HYBAS_ID = 'HYBAS_ID'
 ADMIN_ID = 'ADMIN_ID'  # id attribute for administrative boundaries shapefile
-#should also be possible to be GID_1
+# should also be possible to be GID_1
 GID_0 = 'GID_0'
 C_CODE = 'C_CODE'
 CODE = 'CODE'
@@ -298,3 +302,74 @@ class ENCARun(Run):
         """Return a `pd.DataFrame` with the index codes and their descriptions."""
         with files(enca).joinpath(f'data/LUT_{cls.component}_INDEX_CAL.csv').open() as f:
             return pd.read_csv(f, sep=';').set_index(CODE)
+
+
+class ENCARunAdminAOI(ENCARun):
+    """ENCA Run where the reference AOI is based on the administrative boundaries shapefile.
+
+    If we need to run spatial disaggregation for statistics per administrative boundary, the reference AOI must contain
+    the all adminstrative boundaries for the regios involved.
+    """
+
+    def _StudyScopeCheck(self):
+        """Override _StudyScopeCheck to set AOI based administrative boundaries shapefile."""
+        # Generate the bounds for the AOI
+        logger.debug('Calculate the raster AOI based on administrative boundaries')
+        # first get total bounds for selected regions in statistical vector file
+        # format: minx, miny, maxx, maxy
+        bbox = self.admin_shape.total_bounds
+        # allign to min_resolution increment to support better merges
+        bbox = bbox / MINIMUM_RESOLUTION
+        # named tuple - BoundingBox(left, bottom, right, top)
+        AOI_bbox = rasterio.coords.BoundingBox(left=math.floor(bbox[0]) * MINIMUM_RESOLUTION,
+                                               bottom=math.floor(bbox[1]) * MINIMUM_RESOLUTION,
+                                               right=math.ceil(bbox[2]) * MINIMUM_RESOLUTION,
+                                               top=math.ceil(bbox[3]) * MINIMUM_RESOLUTION)
+
+        # Set up the accord object with the needed extent
+        logger.debug('Initialize the global raster AccoRD object')
+        # Note: since we do not give a reference raster file to GeoProcessing object we have to fill some info manually
+        self.accord = GeoProcessing(self.software_name, self.component, self.temp_dir())
+        # set the extent for the raster files using the statistical domain
+        self.accord.ref_extent = AOI_bbox
+
+        # Set the reference profile in the accord GeoProcessing object
+        logger.debug('* give administrative boundaries raster info as reference file to the AccoRD object (profile, extent)')
+        # we set up the standard raster profile
+        self.accord.ref_profile = {'driver': 'GTiff',
+                                   'dtype': self.src_profile['dtype'],
+                                   'nodata': self.src_profile['nodata'],
+                                   'width': int((AOI_bbox.right - AOI_bbox.left) / self.src_res[0]),
+                                   'height': int((AOI_bbox.top - AOI_bbox.bottom) / self.src_res[1]),
+                                   'count': 1,
+                                   'crs': rasterio.crs.CRS.from_epsg(self.epsg),
+                                   'transform': rasterio.transform.from_origin(AOI_bbox.left, AOI_bbox.top,
+                                                                               self.src_res[0], self.src_res[1]),
+                                   'blockxsize': 256,
+                                   'blockysize': 256,
+                                   'tiled': True,
+                                   'compress': 'deflate',
+                                   'interleave': 'band',
+                                   'bigtiff': 'if_saver'}
+        # create rasterio profile for the reporting area also for further processing
+        logger.debug('* set up the raster profile and extent for the reporting regions')
+        self._create_reporting_profile()
+
+        # Check if input land cover map covers the required AOI
+        land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
+        logger.debug(
+            '* pre-check the provided MASTER land cover raster file if all admin regions are covered')
+        try:
+            aoi_ok = self.accord.vector_in_raster_extent_check(land_cover_year0, self.admin_shape,
+                                                               check_projected=True, check_unit=True,
+                                                               stand_alone=True)
+        except Error as e:
+            # Catch Error exceptions and re-raise as ConfigError linked to the config['landcover'][self.years[0]]:
+            raise ConfigError(e.message, [enca._LAND_COVER, self.years[0]])
+        if not aoi_ok:
+            raise ConfigError(
+                'Not all needed admin regions specified by the reporting_regions are included in the ' +
+                'provided land cover map ({}). '.format(land_cover_year0) +
+                'Please provide a land cover map with a minimum extent of {} in EPSG:{}.'.format(AOI_bbox,
+                                                                                                 self.epsg),
+                [enca._LAND_COVER, self.years[0]])
