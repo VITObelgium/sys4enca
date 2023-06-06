@@ -19,7 +19,7 @@ import enca
 import enca.parameters
 from enca.framework.config_check import YEARLY, ConfigError, ConfigItem, ConfigRaster, check_csv
 from enca.framework.run import Run
-from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea, RasterType
+from enca.framework.geoprocessing import SHAPE_ID, number_blocks, block_window_generator, statistics_byArea, RasterType, POLY_MIN_SIZE
 from enca.framework.errors import Error
 
 try:
@@ -199,6 +199,19 @@ class ENCARun(Run):
             logger.debug('Warped administrative boundaries vector file.')
 
         self.admin_shape[SHAPE_ID] = range(1, 1 + self.admin_shape.shape[0])
+
+        # Get the administrative regions needed to cover all selected SELU ("statistical") regions:
+        logger.debug('Clip administrative boundaries shapefile by selected statistical regions.')
+        df_check = gpd.clip(self.admin_shape, self.statistics_shape)
+        # Remove empty / false areas:
+        df_check = df_check[~df_check.is_empty]
+        df_check = df_check[df_check.area > POLY_MIN_SIZE]
+        # Check if the adminstrative regions cover the set of seleted statistical regions:
+        area_delta = self.statistics_shape.area.sum() - df_check.area.sum()
+        if abs(area_delta) > (self.src_res[0] * self.src_res[1] / 3.):
+            raise ConfigError('The administrative boundaries shapefile does not cover all selected SELU shapes.')
+        # Extract the selected regions:
+        self.admin_shape = self.admin_shape.reindex(df_check.index.unique()).sort_index()
 
     def _StudyScopeCheck(self):
         """Extend _StudyScopeCheck to rasterize the administrative boundary file.

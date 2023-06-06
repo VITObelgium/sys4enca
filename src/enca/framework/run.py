@@ -150,6 +150,28 @@ class Run:
 
     def _configure(self):
         """Set up reference CRS and AOI, check configuration, and adjust input rasters."""
+        # Get the resolution of the first land cover raster.
+        try:
+            land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
+        except KeyError:
+            raise ConfigError(f'Please provide a land cover file for year {self.years[0]}.',
+                              [_LAND_COVER, self.years[0]])
+        try:
+            with rasterio.open(land_cover_year0) as src:
+                self.src_profile = src.profile
+                self.src_res = src.res
+        except Exception as e:
+            raise ConfigError(f'Failed to open land cover file for year {self.years[0]}: "{e}"',
+                              [_LAND_COVER, self.years[0]])
+
+        if self.src_res[0] > MINIMUM_RESOLUTION:
+            logger.warning(
+                f'The provided landcover map has a resolution of {self.src_res[0]}m, which is coarser than the '
+                f'proposed MINIMUM RESOLUTION of {MINIMUM_RESOLUTION}m.  The land cover map will be '
+                'resampled. Please consider using a higher resolution land cover map if the resampling '
+                'produces non-desired results.')
+            self.src_res = (MINIMUM_RESOLUTION, MINIMUM_RESOLUTION)
+
         self._load_region_shapes()
         self._StudyScopeCheck()
         config_check = ConfigCheck(self.config_template, self.config, self.accord)
@@ -209,6 +231,8 @@ class Run:
 
         The resulting :class:`geopandas.GeoDataFrame` is indexed by NUTS_ID, and has an additional column SHAPE_ID,
         which contains an integer identifier for each shape.  This column can be used when rasterizing shapefiles.
+
+        Statistics regions are reduced to the set of regions needed to cover the chosen reporting regions.
         """
         assert self.id_col_statistics is not None
         assert self.id_col_reporting is not None
@@ -223,6 +247,7 @@ class Run:
                               f'not have a column {self.id_col_statistics}.', [_STATISTICS_SHAPE])
         except Exception as e:
             raise Error(f'Failed to read input stastistics geographical regions file "{file_statistics}": {e}.')
+
         #: Column name to use as index in reporting region file.
         file_reporting = self.config.get(_REPORTING_SHAPE)
         if not file_reporting:
@@ -236,6 +261,20 @@ class Run:
         except Exception as e:
             raise Error(f'Failed to read reporting geographical regions file "{file_reporting}": {e}.')
 
+        # Reduce reporting regions GeoDataFrame to the set of selected regions:
+        logger.debug('* get the reporting regions')
+        # first we check the given "selected_regions" from  config all exist in reporting_shape
+        # mainly needed when tool is run in command line mode
+        logger.debug('** check if even all selected_regions (reporting_regions) exist in the reporting vector file')
+        selected_regions = self.config.get('selected_regions')
+        if not isinstance(selected_regions, list) or not len(selected_regions):
+            raise ConfigError('Please select one or more reporting regions.', ['selected_regions'])
+        lMismatch = [x for x in selected_regions if x not in self.reporting_shape.index]
+        if lMismatch:
+            raise ConfigError('The following regions are missing from the provided reporting vector file: ' +
+                              ', '.join(lMismatch), [_REPORTING_SHAPE])
+        self.reporting_shape = self.reporting_shape.reindex(selected_regions).sort_index()
+
         logger.debug('Check if statistics and reporting vector files have correct EPSG')
         # reporting vector file
         try:
@@ -246,7 +285,6 @@ class Run:
         if check_epsg != self.epsg:
             self.reporting_shape.to_crs(epsg=self.epsg, inplace=True)
             logger.debug('** reporting vector file had to be warped')
-
         # statistics vector file
         try:
             check_epsg = self.statistics_shape.crs.to_epsg()
@@ -261,55 +299,10 @@ class Run:
         self.statistics_shape[SHAPE_ID] = range(1, 1 + self.statistics_shape.shape[0])
         self.reporting_shape[SHAPE_ID] = range(1, 1 + self.reporting_shape.shape[0])
 
-    def _StudyScopeCheck(self):
-        """Set up statistical and reporting region vector files, project extent, resolution, raster metadata.
-
-        - Establish the list of statistics regions needed to cover the chosen reporting regions.
-
-        - Initialize the metadata object to handle raster tags and standard output profiles for rasterio.  The
-          landcover map provided for the first reference year is used as a master.
-
-        - Generate raster masks of the reporting_regions and statistics_regions, which can be used for
-          block-processing.
-        """
-        # Get the resolution of the first land cover raster.
-        try:
-            land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
-        except KeyError:
-            raise ConfigError(f'Please provide a land cover file for year {self.years[0]}.',
-                              [_LAND_COVER, self.years[0]])
-        try:
-            with rasterio.open(land_cover_year0) as src:
-                src_profile = src.profile
-                src_res = src.res
-        except Exception as e:
-            raise ConfigError(f'Failed to open land cover file for year {self.years[0]}: "{e}"',
-                              [_LAND_COVER, self.years[0]])
-
-        if src_res[0] > MINIMUM_RESOLUTION:
-            logger.warning(
-                f'The provided landcover map has a resolution of {src_res[0]}m, which is coarser than the '
-                f'proposed MINIMUM RESOLUTION of {MINIMUM_RESOLUTION}m.  The land cover map will be '
-                'resampled. Please consider using a higher resolution land cover map if the resampling '
-                'produces non-desired results.')
-            src_res = (MINIMUM_RESOLUTION, MINIMUM_RESOLUTION)
-
-        # Get the "statistics_regions" needed to cover the selected "reporting_regions"
-        logger.debug('* get the reporting regions')
-        # first we check the given "selected_regions" from  config all exist in reporting_shape
-        # mainly needed when tool is run in command line mode
-        logger.debug('** check if even all selected_regions (reporting_regions) exist in the reporting vector file')
-        selected_regions = self.config.get('selected_regions')
-        if not isinstance(selected_regions, list) or not len(selected_regions):
-            raise ConfigError('Please select one or more reporting regions.', ['selected_regions'])
-        lMismatch = [x for x in selected_regions if x not in self.reporting_shape.index]
-        if lMismatch:
-            raise ConfigError('The following regions are missing from the provided reporting vector file: ' +
-                              ', '.join(lMismatch), [_REPORTING_SHAPE])
-        self.reporting_shape = self.reporting_shape.reindex(selected_regions).sort_index()
-
-        # second, we clip the statistics vector file by the reporting one to get a list of all names from the statistic
-        # regions intersecting the reporting ones --> faster then a gpd.overlay()
+        # Get the "statistics_regions" needed to cover the selected "reporting_regions":
+        #
+        # We clip the statistics vector file by the reporting one to get a list of all names from the statistic regions
+        # intersecting the reporting ones --> faster then a gpd.overlay()
         logger.debug('** clip the statistical vector file by selected reporting regions')
         df_check = gpd.clip(self.statistics_shape, self.reporting_shape)
         # we have to remove false areas (boundary of a statistical region is identical to boundary of reporting one)
@@ -322,13 +315,22 @@ class Run:
         # check if all reporting polygons are completely covered by a statistical ones (minimum overlap)
         area_delta = self.reporting_shape.area.sum() - df_check.area.sum()
         # assume that any area difference less then a third of a pixel will disappear after rasterization
-        if abs(area_delta) > (src_res[0] * src_res[1] / 3.):
+        if abs(area_delta) > (self.src_res[0] * self.src_res[1] / 3.):
             raise ConfigError(
                 'The statistics regions file does not completely cover all selected reporting regions.',
                 [_STATISTICS_SHAPE])
         # extract the identifier to get the reporting_regions
         self.statistics_shape = self.statistics_shape.reindex(df_check.index.unique()).sort_index()
 
+    def _StudyScopeCheck(self):
+        """Set up project extent, resolution, raster metadata.
+
+        - Initialize the metadata object to handle raster tags and standard output profiles for rasterio.  The
+          landcover map provided for the first reference year is used as a master.
+
+        - Generate raster masks of the reporting_regions and statistics_regions, which can be used for
+          block-processing.
+        """
         # Generate the bounds for the statistical AOI
         logger.debug('* calculate the raster statistical AOI')
         # first get total bounds for selected regions in statistical vector file
@@ -353,14 +355,14 @@ class Run:
         logger.debug('** give statistic raster info as reference file to the AccoRD object (profile, extent)')
         # we set up the standard raster profile
         self.accord.ref_profile = {'driver': 'GTiff',
-                                   'dtype': src_profile['dtype'],
-                                   'nodata': src_profile['nodata'],
-                                   'width': int((AOI_bbox.right - AOI_bbox.left) / src_res[0]),
-                                   'height': int((AOI_bbox.top - AOI_bbox.bottom) / src_res[1]),
+                                   'dtype': self.src_profile['dtype'],
+                                   'nodata': self.src_profile['nodata'],
+                                   'width': int((AOI_bbox.right - AOI_bbox.left) / self.src_res[0]),
+                                   'height': int((AOI_bbox.top - AOI_bbox.bottom) / self.src_res[1]),
                                    'count': 1,
                                    'crs': rasterio.crs.CRS.from_epsg(self.epsg),
                                    'transform': rasterio.transform.from_origin(AOI_bbox.left, AOI_bbox.top,
-                                                                               src_res[0], src_res[1]),
+                                                                               self.src_res[0], self.src_res[1]),
                                    'blockxsize': 256,
                                    'blockysize': 256,
                                    'tiled': True,
@@ -388,6 +390,7 @@ class Run:
                               guess_dtype=True, mode='statistical')
 
         # Check if input land cover map covers the required AOI
+        land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
         logger.debug(
             '** pre-check the provided MASTER land cover raster file if all statistical regions are covered')
         try:
