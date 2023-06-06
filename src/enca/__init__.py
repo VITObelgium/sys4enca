@@ -213,12 +213,12 @@ class ENCARun(Run):
         # Extract the selected regions:
         self.admin_shape = self.admin_shape.reindex(df_check.index.unique()).sort_index()
 
-    def _StudyScopeCheck(self):
-        """Extend _StudyScopeCheck to rasterize the administrative boundary file.
+    def _rasterize_shapes(self):
+        """Extend _rasterize_shapes to rasterize the administrative boundary file.
 
         By default, we rasterize the admin boundaries shapefile for the same extent as the statistics (=SELU) shapes.
         """
-        super()._StudyScopeCheck()
+        super()._rasterize_shapes()
         self.admin_raster = os.path.join(self.temp_dir(), 'admin_shape_rasterized.tif')
         self.accord.rasterize(self.admin_shape, SHAPE_ID, self.admin_raster, guess_dtype=True, mode='statistical')
 

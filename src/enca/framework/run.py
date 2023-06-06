@@ -174,6 +174,7 @@ class Run:
 
         self._load_region_shapes()
         self._StudyScopeCheck()
+        self._rasterize_shapes()
         config_check = ConfigCheck(self.config_template, self.config, self.accord)
         config_check.validate()
         self.adjust_rasters(config_check)
@@ -332,7 +333,7 @@ class Run:
           block-processing.
         """
         # Generate the bounds for the statistical AOI
-        logger.debug('* calculate the raster statistical AOI')
+        logger.debug('Calculate the raster statistical AOI')
         # first get total bounds for selected regions in statistical vector file
         # format: minx, miny, maxx, maxy
         bbox = self.statistics_shape.total_bounds
@@ -345,14 +346,14 @@ class Run:
                                                top=math.ceil(bbox[3]) * MINIMUM_RESOLUTION)
 
         # Set up the accord object with the needed extent
-        logger.debug('* initialize the global raster AccoRD object')
-        # Note: since we do not give a reference raster file to GeoProcessing object we have to fill some info manual
+        logger.debug('Initialize the global raster AccoRD object')
+        # Note: since we do not give a reference raster file to GeoProcessing object we have to fill some info manually.
         self.accord = GeoProcessing(self.software_name, self.component, self.temp_dir())
         # set the extent for the raster files using the statistical domain
         self.accord.ref_extent = AOI_bbox
 
         # Set the reference profile in the accord GeoProcessing object
-        logger.debug('** give statistic raster info as reference file to the AccoRD object (profile, extent)')
+        logger.debug('* give statistic raster info as reference file to the AccoRD object (profile, extent)')
         # we set up the standard raster profile
         self.accord.ref_profile = {'driver': 'GTiff',
                                    'dtype': self.src_profile['dtype'],
@@ -370,29 +371,13 @@ class Run:
                                    'interleave': 'band',
                                    'bigtiff': 'if_saver'}
         # create rasterio profile for the reporting area also for further processing
-        logger.debug('** set up the raster profile and extent for the reporting regions')
+        logger.debug('* set up the raster profile and extent for the reporting regions')
         self._create_reporting_profile()
-
-        # Generate a raster version of stats and reporting vector file for blockprocessing tasks
-        logger.debug('* create raster versions of statistic and reporting vectors for block processing tasks')
-        # first, reporting vector file
-        # output file name
-        self.reporting_raster = os.path.join(self.temp_dir(), 'reporting_shape_rasterized.tif')
-        # run rasterization
-        self.accord.rasterize(self.reporting_shape, SHAPE_ID, self.reporting_raster,
-                              guess_dtype=True, mode='statistical')
-
-        # second, statistical vector file
-        # output file name
-        self.statistics_raster = os.path.join(self.temp_dir(), 'statistics_shape_rasterized.tif')
-        # run rasterization
-        self.accord.rasterize(self.statistics_shape, SHAPE_ID, self.statistics_raster,
-                              guess_dtype=True, mode='statistical')
 
         # Check if input land cover map covers the required AOI
         land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
         logger.debug(
-            '** pre-check the provided MASTER land cover raster file if all statistical regions are covered')
+            '* pre-check the provided MASTER land cover raster file if all statistical regions are covered')
         try:
             aoi_ok = self.accord.vector_in_raster_extent_check(land_cover_year0, self.statistics_shape,
                                                                check_projected=True, check_unit=True,
@@ -433,6 +418,24 @@ class Run:
                                                                                       ref_profile['transform'].a,
                                                                                       abs(self.accord.
                                                                                           ref_profile['transform'].e)))
+
+    def _rasterize_shapes(self):
+        """Rasterize reporting and statistics shapes for the AOI."""
+        # Generate a raster version of stats and reporting vector file for blockprocessing tasks
+        logger.debug('Create raster versions of statistic and reporting vectors for block processing tasks')
+        # first, reporting vector file
+        # output file name
+        self.reporting_raster = os.path.join(self.temp_dir(), 'reporting_shape_rasterized.tif')
+        # run rasterization
+        self.accord.rasterize(self.reporting_shape, SHAPE_ID, self.reporting_raster,
+                              guess_dtype=True, mode='statistical')
+
+        # second, statistical vector file
+        # output file name
+        self.statistics_raster = os.path.join(self.temp_dir(), 'statistics_shape_rasterized.tif')
+        # run rasterization
+        self.accord.rasterize(self.statistics_shape, SHAPE_ID, self.statistics_raster,
+                              guess_dtype=True, mode='statistical')
 
     def adjust_rasters(self, config_check):
         """If needed, warp or clip input raster data so it matches the current calculation's extent and projection.
