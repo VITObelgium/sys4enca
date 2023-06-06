@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 
 import numpy as np
@@ -6,8 +7,10 @@ import pandas as pd
 import rasterio
 
 import enca
-from enca.framework.config_check import ConfigRaster, ConfigItem, check_csv
-from enca.framework.geoprocessing import RasterType, block_window_generator, SHAPE_ID
+from enca.framework.errors import Error
+from enca.framework.config_check import ConfigRaster, ConfigItem, check_csv, ConfigError
+from enca.framework.geoprocessing import GeoProcessing, RasterType, block_window_generator, SHAPE_ID, MINIMUM_RESOLUTION
+from enca.framework.run import _LAND_COVER
 
 LAND_COVER_FRACTION = 'land_cover_fraction'
 WOOD_REMOVAL_LIMIT = 'wood_removal_limitation'
@@ -45,6 +48,69 @@ class CarbonForest(enca.ENCARun):
 
         self.cf_clean = os.path.join(self.temp_dir(), 'cf_clean_{year}.tif')
         self.cf_clean_wr = os.path.join(self.temp_dir(), 'cf_clean_wr_{year}.tif')
+
+    def _StudyScopeCheck(self):
+        """Override _StudyScopeCheck to set AOI based administrative boundaries shapefile."""
+        # Generate the bounds for the AOI
+        logger.debug('Calculate the raster AOI based on administrative boundaries')
+        # first get total bounds for selected regions in statistical vector file
+        # format: minx, miny, maxx, maxy
+        bbox = self.admin_shape.total_bounds
+        # allign to min_resolution increment to support better merges
+        bbox = bbox / MINIMUM_RESOLUTION
+        # named tuple - BoundingBox(left, bottom, right, top)
+        AOI_bbox = rasterio.coords.BoundingBox(left=math.floor(bbox[0]) * MINIMUM_RESOLUTION,
+                                               bottom=math.floor(bbox[1]) * MINIMUM_RESOLUTION,
+                                               right=math.ceil(bbox[2]) * MINIMUM_RESOLUTION,
+                                               top=math.ceil(bbox[3]) * MINIMUM_RESOLUTION)
+
+        # Set up the accord object with the needed extent
+        logger.debug('Initialize the global raster AccoRD object')
+        # Note: since we do not give a reference raster file to GeoProcessing object we have to fill some info manually
+        self.accord = GeoProcessing(self.software_name, self.component, self.temp_dir())
+        # set the extent for the raster files using the statistical domain
+        self.accord.ref_extent = AOI_bbox
+
+        # Set the reference profile in the accord GeoProcessing object
+        logger.debug('* give statistic raster info as reference file to the AccoRD object (profile, extent)')
+        # we set up the standard raster profile
+        self.accord.ref_profile = {'driver': 'GTiff',
+                                   'dtype': self.src_profile['dtype'],
+                                   'nodata': self.src_profile['nodata'],
+                                   'width': int((AOI_bbox.right - AOI_bbox.left) / self.src_res[0]),
+                                   'height': int((AOI_bbox.top - AOI_bbox.bottom) / self.src_res[1]),
+                                   'count': 1,
+                                   'crs': rasterio.crs.CRS.from_epsg(self.epsg),
+                                   'transform': rasterio.transform.from_origin(AOI_bbox.left, AOI_bbox.top,
+                                                                               self.src_res[0], self.src_res[1]),
+                                   'blockxsize': 256,
+                                   'blockysize': 256,
+                                   'tiled': True,
+                                   'compress': 'deflate',
+                                   'interleave': 'band',
+                                   'bigtiff': 'if_saver'}
+        # create rasterio profile for the reporting area also for further processing
+        logger.debug('* set up the raster profile and extent for the reporting regions')
+        self._create_reporting_profile()
+
+        # Check if input land cover map covers the required AOI
+        land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
+        logger.debug(
+            '* pre-check the provided MASTER land cover raster file if all statistical regions are covered')
+        try:
+            aoi_ok = self.accord.vector_in_raster_extent_check(land_cover_year0, self.statistics_shape,
+                                                               check_projected=True, check_unit=True,
+                                                               stand_alone=True)
+        except Error as e:
+            # Catch Error exceptions and re-raise as ConfigError linked to the config['landcover'][self.years[0]]:
+            raise ConfigError(e.message, [enca._LAND_COVER, self.years[0]])
+        if not aoi_ok:
+            raise ConfigError(
+                'Not all needed statistical_regions specified by the reporting_regions are included in the ' +
+                'provided land cover map ({}). '.format(land_cover_year0) +
+                'Please provide a land cover map with a minimum extent of {} in EPSG:{}.'.format(AOI_bbox,
+                                                                                                 self.epsg),
+                [enca._LAND_COVER, self.years[0]])
 
     def _start(self):
         print('Hello from ENCA Carbon Forest preprocessing.')
