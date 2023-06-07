@@ -22,7 +22,7 @@ FAOFRA_WREM = 'faofra_wood_removals'
 logger = logging.getLogger(__name__)
 
 
-class CarbonForest(enca.ENCARun):
+class CarbonForest(enca.ENCARunAdminAOI):
     """Forest carbon preprocessing run."""
 
     run_type = enca.RunType.PREPROCESS
@@ -89,18 +89,21 @@ class CarbonForest(enca.ENCARun):
         removals = pd.read_csv(comp_config[FAOFRA_WREM], sep=';', index_col=enca.GID_0)[f'WremCt_{year}']
 
         path_cf = self.cf_clean.format(year=year)
+        logger.debug('Spatial disaggregation for above-ground biomass.')
         proxy_sums = self.accord.spatial_disaggregation_byArea(path_cf, agb,
-                                                               self.reporting_raster, self.reporting_shape[SHAPE_ID],
+                                                               self.admin_raster, self.admin_shape[SHAPE_ID],
                                                                os.path.join(self.maps, f'agb_{year}.tif'))
+        logger.debug('Spatial disaggregation for below-ground biomass.')
         self.accord.spatial_disaggregation_byArea(path_cf, bgb,
-                                                  self.reporting_raster, self.reporting_shape[SHAPE_ID],
+                                                  self.admin_raster, self.admin_shape[SHAPE_ID],
                                                   os.path.join(self.maps, f'bgb_{year}.tif'),
                                                   proxy_sums=proxy_sums)
+        logger.debug('Spatial disaggregation for forest litter.')
         self.accord.spatial_disaggregation_byArea(path_cf, litter,
-                                                  self.reporting_raster, self.reporting_shape[SHAPE_ID],
+                                                  self.admin_raster, self.admin_shape[SHAPE_ID],
                                                   os.path.join(self.maps, f'litter_{year}.tif'),
                                                   proxy_sums=proxy_sums)
-
+        logger.debug('Spatial disaggregation for wood removal.')
         self.accord.spatial_disaggregation_byArea(self.cf_clean_wr.format(year=year), removals,
-                                                  self.reporting_raster,  self.reporting_shape[SHAPE_ID],
+                                                  self.admin_raster,  self.admin_shape[SHAPE_ID],
                                                   os.path.join(self.maps, f'removals_{year}.tif'))
