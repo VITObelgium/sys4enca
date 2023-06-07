@@ -48,8 +48,8 @@ class Usage(enca.ENCARun):
     def _start(self):
         ghs_pop_rasters = self.prepare_ghs_pop()
 
-        df_agri = pd.read_csv(self.config[self.component][_AGRICULTURAL], delimiter=';', index_col=enca.GID_0)
-        df_muni = pd.read_csv(self.config[self.component][_MUNICIPAL], delimiter=';', index_col=enca.GID_0)
+        df_agri = pd.read_csv(self.config[self.component][_AGRICULTURAL], delimiter=';', index_col=enca.ADMIN_ID)
+        df_muni = pd.read_csv(self.config[self.component][_MUNICIPAL], delimiter=';', index_col=enca.ADMIN_ID)
         pixel_area_ha = pixel_area(self.accord.ref_profile['crs'], self.accord.ref_profile['transform']) / 10000.
         logger.debug('Pixel area in hectare to convert [m3 / ha] to [m3 / ha]: %s', pixel_area_ha)
         for year in self.years:

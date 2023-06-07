@@ -83,10 +83,10 @@ class CarbonForest(enca.ENCARunAdminAOI):
     def make_forest_carbon_maps(self, year, block_shape=(1024, 1024)):
         """Disaggregate AGB/BGB/Litter/Removals statistics using tree cover fraction as a proxy."""
         comp_config = self.config[self.component]
-        agb = pd.read_csv(comp_config[FAOFRA_AGB], sep=';', index_col=enca.GID_0)[f'agbCt_{year}']
-        bgb = pd.read_csv(comp_config[FAOFRA_BGB], sep=';', index_col=enca.GID_0)[f'bgbCt_{year}']
-        litter = pd.read_csv(comp_config[FAOFRA_LITTER], sep=';', index_col=enca.GID_0)[f'litterCt_{year}']
-        removals = pd.read_csv(comp_config[FAOFRA_WREM], sep=';', index_col=enca.GID_0)[f'WremCt_{year}']
+        agb = pd.read_csv(comp_config[FAOFRA_AGB], sep=';', index_col=enca.ADMIN_ID)[f'agbCt_{year}']
+        bgb = pd.read_csv(comp_config[FAOFRA_BGB], sep=';', index_col=enca.ADMIN_ID)[f'bgbCt_{year}']
+        litter = pd.read_csv(comp_config[FAOFRA_LITTER], sep=';', index_col=enca.ADMIN_ID)[f'litterCt_{year}']
+        removals = pd.read_csv(comp_config[FAOFRA_WREM], sep=';', index_col=enca.ADMIN_ID)[f'WremCt_{year}']
 
         path_cf = self.cf_clean.format(year=year)
         logger.debug('Spatial disaggregation for above-ground biomass.')

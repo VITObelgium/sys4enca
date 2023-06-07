@@ -127,7 +127,7 @@ class CarbonAgriculture(enca.ENCARunAdminAOI):
                 csv_file, = (x for x in stats_files if x.endswith(f'_{agri}.csv'))
             except ValueError as e:
                 raise Error(f'Failed to find unique statistics file for "{agri}": {e}.')
-            df_stats = pd.read_csv(csv_file, index_col=enca.GID_0, sep=';')
+            df_stats = pd.read_csv(csv_file, index_col=enca.ADMIN_ID, sep=';')
             data = df_stats[f't_{year}'] * _carbon[agri]
             out_file = os.path.join(self.maps, f'NCA_{self.component}_{agri}_tonsha_{year}.tif')
             self.accord.spatial_disaggregation_byArea(self.spam_files_aoi[agri], data,

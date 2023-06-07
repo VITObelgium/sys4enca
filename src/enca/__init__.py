@@ -50,8 +50,7 @@ class RunType(Enum):
 
 HYBAS_ID = 'HYBAS_ID'
 ADMIN_ID = 'ADMIN_ID'  # id attribute for administrative boundaries shapefile
-# should also be possible to be GID_1
-GID_0 = 'GID_0'
+REP_ID = 'REP_ID'  # reporting id
 C_CODE = 'C_CODE'
 CODE = 'CODE'
 
@@ -73,7 +72,7 @@ class ENCARun(Run):
     run_type = None  #: One of ENCA, ACCOUNT, or PREPROCESS
     software_name = 'ENCA Tool'
     id_col_statistics = HYBAS_ID
-    id_col_reporting = GID_0
+    id_col_reporting = REP_ID
 
     epsg = 3857
     _indices_average = None  #: List of SELU-wide indicators, to be defined in each subclass

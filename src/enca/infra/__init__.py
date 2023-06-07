@@ -20,7 +20,6 @@ class Infra(enca.ENCARun):
 
     run_type = enca.RunType.ENCA
     component = 'infra'
-    #id_col_reporting = "GID_0"
 
     def __init__(self, config):
         super().__init__(config)

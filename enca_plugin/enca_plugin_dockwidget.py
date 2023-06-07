@@ -11,6 +11,7 @@ from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsTask
 from qgis.gui import QgsFileWidget, QgsDoubleSpinBox
 from qgis.utils import iface
 
+import enca
 import enca.carbon as carbon
 import enca.carbon.npp as carbon_npp
 import enca.carbon.soil as carbon_soil
@@ -279,8 +280,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.toolbarLayout.addWidget(self.toolbar)
 
-        # Reporting area shapefiles should have 'GID_0' id attribute
-        self.reporting_areas.set_id_label('GID_0')
+        # Reporting area shapefiles should have 'REP_ID' id attribute
+        self.reporting_areas.set_id_label(enca.REP_ID)
 
         # Initialize Tier level combobox
         self.tier.addItem('1', 1)

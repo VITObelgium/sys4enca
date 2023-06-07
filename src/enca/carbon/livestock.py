@@ -77,7 +77,7 @@ class CarbonLivestock(enca.ENCARunAdminAOI):
         for stock_type in _livestock_types:
             raster_dist = config[LIVESTOCK_DIST][stock_type]
             out_file = self.livestock_carbon_rasters[stock_type].format(year=year)
-            df_stats = pd.read_csv(config[LIVESTOCK_CARBON][stock_type], sep=';', index_col=enca.GID_0)
+            df_stats = pd.read_csv(config[LIVESTOCK_CARBON][stock_type], sep=';', index_col=enca.ADMIN_ID)
 
             data = df_stats[f'heads_{year}'] * config[WEIGHTS][stock_type] * _conversion_factor
 
