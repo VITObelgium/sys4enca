@@ -39,7 +39,7 @@ class Usage(enca.ENCARun):
                            'y2005': ConfigItem(optional=True),
                            'y2010': ConfigItem(optional=True),
                            'y2015': ConfigItem(optional=True),
-                           'y2020': ConfigItem(optional=True),},
+                           'y2020': ConfigItem(optional=True)},
                 _MUNICIPAL: ConfigItem(check_function=check_csv, delimiter=';'),
                 _AGRICULTURAL: ConfigItem(check_function=check_csv, delimiter=';'),
                 _LC_AGRI: ConfigItem(default=[20])
@@ -106,8 +106,9 @@ class Usage(enca.ENCARun):
         ghs_pop_input = {}
         for key in self.config_template[self.component][_GHS_POP].keys():
             val = self.config[self.component][_GHS_POP].get(key)
+            logger.debug('GHS_POP input for year %s: %s', key, val)
             if val:
-                year = key[1:]
+                year = int(key[1:])
                 ghs_pop_input[year] = val
 
         years_input = sorted(ghs_pop_input.keys())
