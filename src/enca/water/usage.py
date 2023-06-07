@@ -60,7 +60,7 @@ class Usage(enca.ENCARun):
             data_agri = df_agri[f'AWWm3ha_{year}'] * pixel_area_ha
             path_agriusage = os.path.join(self.maps, f'NCA_WATER_AGRIusage_m3_{year}.tif')
             self.accord.spatial_disaggregation_byArea(agri_mask, data_agri,
-                                                      self.reporting_raster, self.reporting_shape[SHAPE_ID],
+                                                      self.admin_raster, self.admin_shape[SHAPE_ID],
                                                       path_agriusage,
                                                       proxy_sums=pd.Series(1, index=data_agri.index))
             # multiply ghs_pop raster with muni water consumption per country.
@@ -68,7 +68,7 @@ class Usage(enca.ENCARun):
             path_muniusage = os.path.join(self.maps, f'NCA_WATER_MUNIusage_m3_{year}.tif')
             data_muni = df_muni[f'MWWm3per_{year}']
             self.accord.spatial_disaggregation_byArea(ghs_pop_rasters[year], data_muni,
-                                                      self.reporting_raster, self.reporting_shape[SHAPE_ID],
+                                                      self.admin_raster, self.admin_shape[SHAPE_ID],
                                                       path_muniusage,
                                                       proxy_sums=pd.Series(1, index=data_agri.index))
 
