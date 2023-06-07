@@ -295,6 +295,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             'statistics_shape': self.data_areas,
             'reporting_shape': self.reporting_areas._filewidget,
             'selected_regions': self.reporting_areas._selected_regions,
+            enca._ADMIN_BOUNDS: self.admin_boundaries,
             'land_cover': {self.year: self.land_cover},
             'continue': self.continue_run,
             'tier': self.tier
