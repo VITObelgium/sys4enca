@@ -47,7 +47,7 @@ _carbon = {
     VEGETABLES: 0.1,
 }
 
-class CarbonAgriculture(enca.ENCARun):
+class CarbonAgriculture(enca.ENCARunAdminAOI):
 
     run_type = enca.RunType.PREPROCESS
     component = 'CARBON_AGRICULTURE'
@@ -121,21 +121,18 @@ class CarbonAgriculture(enca.ENCARun):
         """Adjust agriculture distribution for this year, and convert to tonnes of carbon."""
         stats_files = glob.glob(os.path.join(self.config[self.component][AGRICULTURE_STATS], '*.csv'))
         for agri in _agri_types:
+            logger.debug('Spatial disaggregation of statistics for agriculture type %s.', agri)
             # Look for the single file matching the pattern 'FAOSTATSy_{agri}.csv'
             try:
                 csv_file, = (x for x in stats_files if x.endswith(f'_{agri}.csv'))
             except ValueError as e:
                 raise Error(f'Failed to find unique statistics file for "{agri}": {e}.')
             df_stats = pd.read_csv(csv_file, index_col=enca.GID_0, sep=';')
-            # Distribution weight factor:
-            dwf = df_stats[f't_{year}'] / df_stats['t_2010']
-            data = dwf * _carbon[agri]
-            ones = pd.Series(1, index=data.index)
+            data = df_stats[f't_{year}'] * _carbon[agri]
             out_file = os.path.join(self.maps, f'NCA_{self.component}_{agri}_tonsha_{year}.tif')
             self.accord.spatial_disaggregation_byArea(self.spam_files_aoi[agri], data,
-                                                      self.reporting_raster, self.reporting_shape[SHAPE_ID],
-                                                      out_file,
-                                                      proxy_sums=ones)
+                                                      self.admin_raster, self.admin_shape[SHAPE_ID],
+                                                      out_file)
 
 
 def latlon_pixel_area(lats, res_lon, res_lat):

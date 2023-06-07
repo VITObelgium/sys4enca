@@ -36,7 +36,7 @@ _conversion_factor = _weight_2_carbon * _kg_2_tons * _tKm2_2_tHa
 _livestock_types = [CATTLE, CHICKEN, SHEEP, GOAT, PIG]
 
 
-class CarbonLivestock(enca.ENCARun):
+class CarbonLivestock(enca.ENCARunAdminAOI):
 
     run_type = enca.RunType.PREPROCESS
     component = 'CARBON_LIVESTOCK'
@@ -72,20 +72,15 @@ class CarbonLivestock(enca.ENCARun):
             shutil.move(self.livestock_carbon_rasters[CATTLE].format(year=year), self.maps)
 
     def livestock_carbon(self, year):
-        """Calculate livestock carbon per pixel using livestock distribution raster * weight factor from FAO stats."""
+        """Calculate livestock carbon per pixel using livestock distribution raster and FAO stats."""
         config = self.config[self.component]
         for stock_type in _livestock_types:
             raster_dist = config[LIVESTOCK_DIST][stock_type]
             out_file = self.livestock_carbon_rasters[stock_type].format(year=year)
             df_stats = pd.read_csv(config[LIVESTOCK_CARBON][stock_type], sep=';', index_col=enca.GID_0)
-            # distribution weight factor:
-            dwf = df_stats[f'heads_{year}'] / df_stats['heads_2006']
 
-            # multiply livestock distribution map by animal_weight, DWF and conversion factor.
-            # We can use our spatial disaggregation function for this, setting proxy_sums = 1.
-            data = dwf * config[WEIGHTS][stock_type] * _conversion_factor
-            ones = pd.Series(1, index=data.index)
+            data = df_stats[f'heads_{year}'] * config[WEIGHTS][stock_type] * _conversion_factor
+
             self.accord.spatial_disaggregation_byArea(raster_dist, data,
-                                                      self.reporting_raster, self.reporting_shape[SHAPE_ID],
-                                                      out_file,
-                                                      proxy_sums=ones)
+                                                      self.admin_raster, self.admin_shape[SHAPE_ID],
+                                                      out_file)
