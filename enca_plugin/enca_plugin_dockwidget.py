@@ -32,6 +32,7 @@ import enca.infra as infra
 import enca.leac as leac
 import enca.total as total
 import enca.trend as trend
+from enca.components import get_component_long_name
 from enca.framework.errors import Error
 from enca.framework.config_check import ConfigError, YEARLY
 from enca.framework.run import Cancelled
@@ -309,8 +310,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             dropdown = findChild(tab, 'component')
             components_stack = findChild(tab, 'components_stack')
             for j in range(components_stack.count()):
-                # TODO use separate internal values and display values (using Qt.User data)
-                dropdown.addItem(components_stack.widget(j).objectName()[:-1])  # cut off trailing '_'
+                name = components_stack.widget(j).objectName()[:-1]  # cut off trailing '_'
+                dropdown.addItem(get_component_long_name(name))
             dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
     def set_up_carbon_livestock(self):
