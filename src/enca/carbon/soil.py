@@ -66,8 +66,8 @@ class CarbonSoil(enca.ENCARun):
                 soc = ds_SOC.read(1, window=window)
                 socm = ds_SOCm.read(1, window=window)
 
-                soc[np.isnan[soc]] = 0
-                socm[np.isnan[socm]] = 0
+                soc[np.isnan(soc)] = 0
+                socm[np.isnan(socm)] = 0
                 soc[soc == ds_SOC.nodata] = 0
                 socm[socm == ds_SOCm.nodata] = 0
 
