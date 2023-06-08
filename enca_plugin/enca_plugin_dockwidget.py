@@ -311,7 +311,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             components_stack = findChild(tab, 'components_stack')
             for j in range(components_stack.count()):
                 name = components_stack.widget(j).objectName()[:-1]  # cut off trailing '_'
-                dropdown.addItem(get_component_long_name(name))
+                dropdown.addItem(get_component_long_name(name), name)
             dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
     def set_up_carbon_livestock(self):
@@ -381,7 +381,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             # select component:
             component_page = findChild(run_type_tab, component_name)
             component_combo = findChild(run_type_tab, 'component')
-            component_combo.setCurrentText(component_name)
+            idx = component_combo.findData(component_name, QtCore.Qt.UserRole)
+            component_combo.setCurrentIndex(idx)
 
             # handle run name:
             try:
@@ -473,9 +474,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # Get the currently selected component.
         # 1. see which tab we are on (preprocessing / components / accounts)
         tab_runtype = self.run_types.currentWidget()
-        # 2. select the component form this tab
+        # 2. select the component from this tab
         component_dropdown = findChild(tab_runtype, 'component')
-        component_name = component_dropdown.currentText()  # TODO fill component drop-down with user data corresponding to internal component name?
+        component_name = component_dropdown.currentData(QtCore.Qt.UserRole)
         template = {**self.config_template,
                     'component': component_dropdown,
                     component_name: self.component_templates[component_name]}
