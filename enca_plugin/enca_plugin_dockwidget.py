@@ -130,8 +130,7 @@ component_input_widgets = [
         carbon_soil_erosion.SOIL_CARBON_10,
         carbon_soil_erosion.SOIL_CARBON_20,
         carbon_soil_erosion.SOIL_CARBON_30,
-        carbon_soil_erosion.SOIL_LOSS_2001,
-        carbon_soil_erosion.SOIL_LOSS_2012]),
+        (carbon_soil_erosion.SOIL_LOSS, [YEARLY])]),
     (carbon_livestock.CarbonLivestock.component, [
         (carbon_livestock.LIVESTOCK_CARBON, carbon.livestock._livestock_types),
         (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),

@@ -354,27 +354,6 @@
                   </property>
                  </widget>
                 </item>
-                <item row="2" column="0">
-                 <widget class="QLabel" name="label_73">
-                  <property name="text">
-                   <string>Rainfall erosivity (25km resolution)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="7" column="0">
-                 <widget class="QLabel" name="label_77">
-                  <property name="text">
-                   <string>Soil Loss (2001)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="8" column="0">
-                 <widget class="QLabel" name="label_78">
-                  <property name="text">
-                   <string>Soil Loss (2021)</string>
-                  </property>
-                 </widget>
-                </item>
                 <item row="1" column="1">
                  <widget class="QgsFileWidget" name="R_factor_1km_">
                   <property name="filter">
@@ -382,22 +361,15 @@
                   </property>
                  </widget>
                 </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_73">
+                  <property name="text">
+                   <string>Rainfall erosivity (25km resolution)</string>
+                  </property>
+                 </widget>
+                </item>
                 <item row="2" column="1">
                  <widget class="QgsFileWidget" name="R_factor_25km_">
-                  <property name="filter">
-                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="7" column="1">
-                 <widget class="QgsFileWidget" name="soil_loss_2001_">
-                  <property name="filter">
-                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="8" column="1">
-                 <widget class="QgsFileWidget" name="soil_loss_2012_">
                   <property name="filter">
                    <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
                   </property>
@@ -452,6 +424,20 @@
                     </widget>
                    </item>
                   </layout>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QLabel" name="label_77">
+                  <property name="text">
+                   <string>Soil Loss</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QgsFileWidget" name="soil_loss_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
                  </widget>
                 </item>
                </layout>
