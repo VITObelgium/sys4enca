@@ -103,7 +103,8 @@ class CarbonErosion(enca.ENCARun):
             bbox = src.bounds
             target_epsg = src.crs.to_epsg()
         cmd = ('gdalwarp --config GDAL_CACHEMAX 256 -overwrite -t_srs '
-               'EPSG:{} -te {} {} {} {} -tr {} {} -r bilinear -co COMPRESS=deflate -co BIGTIFF=YES -multi {} {}').format(
+               'EPSG:{} -te {} {} {} {} -tr {} {} -r bilinear '
+               '-co COMPRESS=deflate -co BIGTIFF=YES -multi "{}" "{}"').format(
                    target_epsg, bbox.left, bbox.bottom, bbox.right, bbox.top, tresolution, tresolution,
                    path_temp, path_out)
         subprocess.check_call(cmd, shell=True)
