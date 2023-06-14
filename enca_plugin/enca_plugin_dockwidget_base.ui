@@ -1311,7 +1311,14 @@
                     <widget class="QgsSpinBox" name="gaussian_sigma_"/>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QgsSpinBox" name="lc_urban_"/>
+                    <widget class="QgsSpinBox" name="lc_urban_">
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
+                     <property name="value">
+                      <number>220</number>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
