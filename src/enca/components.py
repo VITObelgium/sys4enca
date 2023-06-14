@@ -42,10 +42,14 @@ _component_long_names = {
     CarbonLivestock.component: 'Carbon: livestock',
     CarbonSoil.component: 'Carbon: soil stock',
     CarbonFireVulnerability.component: 'Carbon: fire vulnerability index',
+    WaterPrecipEvapo.component: 'Water: Precipitation & Evapotranspiration',
+    Usage.component: 'Water: Usage',
+    RiverLength.component: 'Water: River length',
+    DroughtVuln.component: 'Water: Drought vulnerability',
     Carbon.component: 'Carbon',
     Water.component: 'Water',
-    Infra.component: 'Infra',
-    Leac.component: 'LEAC'
+    Infra.component: 'Infrastructure',
+    Leac.component: 'Landcover'
 }
 
 

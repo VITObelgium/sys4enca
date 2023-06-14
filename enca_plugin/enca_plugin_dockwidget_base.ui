@@ -176,6 +176,20 @@
               </property>
               <widget class="QWidget" name="CARBON_NPP_">
                <layout class="QFormLayout" name="formLayout_7">
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_65">
+                  <property name="text">
+                   <string>Run name</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QLineEdit" name="run_name_">
+                  <property name="text">
+                   <string>carbon_npp</string>
+                  </property>
+                 </widget>
+                </item>
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_57">
                   <property name="text">
@@ -190,16 +204,6 @@
                   </property>
                  </widget>
                 </item>
-                <item row="2" column="1">
-                 <widget class="QgsDoubleSpinBox" name="GDMP_2_NPP_">
-                  <property name="decimals">
-                   <number>3</number>
-                  </property>
-                  <property name="value">
-                   <double>0.225000000000000</double>
-                  </property>
-                 </widget>
-                </item>
                 <item row="2" column="0">
                  <widget class="QLabel" name="label_64">
                   <property name="text">
@@ -207,17 +211,13 @@
                   </property>
                  </widget>
                 </item>
-                <item row="0" column="1">
-                 <widget class="QLineEdit" name="run_name_">
-                  <property name="text">
-                   <string>carbon_npp</string>
+                <item row="2" column="1">
+                 <widget class="QgsDoubleSpinBox" name="GDMP_2_NPP_">
+                  <property name="decimals">
+                   <number>3</number>
                   </property>
-                 </widget>
-                </item>
-                <item row="0" column="0">
-                 <widget class="QLabel" name="label_65">
-                  <property name="text">
-                   <string>Run name</string>
+                  <property name="value">
+                   <double>0.225000000000000</double>
                   </property>
                  </widget>
                 </item>
@@ -395,28 +395,28 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="0">
+                   <item row="1" column="0">
                     <widget class="QLabel" name="label_75">
                      <property name="text">
                       <string>20cm</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="1">
+                   <item row="1" column="1">
                     <widget class="QgsFileWidget" name="soil_carbon_20cm_">
                      <property name="filter">
                       <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="0">
+                   <item row="2" column="0">
                     <widget class="QLabel" name="label_76">
                      <property name="text">
                       <string>30cm</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="1">
+                   <item row="2" column="1">
                     <widget class="QgsFileWidget" name="soil_carbon_30cm_">
                      <property name="filter">
                       <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
@@ -444,35 +444,35 @@
               </widget>
               <widget class="QWidget" name="CARBON_LIVESTOCK_">
                <layout class="QFormLayout" name="formLayout_14">
-                <item row="1" column="0">
+                <item row="0" column="0">
                  <widget class="QLabel" name="label_59">
                   <property name="text">
                    <string>Run name</string>
                   </property>
                  </widget>
                 </item>
-                <item row="2" column="0" colspan="2">
-                 <widget class="QGroupBox" name="livestock_distribution_">
-                  <property name="title">
-                   <string>Livestock distribution [heads / km²] for reference year</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="3" column="0" colspan="2">
-                 <widget class="QGroupBox" name="livestock_carbon_">
-                  <property name="title">
-                   <string>Livestock statistics</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="1">
+                <item row="0" column="1">
                  <widget class="QLineEdit" name="run_name_">
                   <property name="text">
                    <string>carbon_livestock</string>
                   </property>
                  </widget>
                 </item>
-                <item row="4" column="0" colspan="2">
+                <item row="1" column="0" colspan="2">
+                 <widget class="QGroupBox" name="livestock_distribution_">
+                  <property name="title">
+                   <string>Livestock distribution [heads / km²] for reference year</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0" colspan="2">
+                 <widget class="QGroupBox" name="livestock_carbon_">
+                  <property name="title">
+                   <string>Livestock statistics</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0" colspan="2">
                  <widget class="QGroupBox" name="weights_">
                   <property name="title">
                    <string>Livestock Weight</string>
@@ -780,7 +780,7 @@
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_119">
                   <property name="text">
-                   <string>worldclim</string>
+                   <string>Worldclim LTA monthly precipitation</string>
                   </property>
                  </widget>
                 </item>
@@ -797,14 +797,14 @@
                 <item row="2" column="0">
                  <widget class="QLabel" name="label_120">
                   <property name="text">
-                   <string>CGIAR evapotranspiration</string>
+                   <string>CGIAR LTA annual evapotranspiration</string>
                   </property>
                  </widget>
                 </item>
                 <item row="3" column="0">
                  <widget class="QLabel" name="label_121">
                   <property name="text">
-                   <string>Copernicus precipitation</string>
+                   <string>ERA-5 monthly precipitation</string>
                   </property>
                  </widget>
                 </item>
@@ -947,6 +947,26 @@
                      </property>
                     </widget>
                    </item>
+                   <item row="7" column="0">
+                    <widget class="QLabel" name="label_78">
+                     <property name="text">
+                      <string>2025</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="1">
+                    <widget class="QgsFileWidget" name="y2025_"/>
+                   </item>
+                   <item row="8" column="0">
+                    <widget class="QLabel" name="label_138">
+                     <property name="text">
+                      <string>2030</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="8" column="1">
+                    <widget class="QgsFileWidget" name="y2030_"/>
+                   </item>
                   </layout>
                  </widget>
                 </item>
@@ -1058,7 +1078,7 @@
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_134">
                   <property name="text">
-                   <string>GLORIC data</string>
+                   <string>River network (GLORIC)</string>
                   </property>
                  </widget>
                 </item>
@@ -1455,7 +1475,11 @@
                     </widget>
                    </item>
                    <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="ForestLitter_"/>
+                    <widget class="QgsFileWidget" name="ForestLitter_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="0">
                     <widget class="QLabel" name="label_16">
@@ -1465,7 +1489,11 @@
                     </widget>
                    </item>
                    <item row="1" column="1">
-                    <widget class="QgsFileWidget" name="ForestAGB_"/>
+                    <widget class="QgsFileWidget" name="ForestAGB_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="2" column="0">
                     <widget class="QLabel" name="label_5">
@@ -1475,7 +1503,11 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QgsFileWidget" name="ForestBGB_"/>
+                    <widget class="QgsFileWidget" name="ForestBGB_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="3" column="0">
                     <widget class="QLabel" name="label_19">
@@ -1485,7 +1517,11 @@
                     </widget>
                    </item>
                    <item row="3" column="1">
-                    <widget class="QgsFileWidget" name="Soil_"/>
+                    <widget class="QgsFileWidget" name="Soil_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="4" column="0">
                     <widget class="QLabel" name="label_20">
@@ -1495,10 +1531,18 @@
                     </widget>
                    </item>
                    <item row="4" column="1">
-                    <widget class="QgsFileWidget" name="Livestock_"/>
+                    <widget class="QgsFileWidget" name="Livestock_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="5" column="1">
-                    <widget class="QgsFileWidget" name="Cow_"/>
+                    <widget class="QgsFileWidget" name="Cow_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="5" column="0">
                     <widget class="QLabel" name="label_37">
@@ -1524,7 +1568,11 @@
                     </widget>
                    </item>
                    <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="NPP_"/>
+                    <widget class="QgsFileWidget" name="NPP_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="2" column="0">
                     <widget class="QLabel" name="label_30">
@@ -1534,7 +1582,11 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QgsFileWidget" name="WoodRemoval_"/>
+                    <widget class="QgsFileWidget" name="WoodRemoval_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="4" column="0">
                     <widget class="QLabel" name="label_31">
@@ -1544,10 +1596,18 @@
                     </widget>
                    </item>
                    <item row="4" column="1">
-                    <widget class="QgsFileWidget" name="SoilErosion_"/>
+                    <widget class="QgsFileWidget" name="SoilErosion_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="5" column="1">
-                    <widget class="QgsFileWidget" name="Fire_"/>
+                    <widget class="QgsFileWidget" name="Fire_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="5" column="0">
                     <widget class="QLabel" name="label_38">
@@ -1570,7 +1630,11 @@
                        </widget>
                       </item>
                       <item row="0" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_cereals_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_cereals_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="1" column="0">
                        <widget class="QLabel" name="label_23">
@@ -1580,7 +1644,11 @@
                        </widget>
                       </item>
                       <item row="1" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_fiber_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_fiber_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="2" column="0">
                        <widget class="QLabel" name="label_24">
@@ -1590,7 +1658,11 @@
                        </widget>
                       </item>
                       <item row="2" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_oilcrop_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_oilcrop_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="3" column="0">
                        <widget class="QLabel" name="label_25">
@@ -1600,7 +1672,11 @@
                        </widget>
                       </item>
                       <item row="3" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_pulses_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_pulses_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="4" column="0">
                        <widget class="QLabel" name="label_26">
@@ -1610,7 +1686,11 @@
                        </widget>
                       </item>
                       <item row="4" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_roots_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_roots_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="5" column="0">
                        <widget class="QLabel" name="label_27">
@@ -1620,7 +1700,11 @@
                        </widget>
                       </item>
                       <item row="5" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_cafe_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_cafe_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="6" column="0">
                        <widget class="QLabel" name="label_42">
@@ -1630,7 +1714,11 @@
                        </widget>
                       </item>
                       <item row="6" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_fruit_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_fruit_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="7" column="0">
                        <widget class="QLabel" name="label_28">
@@ -1640,7 +1728,11 @@
                        </widget>
                       </item>
                       <item row="7" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_vegetables_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_vegetables_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="8" column="0">
                        <widget class="QLabel" name="label_29">
@@ -1650,7 +1742,11 @@
                        </widget>
                       </item>
                       <item row="8" column="1">
-                       <widget class="QgsFileWidget" name="Agriculture_sugar_"/>
+                       <widget class="QgsFileWidget" name="Agriculture_sugar_">
+                        <property name="filter">
+                         <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                      </layout>
                     </widget>
@@ -1672,7 +1768,11 @@
                     </widget>
                    </item>
                    <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="CEH1_"/>
+                    <widget class="QgsFileWidget" name="CEH1_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="0">
                     <widget class="QLabel" name="label_34">
@@ -1682,7 +1782,11 @@
                     </widget>
                    </item>
                    <item row="1" column="1">
-                    <widget class="QgsFileWidget" name="CEH4_"/>
+                    <widget class="QgsFileWidget" name="CEH4_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="2" column="0">
                     <widget class="QLabel" name="label_35">
@@ -1692,7 +1796,11 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QgsFileWidget" name="CEH6_"/>
+                    <widget class="QgsFileWidget" name="CEH6_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="3" column="0">
                     <widget class="QLabel" name="label_36">
@@ -1702,7 +1810,11 @@
                     </widget>
                    </item>
                    <item row="3" column="1">
-                    <widget class="QgsFileWidget" name="CEH7_"/>
+                    <widget class="QgsFileWidget" name="CEH7_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
@@ -1731,7 +1843,11 @@
                     </widget>
                    </item>
                    <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="ILUP_"/>
+                    <widget class="QgsFileWidget" name="ILUP_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="0">
                     <widget class="QLabel" name="label_39">
@@ -1741,7 +1857,11 @@
                     </widget>
                    </item>
                    <item row="1" column="1">
-                    <widget class="QgsFileWidget" name="FireSplit_"/>
+                    <widget class="QgsFileWidget" name="FireSplit_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
@@ -1764,145 +1884,210 @@
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="0">
-                 <widget class="QLabel" name="label_43">
-                  <property name="text">
-                   <string>AGRI usage</string>
+                <item row="1" column="0" colspan="2">
+                 <widget class="QGroupBox" name="groupBox_13">
+                  <property name="title">
+                   <string>Water surface fluxes [m³/yr]</string>
                   </property>
-                 </widget>
-                </item>
-                <item row="14" column="0">
-                 <widget class="QLabel" name="label_44">
-                  <property name="text">
-                   <string>River length (GLORIC))</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="13" column="0">
-                 <widget class="QLabel" name="label_45">
-                  <property name="text">
-                   <string>HYDRO lakes</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="12" column="0">
-                 <widget class="QLabel" name="label_46">
-                  <property name="text">
-                   <string>salinity</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="11" column="0">
-                 <widget class="QLabel" name="label_47">
-                  <property name="text">
-                   <string>aquifer</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="8" column="0">
-                 <widget class="QLabel" name="label_48">
-                  <property name="text">
-                   <string>drought vulnerability</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="10" column="0">
-                 <widget class="QLabel" name="label_49">
-                  <property name="text">
-                   <string>LTA river outflow</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="9" column="0">
-                 <widget class="QLabel" name="label_50">
-                  <property name="text">
-                   <string>river length</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="7" column="0">
-                 <widget class="QLabel" name="label_51">
-                  <property name="text">
-                   <string>LTA evapotranspiration</string>
-                  </property>
+                  <layout class="QFormLayout" name="formLayout_37">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_43">
+                     <property name="text">
+                      <string>Agricultural water usage</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsFileWidget" name="AGRIusage_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_52">
+                     <property name="text">
+                      <string>Municipal water usage</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QgsFileWidget" name="MUNIusage_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_53">
+                     <property name="text">
+                      <string>Rainfed agriculture evapotranspiration</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QgsFileWidget" name="ET_rainfed_agriculture_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_56">
+                     <property name="text">
+                      <string>Precipitation</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QgsFileWidget" name="precipitation_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_54">
+                     <property name="text">
+                      <string>LTA precipitation</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="1">
+                    <widget class="QgsFileWidget" name="LTA_precipitation_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="0">
+                    <widget class="QLabel" name="label_49">
+                     <property name="text">
+                      <string>LTA river outflow</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="1">
+                    <widget class="QgsFileWidget" name="LTA_river_outflow_">
+                     <property name="filter">
+                      <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label_55">
+                     <property name="text">
+                      <string>Evapotranspiration</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="1">
+                    <widget class="QgsFileWidget" name="evapotranspiration_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="0">
+                    <widget class="QLabel" name="label_51">
+                     <property name="text">
+                      <string>LTA evapotranspiration</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="1">
+                    <widget class="QgsFileWidget" name="LTA_evapotranspiration_">
+                     <property name="filter">
+                      <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </widget>
                 </item>
                 <item row="2" column="0">
-                 <widget class="QLabel" name="label_52">
+                 <widget class="QLabel" name="label_48">
                   <property name="text">
-                   <string>MUNI usage</string>
+                   <string>Drought vulnerability</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="drought_vulnerability_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
                   </property>
                  </widget>
                 </item>
                 <item row="3" column="0">
-                 <widget class="QLabel" name="label_53">
+                 <widget class="QLabel" name="label_50">
                   <property name="text">
-                   <string>ET rainfed agriculture</string>
+                   <string>River length</string>
                   </property>
                  </widget>
                 </item>
-                <item row="6" column="0">
-                 <widget class="QLabel" name="label_54">
-                  <property name="text">
-                   <string>LTA precipitation</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="5" column="0">
-                 <widget class="QLabel" name="label_55">
-                  <property name="text">
-                   <string>evapotranspiration</string>
+                <item row="3" column="1">
+                 <widget class="QgsFileWidget" name="river_length_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
                   </property>
                  </widget>
                 </item>
                 <item row="4" column="0">
-                 <widget class="QLabel" name="label_56">
+                 <widget class="QLabel" name="label_47">
                   <property name="text">
-                   <string>precipitation</string>
+                   <string>Groundwater resources / recharge</string>
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="1">
-                 <widget class="QgsFileWidget" name="AGRIusage_"/>
-                </item>
-                <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="MUNIusage_"/>
-                </item>
-                <item row="3" column="1">
-                 <widget class="QgsFileWidget" name="ET_rainfed_agriculture_"/>
-                </item>
                 <item row="4" column="1">
-                 <widget class="QgsFileWidget" name="precipitation_"/>
+                 <widget class="QgsFileWidget" name="aquifer_">
+                  <property name="filter">
+                   <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QLabel" name="label_46">
+                  <property name="text">
+                   <string>Salinity</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QgsFileWidget" name="evapotranspiration_"/>
+                 <widget class="QgsFileWidget" name="salinity_">
+                  <property name="filter">
+                   <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QLabel" name="label_45">
+                  <property name="text">
+                   <string>Lake &amp; reservoirs</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QgsFileWidget" name="LTA_precipitation_"/>
+                 <widget class="QgsFileWidget" name="HYDROlakes_">
+                  <property name="filter">
+                   <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="7" column="0">
+                 <widget class="QLabel" name="label_44">
+                  <property name="text">
+                   <string>River network (GLORIC)</string>
+                  </property>
+                 </widget>
                 </item>
                 <item row="7" column="1">
-                 <widget class="QgsFileWidget" name="LTA_evapotranspiration_"/>
-                </item>
-                <item row="8" column="1">
-                 <widget class="QgsFileWidget" name="drought_vulnerability_"/>
-                </item>
-                <item row="9" column="1">
-                 <widget class="QgsFileWidget" name="river_length_"/>
-                </item>
-                <item row="10" column="1">
-                 <widget class="QgsFileWidget" name="LTA_river_outflow_"/>
-                </item>
-                <item row="11" column="1">
-                 <widget class="QgsFileWidget" name="aquifer_"/>
-                </item>
-                <item row="12" column="1">
-                 <widget class="QgsFileWidget" name="salinity_"/>
-                </item>
-                <item row="13" column="1">
-                 <widget class="QgsFileWidget" name="HYDROlakes_"/>
-                </item>
-                <item row="14" column="1">
-                 <widget class="QgsFileWidget" name="GLORIC_1"/>
+                 <widget class="QgsFileWidget" name="GLORIC_">
+                  <property name="filter">
+                   <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
