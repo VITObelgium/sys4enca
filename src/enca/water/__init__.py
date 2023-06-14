@@ -27,7 +27,7 @@ LT_OUTFLOW = 'LTA_river_outflow'
 AQUIFER = 'aquifer'
 SALINITY = 'salinity'
 HYDRO_LAKES = 'HYDROlakes'
-GLORIC_ADAPTED = 'GLORIC_adapted'
+GLORIC = 'GLORIC'
 
 COAST = 'COAST'
 COEFF = 'coeff'
@@ -112,7 +112,7 @@ class Water(enca.ENCARun):
                 AQUIFER: ConfigShape(),
                 SALINITY: ConfigShape(),
                 HYDRO_LAKES: ConfigShape(),
-                GLORIC_ADAPTED: ConfigShape(),
+                GLORIC: ConfigShape(),
                 }
             })
 
@@ -165,7 +165,8 @@ class Water(enca.ENCARun):
         hybas_geom = self.statistics_shape[['geometry']].reset_index()
 
         logger.debug('Calculate SRMU.')
-        gdf_SRMU = gpd.read_file(water_config[GLORIC_ADAPTED], include_fields=[LOG_Q_AVG]).overlay(
+        gdf_SRMU = gpd.read_file(water_config[GLORIC], include_fields=[LOG_Q_AVG]).to_crs(
+            hybas_geom.crs).overlay(
             hybas_geom, how='intersection')
 
         length = gdf_SRMU.geometry.length / 1000.

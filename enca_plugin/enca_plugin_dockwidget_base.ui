@@ -1774,7 +1774,7 @@
                 <item row="14" column="0">
                  <widget class="QLabel" name="label_44">
                   <property name="text">
-                   <string>GLORIC (adapted)</string>
+                   <string>River length (GLORIC))</string>
                   </property>
                  </widget>
                 </item>
@@ -1902,7 +1902,7 @@
                  <widget class="QgsFileWidget" name="HYDROlakes_"/>
                 </item>
                 <item row="14" column="1">
-                 <widget class="QgsFileWidget" name="GLORIC_adapted_"/>
+                 <widget class="QgsFileWidget" name="GLORIC_1"/>
                 </item>
                </layout>
               </widget>
