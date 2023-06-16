@@ -6,8 +6,10 @@ On other systems, we present a warning message and expect the user to take care 
 import importlib
 import os
 import subprocess
+import sys
 import tempfile
 from importlib.metadata import PackageNotFoundError, version, distributions  # pragma: no cover
+from site import getusersitepackages
 
 from PyQt5.QtWidgets import QMessageBox, QDialog
 from pkg_resources import parse_version
@@ -133,6 +135,13 @@ def check_dependencies():
     # If enca wasn't installed previously, 'import enca' might still fail due to the importlib cache.  Invalidate the
     # caches so we are sure that we can import the newly installed enca:
     importlib.invalidate_caches()
+    # If the user's site packages directory (e.g. C:\Users\<username>\AppData\... on windows) directory is empty at
+    # QGIS startup, the directory is not added to sys.path.  Therefore, if sys4enca was installed in the user's site
+    # packages directory, 'import' will also fail.  Therefore, add it to sys path if needed:
+    user_site_packages = getusersitepackages()
+    if user_site_packages not in sys.path:
+        sys.path.append(user_site_packages)
+
     import enca
     if parse_version(enca.__version__) < parse_version(_min_version):
         QMessageBox.warning(None, 'Restart QGIS', f'The {_package_dist_name} package was updated.  Please restart '
