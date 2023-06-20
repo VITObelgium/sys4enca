@@ -29,8 +29,8 @@ class Infra(enca.ENCARun):
                 "paths_indices" :
                     {layer : ConfigRaster(optional= True) for layer in INDICES},
                 "general" : {
-                    "gaussian_kernel_radius": ConfigItem(),
-                    "gaussian_sigma": ConfigItem(),
+                    "gaussian_kernel_radius": ConfigItem(default=10),
+                    "gaussian_sigma": ConfigItem(default=50),
                     "lc_urban" : ConfigItem(),
                     "lc_water" : ConfigItem(default = [51])
                 },
@@ -50,11 +50,11 @@ class Infra(enca.ENCARun):
                 'leac_result' : {YEARLY : ConfigRaster(optional = True)},
             }})
         self.check_leac()
-        self.make_output_filenames()
 
     def _start(self):
 
         logger.debug('Hello from ENCA Infra')
+        self.make_output_filenames()
 
         # region = self.aoi_name
         # tier = self.tier
@@ -431,7 +431,7 @@ class Infra(enca.ENCARun):
     def check_leac(self):
         logger.info("Checking if LEAC is available")
         for year in self.years:
-            if year in self.config["infra"]["leac_result"]:
+            if year in self.config.get("infra", {}).get("leac_result", []):
                 logger.info("leac information was manual added")
                 # basename = os.path.basename(self.config["infra"]["leac_result"][year])
                 continue
