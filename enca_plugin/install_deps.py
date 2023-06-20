@@ -45,8 +45,9 @@ def get_python_interpreter():
 def install_pip_deps():
     """Install remaining dependencies using pip."""
     install_dialog = PipInstallDialog()
-    install_dialog.message.setText('ENCA plugin must install the sys4enca core package (and possible dependencies) '
-                                   'using pip.  OK to download and install?')
+    install_dialog.message.setText(self.tr(
+        'ENCA plugin must install the sys4enca core package (and possible dependencies) using pip.  '
+        'OK to download and install?'))
     answer = install_dialog.exec()
     if answer != QDialog.Accepted:  # Installation cancelled.
         return False

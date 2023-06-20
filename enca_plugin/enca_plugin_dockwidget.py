@@ -350,8 +350,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def loadConfig(self):
         """Load a yaml config file."""
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Load Config File", "",
-                                                            "Config files (*.yaml);; All files (*.*)")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, self.tr("Load Config File"), "",
+                                                            self.tr("Config files (*.yaml);; All files (*.*)"))
         if not filename:
             return
 
