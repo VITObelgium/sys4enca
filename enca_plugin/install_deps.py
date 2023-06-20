@@ -6,8 +6,10 @@ On other systems, we present a warning message and expect the user to take care 
 import importlib
 import os
 import subprocess
+import sys
 import tempfile
 from importlib.metadata import PackageNotFoundError, version, distributions  # pragma: no cover
+from site import getusersitepackages
 
 from PyQt5.QtWidgets import QMessageBox, QDialog
 from pkg_resources import parse_version
@@ -17,8 +19,8 @@ from .pip_install_dialog import PipInstallDialog
 from .marvin_qgis_tools import osgeo4w
 
 _package_dist_name = 'sys4enca'  # Python package with core functionality
-_min_version = '0.3.0'  # Minimum required package version for the plugin.
-_version_next = '0.4.0'  # Next package version which may no longer be compatible with this version of the plugin.
+_min_version = '0.5.0'  # Minimum required package version for the plugin.
+_version_next = '0.6.0'  # Next package version which may no longer be compatible with this version of the plugin.
 _repo_url = 'https://artifactory.vgt.vito.be/api/pypi/python-packages/simple'
 
 
@@ -43,8 +45,9 @@ def get_python_interpreter():
 def install_pip_deps():
     """Install remaining dependencies using pip."""
     install_dialog = PipInstallDialog()
-    install_dialog.message.setText('ENCA plugin must install the sys4enca core package (and possible dependencies) '
-                                   'using pip.  OK to download and install?')
+    install_dialog.message.setText(self.tr(
+        'ENCA plugin must install the sys4enca core package (and possible dependencies) using pip.  '
+        'OK to download and install?'))
     answer = install_dialog.exec()
     if answer != QDialog.Accepted:  # Installation cancelled.
         return False
@@ -133,6 +136,13 @@ def check_dependencies():
     # If enca wasn't installed previously, 'import enca' might still fail due to the importlib cache.  Invalidate the
     # caches so we are sure that we can import the newly installed enca:
     importlib.invalidate_caches()
+    # If the user's site packages directory (e.g. C:\Users\<username>\AppData\... on windows) directory is empty at
+    # QGIS startup, the directory is not added to sys.path.  Therefore, if sys4enca was installed in the user's site
+    # packages directory, 'import' will also fail.  Therefore, add it to sys path if needed:
+    user_site_packages = getusersitepackages()
+    if user_site_packages not in sys.path:
+        sys.path.append(user_site_packages)
+
     import enca
     if parse_version(enca.__version__) < parse_version(_min_version):
         QMessageBox.warning(None, 'Restart QGIS', f'The {_package_dist_name} package was updated.  Please restart '

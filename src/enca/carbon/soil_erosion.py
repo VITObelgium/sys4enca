@@ -5,14 +5,13 @@ import subprocess
 import rasterio
 
 import enca
-from enca.framework.config_check import ConfigItem
+from enca.framework.config_check import ConfigItem, YEARLY
 from enca.framework.geoprocessing import block_window_generator, average_rasters
 
 
 logger = logging.getLogger(__name__)
 
-SOIL_LOSS_2001 = 'soil_loss_2001'
-SOIL_LOSS_2012 = 'soil_loss_2012'
+SOIL_LOSS = 'soil_loss'
 R_FACTOR_1 = 'R_factor_1km'
 R_FACTOR_25 = 'R_factor_25km'
 SOIL_CARBON_10 = 'soil_carbon_10cm'
@@ -44,35 +43,20 @@ class CarbonErosion(enca.ENCARun):
                 SOIL_CARBON_10: ConfigItem(),
                 SOIL_CARBON_20: ConfigItem(),
                 SOIL_CARBON_30: ConfigItem(),
-                SOIL_LOSS_2001: ConfigItem(),
-                SOIL_LOSS_2012: ConfigItem()}})
+                SOIL_LOSS: {YEARLY: ConfigItem()}}})
 
     def _start(self):
         print('Hello from Carbon Soil Erosion preprocessing.')
-
-        soil_loss_2001 = self.soil_erosion_upsample(SOIL_LOSS_2001)
-        soil_loss_2012 = self.soil_erosion_upsample(SOIL_LOSS_2012)
-
-        with rasterio.open(soil_loss_2001) as src:
-            tresolution = src.transform[0]
-            bbox = src.bounds
-            target_crs = src.crs
-        carbon_average = self.soil_carbon_average(tresolution, bbox, target_crs)
-
+        carbon_average = None
         for year in self.years:
-            # Reproducing PAPBio code + example config:
-            # For years < 2010, use 2001 soil loss
-            # For years 2010, 2011, use average of 2001 and 2012 soil loss
-            # For years >= 2012, use 2012 soil loss
-            if year < 2010:
-                soil_loss = soil_loss_2001
-            elif 2010 <= year < 2012:
-                avg_soil_loss = os.path.join(self.temp_dir(), 'soil_loss_avg_2001-2012.tif')
-                if not os.path.exists(avg_soil_loss):
-                    average_rasters(avg_soil_loss, soil_loss_2001, soil_loss_2012)
-                soil_loss = avg_soil_loss
-            else:
-                soil_loss = soil_loss_2012
+            soil_loss = self.soil_erosion_upsample(year)
+
+            if carbon_average is None:
+                with rasterio.open(soil_loss) as src:
+                    tresolution = src.transform[0]
+                    bbox = src.bounds
+                    target_crs = src.crs
+                carbon_average = self.soil_carbon_average(tresolution, bbox, target_crs)
 
             self.calculate_erosion_carbon(year, soil_loss, carbon_average)
 
@@ -103,7 +87,8 @@ class CarbonErosion(enca.ENCARun):
             bbox = src.bounds
             target_epsg = src.crs.to_epsg()
         cmd = ('gdalwarp --config GDAL_CACHEMAX 256 -overwrite -t_srs '
-               'EPSG:{} -te {} {} {} {} -tr {} {} -r bilinear -co COMPRESS=deflate -co BIGTIFF=YES -multi {} {}').format(
+               'EPSG:{} -te {} {} {} {} -tr {} {} -r bilinear '
+               '-co COMPRESS=deflate -co BIGTIFF=YES -multi "{}" "{}"').format(
                    target_epsg, bbox.left, bbox.bottom, bbox.right, bbox.top, tresolution, tresolution,
                    path_temp, path_out)
         subprocess.check_call(cmd, shell=True)
@@ -124,11 +109,11 @@ class CarbonErosion(enca.ENCARun):
         average_rasters(carbon_mean, carbon_10_res, carbon_20_res, carbon_30_res)
         return carbon_mean
 
-    def soil_erosion_upsample(self, soil_loss_key, block_shape=(1024, 1024)):
+    def soil_erosion_upsample(self, year, block_shape=(1024, 1024)):
         """Upsample soil loss raster with pansharpening approach using R-factor rasters.
 
-        :param soil_loss_key: config key for soil loss raster to work on.
-        :returns: 
+        :param year: year of the soil loss raster to work on.
+        :returns: path to upsampled soil loss raster
 
         """
         # 1 get AOI bounds in soil loss EPSG
@@ -139,9 +124,9 @@ class CarbonErosion(enca.ENCARun):
         # 6 calculate soil loss resampled as (Rhighres / Rlowres) * Loss (~pansharpening approach)
         config = self.config[self.component]
         # first get the AOI bounds in EPSG of high resolution dataset
-        with rasterio.open(self.reporting_raster) as src_AOI, rasterio.open(config[R_FACTOR_1]) as src_Loss:
+        with rasterio.open(self.reporting_raster) as src_AOI, rasterio.open(config[R_FACTOR_1]) as src_r_factor1:
             # now we have to re-project the AOI bounds to the input dataset crs
-            AOI_bounds = rasterio.warp.transform_bounds(src_AOI.crs,  src_Loss.crs,
+            AOI_bounds = rasterio.warp.transform_bounds(src_AOI.crs,  src_r_factor1.crs,
                                                         src_AOI.bounds.left,
                                                         src_AOI.bounds.bottom,
                                                         src_AOI.bounds.right,
@@ -164,20 +149,20 @@ class CarbonErosion(enca.ENCARun):
             Resample2AOI(config[R_FACTOR_25], path_Low_AOI, target_crs, bbox, tresolution, wResampling='cubicspline')
 
         # Third resample also the soil loss dataset
-        path_SoilLoss_AOI = os.path.join(self.temp_dir(), f'{soil_loss_key}_Cut2AOI.tif')
+        path_SoilLoss_AOI = os.path.join(self.temp_dir(), f'soil_loss_{year}_Cut2AOI.tif')
         if not os.path.exists(path_SoilLoss_AOI):
-            Resample2AOI(config[soil_loss_key], path_SoilLoss_AOI, target_crs, bbox, tresolution,
+            Resample2AOI(config[SOIL_LOSS][year], path_SoilLoss_AOI, target_crs, bbox, tresolution,
                          wResampling='cubicspline')
 
         # Fill holes in datasets
         path_Low_AOI_filled = os.path.join(self.temp_dir(), 'Low_res_dataset_Cut2AOI_filled.tif')
-        path_SoilLoss_AOI_filled = os.path.join(self.temp_dir(), f'{soil_loss_key}_Cut2AOI_filled.tif')
+        path_SoilLoss_AOI_filled = os.path.join(self.temp_dir(), f'soil_loss{year}_Cut2AOI_filled.tif')
         if not os.path.exists(path_Low_AOI_filled):
             FillHoles(path_Low_AOI, path_Low_AOI_filled)
         if not os.path.exists(path_SoilLoss_AOI_filled):
             FillHoles(path_SoilLoss_AOI, path_SoilLoss_AOI_filled)
 
-        path_out = os.path.join(self.temp_dir(), f'{soil_loss_key}_resampled.tif')
+        path_out = os.path.join(self.temp_dir(), f'soil_loss_{year}_resampled.tif')
         with rasterio.open(path_High_AOI) as src_data1, \
              rasterio.open(path_Low_AOI_filled) as src_data2, \
              rasterio.open(path_SoilLoss_AOI_filled) as src_data3, \

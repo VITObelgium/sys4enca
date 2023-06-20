@@ -212,7 +212,8 @@ class ENCARun(Run):
         # Check if the adminstrative regions cover the set of seleted statistical regions:
         area_delta = self.statistics_shape.area.sum() - df_check.area.sum()
         if abs(area_delta) > (self.src_res[0] * self.src_res[1] / 3.):
-            raise ConfigError('The administrative boundaries shapefile does not cover all selected SELU shapes.')
+            raise ConfigError('The administrative boundaries shapefile does not cover all selected SELU shapes.',
+                              [_ADMIN_BOUNDS])
         # Extract the selected regions:
         self.admin_shape = self.admin_shape.reindex(df_check.index.unique()).sort_index()
 

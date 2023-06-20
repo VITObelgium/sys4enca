@@ -32,6 +32,7 @@ import enca.infra as infra
 import enca.leac as leac
 import enca.total as total
 import enca.trend as trend
+from enca.components import get_component_long_name
 from enca.framework.errors import Error
 from enca.framework.config_check import ConfigError, YEARLY
 from enca.framework.run import Cancelled
@@ -91,7 +92,7 @@ component_input_widgets = [
         water.AQUIFER,
         water.SALINITY,
         water.HYDRO_LAKES,
-        water.GLORIC_ADAPTED]),
+        water.GLORIC]),
     (water_precip_evapo.WaterPrecipEvapo.component, [
         water_precip_evapo._WORLDCLIM,
         water_precip_evapo._CGIAR_AET,
@@ -104,7 +105,9 @@ component_input_widgets = [
                                 'y2005',
                                 'y2010',
                                 'y2015',
-                                'y2020']),
+                                'y2020',
+                                'y2025',
+                                'y2030']),
         water_usage._MUNICIPAL,
         water_usage._AGRICULTURAL,
         water_usage._LC_AGRI]),
@@ -129,8 +132,7 @@ component_input_widgets = [
         carbon_soil_erosion.SOIL_CARBON_10,
         carbon_soil_erosion.SOIL_CARBON_20,
         carbon_soil_erosion.SOIL_CARBON_30,
-        carbon_soil_erosion.SOIL_LOSS_2001,
-        carbon_soil_erosion.SOIL_LOSS_2012]),
+        (carbon_soil_erosion.SOIL_LOSS, [YEARLY])]),
     (carbon_livestock.CarbonLivestock.component, [
         (carbon_livestock.LIVESTOCK_CARBON, carbon.livestock._livestock_types),
         (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),
@@ -309,8 +311,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             dropdown = findChild(tab, 'component')
             components_stack = findChild(tab, 'components_stack')
             for j in range(components_stack.count()):
-                # TODO use separate internal values and display values (using Qt.User data)
-                dropdown.addItem(components_stack.widget(j).objectName()[:-1])  # cut off trailing '_'
+                name = components_stack.widget(j).objectName()[:-1]  # cut off trailing '_'
+                dropdown.addItem(get_component_long_name(name), name)
             dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
     def set_up_carbon_livestock(self):
@@ -348,8 +350,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def loadConfig(self):
         """Load a yaml config file."""
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Load Config File", "",
-                                                            "Config files (*.yaml);; All files (*.*)")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, self.tr("Load Config File"), "",
+                                                            self.tr("Config files (*.yaml);; All files (*.*)"))
         if not filename:
             return
 
@@ -380,7 +382,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             # select component:
             component_page = findChild(run_type_tab, component_name)
             component_combo = findChild(run_type_tab, 'component')
-            component_combo.setCurrentText(component_name)
+            idx = component_combo.findData(component_name, QtCore.Qt.UserRole)
+            component_combo.setCurrentIndex(idx)
 
             # handle run name:
             try:
@@ -441,7 +444,8 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def run(self):
         template = self.make_template()
         taskname = f'{template["component"].currentText()} run {template["run_name"].text()}'
-        task = Task(taskname, template, output_vectors=component_vector_layers.get(template["component"].currentText(), []))
+        component_name = template["component"].currentData(QtCore.Qt.UserRole)
+        task = Task(taskname, template, output_vectors=component_vector_layers.get(component_name, []))
         _tasks.append(task)
         QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
         QgsApplication.taskManager().addTask(task)
@@ -472,9 +476,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # Get the currently selected component.
         # 1. see which tab we are on (preprocessing / components / accounts)
         tab_runtype = self.run_types.currentWidget()
-        # 2. select the component form this tab
+        # 2. select the component from this tab
         component_dropdown = findChild(tab_runtype, 'component')
-        component_name = component_dropdown.currentText()  # TODO fill component drop-down with user data corresponding to internal component name?
+        component_name = component_dropdown.currentData(QtCore.Qt.UserRole)
         template = {**self.config_template,
                     'component': component_dropdown,
                     component_name: self.component_templates[component_name]}

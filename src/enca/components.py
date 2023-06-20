@@ -32,6 +32,27 @@ _run_components = {CarbonAgriculture, CarbonFire, CarbonFireVulnerability, Carbo
 _component_registry = {cls.component: cls for cls in _run_components}
 
 
+# Dict of descriptive names for components:
+_component_long_names = {
+    CarbonAgriculture.component: 'Carbon: agriculture (harvest)',
+    CarbonNPP.component: 'Carbon: vegetation productivity (NPP)',
+    CarbonForest.component: 'Carbon: forest stock and wood removal',
+    CarbonFire.component: 'Carbon: fire emission',
+    CarbonErosion.component: 'Carbon: soil erosion',
+    CarbonLivestock.component: 'Carbon: livestock',
+    CarbonSoil.component: 'Carbon: soil stock',
+    CarbonFireVulnerability.component: 'Carbon: fire vulnerability index',
+    WaterPrecipEvapo.component: 'Water: Precipitation & Evapotranspiration',
+    Usage.component: 'Water: Usage',
+    RiverLength.component: 'Water: River length',
+    DroughtVuln.component: 'Water: Drought vulnerability',
+    Carbon.component: 'Carbon',
+    Water.component: 'Water',
+    Infra.component: 'Infrastructure',
+    Leac.component: 'Landcover'
+}
+
+
 def make_run(config):
     """Read the component from config, and create a Run object for that component."""
     if COMPONENT not in config:
@@ -52,3 +73,9 @@ def list_components():
 def get_component(component_name):
     """Return the class for the component with the given name."""
     return _component_registry[component_name]
+
+
+def get_component_long_name(component_name):
+    """Return a human-readable name of the component with the given name."""
+    # return entry from _component_long_names if it exists, otherwise return input name
+    return _component_long_names.get(component_name, component_name)
