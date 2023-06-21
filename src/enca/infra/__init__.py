@@ -294,9 +294,8 @@ class Infra(enca.ENCARun):
                 df_grouped.drop(ID_FIELD, axis=1, inplace=True)
 
                 #adjust values for columns were we need the SUM
-                lSum = [x for x in df_grouped.columns if x not in lAverage]
-                #remove some columsn
-                lSum.remove('DLCT_{}'.format(2015))
+                lSum = [x for x in df_grouped.columns if x not in lAverage and not x.startswith('DLCT')]
+                #remove some columns
                 lSum.remove('F_AREA')
                 for element in lSum:
                     df_grouped[element] = df_grouped[element] * df_grouped['F_AREA']
@@ -312,10 +311,10 @@ class Infra(enca.ENCARun):
 
             #calculate the sum of the fields by all and DLCT
             #results per DLCT
-            results_DLCT = df_grouped.groupby('DLCT_{}'.format(2015)).sum()
+            results_DLCT = df_grouped.groupby('DLCT').sum()
 
             #results for full area
-            results_all = df_grouped.drop('DLCT_{}'.format(2015),axis=1).groupby('num_SELU').sum()
+            results_all = df_grouped.drop('DLCT', axis=1).groupby('num_SELU').sum()
             results_all.reset_index(inplace=True)
             results_all['num_SELU'] = df_grouped['num_SELU'].sum()
             results_all.rename({0: 'total'}, inplace=True)
@@ -372,7 +371,7 @@ class Infra(enca.ENCARun):
         df.index.name = ID_FIELD
         m2_2ha = 1/100**2
         pix2ha = self.accord.pixel_area_m2()/100**2
-        df['DLCT_2015'] = self.statistics_shape["DLCT_2015"]
+        df['DLCT'] = self.statistics_shape["DLCT"]
         df['Area_poly'] = df.area * m2_2ha
 
         for idx,path in enumerate(lPaths):
