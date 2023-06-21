@@ -11,7 +11,6 @@ Created on Oct 28, 2019
 @author: smetsb
 '''
 import os
-import sys
 import rasterio
 import logging
 import numpy as np
@@ -207,13 +206,11 @@ class LFI(object):
                 if (col.startswith('WS') or col.startswith('HY')) and col.endswith('_ID'):
                     ws = col
             if ws is None:
-                logger.error('No watershed level found')
-                sys.exit(-1)
+                raise Error('No watershed level found')
             else:
                 #check if catchment level also in catchment layer
                 if not ws in data_catchment.columns:
-                    print('Inconsistent watershed level between catchment and mesh vectors')
-                    sys.exit(-1)
+                    raise Error('Inconsistent watershed level between catchment and mesh vectors')
 
             '''#SAGA uses first letters in intersect_LFI, so rename
             cols_to_rename = [{lcName.split('_')[0]+"_NCA": lcName}]

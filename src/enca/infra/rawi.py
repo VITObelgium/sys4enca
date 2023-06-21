@@ -5,7 +5,7 @@ Created on Oct 26, 2020
 
 @author: smetsb
 '''
-import os, sys
+import os
 import math
 from math import sqrt
 import geopandas as gpd
@@ -57,42 +57,37 @@ class RAWI(object):
         #4- large rivers >=10 and < 100
         #5- very large river >=100
 
-        try:
-            data = gpd.read_file(self.gloric)
-            data[river_class_name] = 0
+        data = gpd.read_file(self.gloric)
+        data[river_class_name] = 0
 
-            #inverse the log avg discharge m3/sec
-            data['Q_avg'] = 10 ** data['Log_Q_avg']
+        #inverse the log avg discharge m3/sec
+        data['Q_avg'] = 10 ** data['Log_Q_avg']
 
-            #categorize according lut table
-            data.loc[data.Q_avg < 1.0, river_class_name] = 1
-            data.loc[(data.Q_avg >= 1.0) & (data.Q_avg < 5.0), river_class_name] = 2
-            data.loc[(data.Q_avg >= 5.0) & (data.Q_avg < 10.0), river_class_name] = 3
-            data.loc[(data.Q_avg >= 10.0) & (data.Q_avg < 100.0), river_class_name] = 4
-            data.loc[(data.Q_avg >= 100.0), river_class_name] = 5
+        #categorize according lut table
+        data.loc[data.Q_avg < 1.0, river_class_name] = 1
+        data.loc[(data.Q_avg >= 1.0) & (data.Q_avg < 5.0), river_class_name] = 2
+        data.loc[(data.Q_avg >= 5.0) & (data.Q_avg < 10.0), river_class_name] = 3
+        data.loc[(data.Q_avg >= 10.0) & (data.Q_avg < 100.0), river_class_name] = 4
+        data.loc[(data.Q_avg >= 100.0), river_class_name] = 5
 
-            #calculate SRMU
-            data['SRMU'] = data.Q_avg * data.Length_km  #data.LENGTH_GEO take full river length for SRMU
-            data['log_SRMU'] = np.log10(data['SRMU']+math.e)
+        #calculate SRMU
+        data['SRMU'] = data.Q_avg * data.Length_km  #data.LENGTH_GEO take full river length for SRMU
+        data['log_SRMU'] = np.log10(data['SRMU']+math.e)
 
-            # clean up the shapefile
-            cols_to_drop = ["Log_Q_var","Class_hydr","Temp_min","CMI_indx","Log_elev","Class_phys","Lake_wet", \
-                            "Stream_pw","Class_geom","Reach_type","Kmeans_30", \
-                            "NEXT_DOW_1","ENDO","COAST","ORDER_","SORT"]
-            for colname in cols_to_drop:
-                if colname in data.columns:
-                    data = data.drop([colname], axis=1)
-            cols_to_rename = []  #format{key:value}
-            for col in cols_to_rename:
-                if list(col.keys())[0] in data.columns:
-                    data = data.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
+        # clean up the shapefile
+        cols_to_drop = ["Log_Q_var","Class_hydr","Temp_min","CMI_indx","Log_elev","Class_phys","Lake_wet",
+                        "Stream_pw","Class_geom","Reach_type","Kmeans_30",
+                        "NEXT_DOW_1","ENDO","COAST","ORDER_","SORT"]
+        for colname in cols_to_drop:
+            if colname in data.columns:
+                data = data.drop([colname], axis=1)
+        cols_to_rename = []  #format{key:value}
+        for col in cols_to_rename:
+            if list(col.keys())[0] in data.columns:
+                data = data.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
 
-            # write result with extra column HSRU (homegeneous stream reach units classes)
-            data.to_file(outfile, drivers='ESRI Shapefile')
-            return
-        except:
-            print("Error categorizing rivers units HSRU %s through geopandas " % outfile)
-            sys.exit(-1)
+        # write result with extra column HSRU (homegeneous stream reach units classes)
+        data.to_file(outfile, drivers='ESRI Shapefile')
 
     def group_SRMUperSELU(self):
 
