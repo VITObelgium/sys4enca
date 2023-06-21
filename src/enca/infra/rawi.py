@@ -10,6 +10,7 @@ import math
 from math import sqrt
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import rasterio
 from enca.framework.geoprocessing import adding_stats, block_window_generator
 
@@ -100,7 +101,7 @@ class RAWI(object):
         data = gpd.read_file(self.rawi_shape)
         data['HSRU_L'] = data.LENGTH_GEO * data.HSRU  #calculate weighted HSRU
 
-        data_hybas = data.groupby('HYBAS_ID').sum()   #data.dissolve('HYBAS_ID',aggfunc='sum') #dissolve is slow
+        data_hybas = data.groupby('HYBAS_ID').sum(numeric_only=True)   #data.dissolve('HYBAS_ID',aggfunc='sum') #dissolve is slow
         #some hybas are 0 with 0 length
         data_hybas['HSRU_W'] = np.floor(data_hybas.HSRU_L / data_hybas.LENGTH_GEO)
         data_hybas['HSRU_W'][data_hybas.HSRU_L == 0]  = 0
@@ -113,7 +114,7 @@ class RAWI(object):
         df = data_catch.merge(data_hybas, on='HYBAS_ID')
         #df = gpd.sjoin(data_catch, data_hybas, how='left', op='contains')  #spatial join is not working properly, still get duplicated hybas rows
         df_missing = data_catch[(~data_catch.index.isin(data_hybas.index))] #some hybas have no river, so will be missing
-        df = df.append(df_missing) #add again the hybas without any river
+        df = pd.concat([df, df_missing]) #add again the hybas without any river
         df.reset_index(level=0, inplace=True)
 
         # clean up the shapefile

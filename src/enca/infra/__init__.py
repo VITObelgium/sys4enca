@@ -321,7 +321,7 @@ class Infra(enca.ENCARun):
             results_all.rename({0: 'total'}, inplace=True)
 
             #combine
-            results_all = results_all.append(results_DLCT, sort=True)
+            results_all = pd.concat([results_all, results_DLCT], sort=True)
             #free
             df_grouped   = None
             results_DLCT = None
