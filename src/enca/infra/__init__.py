@@ -3,7 +3,7 @@ import os
 import numpy as np
 import geopandas as gpd
 import pandas as pd
-
+from importlib.resources import files
 
 import enca
 from enca.infra.nlep import create_NLEP
@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 RIVER_BUFFER = 100
 INDICES = [f'l{idx}' for idx in range(1,13)]
 
+REF_YEAR = 'ref_year'
+REF_LANDCOVER = 'ref_landcover'
+
 class Infra(enca.ENCARun):
 
     run_type = enca.RunType.ENCA
@@ -26,11 +29,13 @@ class Infra(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
+                REF_YEAR: ConfigItem(optional=True),
+                REF_LANDCOVER: ConfigRaster(optional=True),
                 "paths_indices" :
                     {layer : ConfigRaster(optional= True) for layer in INDICES},
                 "general" : {
-                    "gaussian_kernel_radius": ConfigItem(),
-                    "gaussian_sigma": ConfigItem(),
+                    "gaussian_kernel_radius": ConfigItem(default=10),
+                    "gaussian_sigma": ConfigItem(default=50),
                     "lc_urban" : ConfigItem(),
                     "lc_water" : ConfigItem(default = [51])
                 },
@@ -50,11 +55,11 @@ class Infra(enca.ENCARun):
                 'leac_result' : {YEARLY : ConfigRaster(optional = True)},
             }})
         self.check_leac()
-        self.make_output_filenames()
 
     def _start(self):
 
         logger.debug('Hello from ENCA Infra')
+        self.make_output_filenames()
 
         # region = self.aoi_name
         # tier = self.tier
@@ -262,20 +267,15 @@ class Infra(enca.ENCARun):
     def create_account_table(self, year, ID_FIELD = 'HYBAS_ID'):
         #function creates the INFRA/FUNCTIONAL SERVICES ACCOUNT TABLE
         path_INFRA_shp = self.path_results_infra[year]
-        path_LUT_CODE = self.config["infra"]["lut_infra"]
-        reporting_shape = self.reporting_shape #path_aoi
-        take_area_polygon = False
-
-
 
         lAverage = ['EIP1_11','EIP1_12_ha','EIP1_2','EIP1_3','EIP1_5','EIP1_6','NLEP_ha','NREP_ha','TEIP_ha','EISUI','EHI6','EHI7','EHI8','EIH','EIIUV']
-        lSum = ['EIP1_12','EIP1_4','EIP2','EIP3','EIP4','EIP6','EIP5_1','EIP5_2']
 
         #1. read in results of SELU file for year
         df = gpd.read_file(path_INFRA_shp).drop('geometry', axis=1)
 
         #read dataframe with code explanation
-        df_LUT = pd.read_csv(path_LUT_CODE, sep=';').set_index('I_CODE')
+        with files(enca).joinpath(f'data/LUT_INFRA_INDEX_CAL_EN.csv').open() as f:
+            df_LUT = pd.read_csv(f, sep=';').set_index(enca.CODE)
 
         #2. loop over all regions
         for pArea in self.reporting_shape.index:
@@ -431,7 +431,7 @@ class Infra(enca.ENCARun):
     def check_leac(self):
         logger.info("Checking if LEAC is available")
         for year in self.years:
-            if year in self.config["infra"]["leac_result"]:
+            if year in self.config.get("infra", {}).get("leac_result", []):
                 logger.info("leac information was manual added")
                 # basename = os.path.basename(self.config["infra"]["leac_result"][year])
                 continue
