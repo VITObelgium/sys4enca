@@ -104,7 +104,7 @@ class RAWI(object):
         data_hybas = data.groupby('HYBAS_ID').sum(numeric_only=True)   #data.dissolve('HYBAS_ID',aggfunc='sum') #dissolve is slow
         #some hybas are 0 with 0 length
         data_hybas['HSRU_W'] = np.floor(data_hybas.HSRU_L / data_hybas.LENGTH_GEO)
-        data_hybas['HSRU_W'][data_hybas.HSRU_L == 0]  = 0
+        data_hybas.loc[data_hybas.HSRU_L == 0, 'HSRU_W']  = 0
         data_hybas['HSRU_W'] = data_hybas['HSRU_W'].astype(np.uint8)
 
         data_catch = gpd.read_file(self.shapefile_catchment)
