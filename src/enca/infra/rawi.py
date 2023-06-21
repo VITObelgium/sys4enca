@@ -97,48 +97,44 @@ class RAWI(object):
 
         outfile = self.rawi_selu
 
-        try:
-            data = gpd.read_file(self.rawi_shape)
-            data['HSRU_L'] = data.LENGTH_GEO * data.HSRU  #calculate weighted HSRU
+        data = gpd.read_file(self.rawi_shape)
+        data['HSRU_L'] = data.LENGTH_GEO * data.HSRU  #calculate weighted HSRU
 
-            data_hybas = data.groupby('HYBAS_ID').sum()   #data.dissolve('HYBAS_ID',aggfunc='sum') #dissolve is slow
-            #some hybas are 0 with 0 length
-            data_hybas['HSRU_W'] = np.floor(data_hybas.HSRU_L / data_hybas.LENGTH_GEO)
-            data_hybas['HSRU_W'][data_hybas.HSRU_L == 0]  = 0
-            data_hybas['HSRU_W'] = data_hybas['HSRU_W'].astype(np.uint8)
+        data_hybas = data.groupby('HYBAS_ID').sum()   #data.dissolve('HYBAS_ID',aggfunc='sum') #dissolve is slow
+        #some hybas are 0 with 0 length
+        data_hybas['HSRU_W'] = np.floor(data_hybas.HSRU_L / data_hybas.LENGTH_GEO)
+        data_hybas['HSRU_W'][data_hybas.HSRU_L == 0]  = 0
+        data_hybas['HSRU_W'] = data_hybas['HSRU_W'].astype(np.uint8)
 
-            data_catch = gpd.read_file(self.shapefile_catchment)
-            data_catch = data_catch.set_index('HYBAS_ID')
+        data_catch = gpd.read_file(self.shapefile_catchment)
+        data_catch = data_catch.set_index('HYBAS_ID')
 
-            #spatial join, extend catchments with HSRU and SRMU information
-            df = data_catch.merge(data_hybas, on='HYBAS_ID')
-            #df = gpd.sjoin(data_catch, data_hybas, how='left', op='contains')  #spatial join is not working properly, still get duplicated hybas rows
-            df_missing = data_catch[(~data_catch.index.isin(data_hybas.index))] #some hybas have no river, so will be missing
-            df = df.append(df_missing) #add again the hybas without any river
-            df.reset_index(level=0, inplace=True)
+        #spatial join, extend catchments with HSRU and SRMU information
+        df = data_catch.merge(data_hybas, on='HYBAS_ID')
+        #df = gpd.sjoin(data_catch, data_hybas, how='left', op='contains')  #spatial join is not working properly, still get duplicated hybas rows
+        df_missing = data_catch[(~data_catch.index.isin(data_hybas.index))] #some hybas have no river, so will be missing
+        df = df.append(df_missing) #add again the hybas without any river
+        df.reset_index(level=0, inplace=True)
 
-            # clean up the shapefile
-            cols_to_drop = [ "ENDO","COAST","ORDER_","SORT", \
-                            "index_right","FID_GloRiC","Reach_ID","Next_down","Log_Q_avg","Stream_pow", \
-                            "NEXT_SINK","MAIN_BAS","DIST_SINK","DIST_MAIN","SUB_AREA", "UP_AREA", "PFAF_ID", \
-                             "NEXT_SINK_y", "MAIN_BAS_y", "DIST_SINK_y", "DIST_MAIN_y", "SUB_AREA_y", "UP_AREA_y", "PFAF_ID_y", \
-                             "HSRU","HSRU_L"]
-            for colname in cols_to_drop:
-                if colname in df.columns:
-                    df = df.drop([colname], axis=1)
-            cols_to_rename = [{"NEXT_SINK_x":"NEXT_SINK"},{"MAIN_BAS_x":"MAIN_BAS"},{"DIST_SINK_x":"DIST_SINK"},\
-                              {"DIST_MAIN_x":"DIST_MAIN"},{"SUB_AREA_x":"SUB_AREA"},{"UP_AREA_x":"UP_AREA"},\
-                              {"PFAF_ID_x":"PFAF_ID"}]  # format{key:value}
-            for col in cols_to_rename:
-                if list(col.keys())[0] in df.columns:
-                    df = df.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
+        # clean up the shapefile
+        cols_to_drop = [ "ENDO","COAST","ORDER_","SORT",
+                         "index_right","FID_GloRiC","Reach_ID","Next_down","Log_Q_avg","Stream_pow",
+                         "NEXT_SINK","MAIN_BAS","DIST_SINK","DIST_MAIN","SUB_AREA", "UP_AREA", "PFAF_ID",
+                         "NEXT_SINK_y", "MAIN_BAS_y", "DIST_SINK_y", "DIST_MAIN_y",
+                         "SUB_AREA_y", "UP_AREA_y", "PFAF_ID_y",
+                         "HSRU","HSRU_L"]
+        for colname in cols_to_drop:
+            if colname in df.columns:
+                df = df.drop([colname], axis=1)
+        cols_to_rename = [{"NEXT_SINK_x":"NEXT_SINK"},{"MAIN_BAS_x":"MAIN_BAS"},{"DIST_SINK_x":"DIST_SINK"},
+                          {"DIST_MAIN_x":"DIST_MAIN"},{"SUB_AREA_x":"SUB_AREA"},{"UP_AREA_x":"UP_AREA"},
+                          {"PFAF_ID_x":"PFAF_ID"}]  # format{key:value}
+        for col in cols_to_rename:
+            if list(col.keys())[0] in df.columns:
+                df = df.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
 
-            # write out grouped shapefile
-            df.to_file(outfile, drivers='ESRI Shapefile')
-
-        except:
-            print("Error categorizing RAWI %s through geopandas " % outfile)
-            sys.exit(-1)
+        # write out grouped shapefile
+        df.to_file(outfile, drivers='ESRI Shapefile')
 
     #rasterize Gloric rivers
     def rasterize_rivers(self):
