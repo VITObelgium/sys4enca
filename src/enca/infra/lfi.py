@@ -144,7 +144,7 @@ class LFI(object):
 
         gdf_merger_RR = gpd.read_file(merged_roadrails)
         gdf_catchment = gpd.read_file(self.catchments_processed[basin])
-        data = gdf_merger_RR.overlay(gdf_catchment, how='intersection').explode()
+        data = gdf_merger_RR.overlay(gdf_catchment, how='intersection').explode(index_parts=True)
 
         #clean-up
         data['AREA'] = data['geometry'].area * self.scale2ha
