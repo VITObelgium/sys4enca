@@ -284,7 +284,7 @@ class ENCARun(Run):
             results['num_SELU'] = len(df)
 
             # Also collect indicators per dominant landcover type
-            col_dlct = f'DLCT_{year}'
+            col_dlct = 'DLCT'
             grp_dlct = df.join(self.statistics_shape[col_dlct]).groupby(col_dlct)
             # Aggregate sum per DLCT for all columns, plus count of a single column to get 'num_SELU':
             results_dlct = grp_dlct.sum().join(grp_dlct[AREA_RAST].count().rename('num_SELU'))
