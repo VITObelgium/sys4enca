@@ -1,0 +1,61 @@
+CODE;SHORT NAME;LABEL
+a;Area_ha;Area_ha
+Area_poly;Area_polygones_ha;area calculated from the polygons [ha]
+Area_rast;Area_raster_ha;area calculated from raster pixels [ha]
+num_SELU;number of SELU;number of SELU units combined
+;;I. Basic extent balances
+EB1_1LC;EB1_1LCArea;Land cover accounts [LC unit = ha]
+EB1_21RSE;EB1_21RSE_km;River system extent account [RSE unit = km]
+EB1_22RSE;EB1_22RSE;River system extent account [RSE unit = ha]
+;;II. Accessible ecosystem infrastructure potential
+EIP1_11;EIP1_11GBLI;Green background landscape index (= GBLI average per ha) [0-1]
+EIP1_12;EIP1_12GBLV;Green background landscape value (= GBLI x Area_ha)
+EIP1_2;EIP1_2LHNVI;Landscape high nature value index (= LHNVI average per ha) [1-4]
+EIP1_3;EIP1_3FRAGMEFF;Landscape fragmentation index (= FRAG_MEFF average per ha) [1-0]
+EIP1_4;EIP1_4RAWI_SUM;River accessibility weighted index (= sum of RAWI per RSE ha)
+EIP1_5;EIP1_5NATRIV;Rivers high nature value index (= NATRIV river ha average) [1-4]
+EIP1_6;EIP1_6FRAGRIV;Rivers fragmentation index (=FRAGRIV river ha average) [1-0]
+EIP2;EIP2NLEP;Net Landscape Ecosystem Potential
+EIP3;EIP3NREP;Net River Ecosystem Potential
+EIP4;EIP4TEIP;Total Ecosystem Infrastructure Potential
+NLEP_ha:NLEPha;Net Landscape Ecosystem Potential per ha [0-4]
+NREP_ha:NREPha;Net River Ecosystem Potential per ha [0-4]
+TEIP_ha;TEIPha;Total Ecosystem Infrastructure Potential per ha [0-4]
+;;III. Overall acess to ecosystem infrastructure functional services
+EIP5_1;EIP5_1LAIP1_TEIP;Population's local access to TEIP
+EIP5_2;EIP5_2LAIP2_RIV;Population's local access to river services
+EIP5_3;EIP5_3LAIP3_FSP;Population's local access to sustainable food
+EIP5_4;EIP5_4LAIP4_Tourism;Tourists local access to TEIP
+EIP5_5;EIP5_5NATPROtect;TEIP service for local/national Nature conservation
+EIP5_6;EIP5_6INTERPROtect;TEIP service international Nature conservation
+;;IV. Table of indexes of intensity of use and ecosystem health
+EI6TEIP_base;EI6TEIP_baseline;TEIP of baseline year [ref_year]
+EISUI;EISUI;Ecosystem Infrastructure Sustainble Use Index
+EHI3;EHI3_BiiotVulner;Biotopes health condition/ Vulnerability
+EHI5;EHI5_ExtinctionRisk;Other indicator: Extinction risk
+EHI7;EHI7_BurntImpact;Impact of burnt areas
+EHI6;EHI6_Species;Biodiversity species health
+EHI8;EHI8_GOLDRIV_poll;Rivers water quality
+EIH;EHI;Ecosystem Infrastructure Health Index
+EIIUV;EIIUV;Ecosystem Infrastructure Internal Unit Value
+;;Additional input data
+ad_1;ad_1HNVI_baseline;High Nature Value map (used for LHNVI/NATURILIS and NATRIV)
+ad_21;ad_21Prot1_Nat_ha;Protected areas per national designation
+ad_22;ad_22Prot2_Internat_ha;Protected areas per international designation
+ad_2n;ad_2nProtArea_ha;Protected areas per other type
+ad_31;ad_12TouristI,Tourist frequentation (number of hotel beds x frequentation)
+ad_3;ad_3POPsm;Gridded population smoothed for neighbourhood analysis
+ad_41;ad_4AgriCrops;Agriculture crops statistics adjusted to land cover [t]
+ad_51;ad_5FoodSustPot;Food Sustainable Potential
+ad_4;ad_4BiodivIntact;Biodiversity Intactness index
+ad_5;ad_5BiodivMSA;Mean Species abundance
+ad_6;ad_6BiotopeVulner;Biotopes vulnerability (e.g. Terrestrial Ecoregions)
+ad_7;ad_7ExtinctonRisk;Species extinction risk (e.g. Isaac EDGE score)
+ad_8;ad_8BurntArea;Burnt area (total area) [ha]
+ad_9;ad_9FireVulner;Fire vulnerability health index
+ad_10;ad_10MinePollut;Mining potential pollution index [1-10]
+ad_11;ad_11FireDens;Fire density indicator
+ad_12;ad_12FaunaDens;Wild fauna density indicator
+ad_91;ad_9RiverPollutI1;River pollution index 1 (land based index, e.g. GOLDRIV) [1-0]
+ad_92;ad_10RiverPollutI2;River pollution index 2 (water quality monitoring index) [1-0]
+ad_93;ad_11RiverPollutI3River pollution index 3 (population health based index) [1-0]
