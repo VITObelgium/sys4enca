@@ -156,10 +156,10 @@ component_input_widgets = [
         carbon_forest.WOOD_REMOVAL_LIMIT
     ]),
     (infra.Infra.component, [
+        infra.REF_YEAR,
+        infra.REF_LANDCOVER,
         ('paths_indices', infra.INDICES),
         ('general', [
-            'gaussian_kernel_radius',
-            'gaussian_sigma',
             'lc_urban',
             'lc_water']),
         ('nlep', [
@@ -176,8 +176,7 @@ component_input_widgets = [
             'dams',
             'gloric'
         ]),
-        ('leac_result', [YEARLY]),
-        'lut_infra',
+        ('leac_result', [YEARLY])
     ]),
     (leac.Leac.component, [
         'lut_ct_lc',

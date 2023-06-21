@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 RIVER_BUFFER = 100
 INDICES = [f'l{idx}' for idx in range(1,13)]
 
+REF_YEAR = 'ref_year'
+REF_LANDCOVER = 'ref_landcover'
+
 class Infra(enca.ENCARun):
 
     run_type = enca.RunType.ENCA
@@ -26,6 +29,8 @@ class Infra(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
+                REF_YEAR: ConfigItem(optional=True),
+                REF_LANDCOVER: ConfigRaster(optional=True),
                 "paths_indices" :
                     {layer : ConfigRaster(optional= True) for layer in INDICES},
                 "general" : {
