@@ -82,12 +82,12 @@ def writeWidget(widget, value):
             widget.setChecked(True)
         else:
             widget.setChecked(False)
-    elif isinstance(widget, QgsSpinBox):
-        if value:
-            widget.setValue(int(value))
     elif isinstance(widget, QtWidgets.QDoubleSpinBox):
         if value:
             widget.setValue(float(value))
+    elif isinstance(widget, QtWidgets.QAbstractSpinBox):
+        if value:
+            widget.setValue(int(value))
     elif isinstance(widget, QgsCheckableComboBox):
         selected_list = []
         if isinstance(value, list):  # Load from yaml file
