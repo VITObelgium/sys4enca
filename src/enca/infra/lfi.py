@@ -34,7 +34,7 @@ class Catchment(object):
         self.years = runObject.years
         _ , scale = self.accord.ref_profile['crs'].linear_units_factor
         self.scale2ha = scale ** 2 / 10000
-        self.catchment = runObject.config["infra"]["nlep"]["catchments"][basin]
+        self.catchment = runObject.config["infra"]["catchments"][basin]
         self.catchment_temp = runObject.catchments_temp[basin]
         self.basin = basin
     
@@ -74,7 +74,7 @@ class OSM(object):
         self.years = runObject.years
         self.temp_dir = runObject.temp_dir()
         self.accord = runObject.accord
-        self.merged_trunkroads_railways = runObject.config["infra"]["nlep"]['osm']
+        self.merged_trunkroads_railways = runObject.config["infra"]['osm']
         self.merged_trunkroads_railways_inv = runObject.merged_trunkroads_railways_inv
         self.merged_RR_inversed = runObject.merged_RR_inversed
 
@@ -119,9 +119,9 @@ class LFI(object):
         self.pix2ha = self.accord.pixel_area_m2() / 10000 #m2 to hectares
         self.lcclass = runObject.config["infra"]["general"]["lc_urban"]
         self.lcname='NoUrb'
-        self.basins = sorted([basin for basin in runObject.config["infra"]["nlep"]["catchments"].keys()])
+        self.basins = sorted([basin for basin in runObject.config["infra"]["catchments"].keys()])
         self.meshOutlier_ha = int(10*100)   #10km2
-        self.catchments = runObject.config["infra"]["nlep"]["catchments"]
+        self.catchments = runObject.config["infra"]["catchments"]
         self.catchments_processed = runObject.catchments_processed
         self.catchments_clean = runObject.catchments_clean
         self.lfi_mesh = runObject.lfi_mesh

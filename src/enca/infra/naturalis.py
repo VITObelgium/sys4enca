@@ -28,7 +28,7 @@ class NATURALIS(object):
         self.gaussian_kernel_radius = runObject.config["infra"]["general"]["gaussian_kernel_radius"]
         self.gaussian_sigma = runObject.config["infra"]["general"]["gaussian_sigma"]
         self.block_shape = (4096, 4096)
-        self.naturalis = runObject.config["infra"]["nlep"]["naturalis"]
+        self.naturalis = runObject.config["infra"]["naturalis"]
         self.nosm_reverse = runObject.naturalis_nosm_reverse
         self.nosm = runObject.naturalis_nosm
         self.sm = runObject.naturalis_sm

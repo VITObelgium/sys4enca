@@ -158,24 +158,20 @@ component_input_widgets = [
     (infra.Infra.component, [
         infra.REF_YEAR,
         infra.REF_LANDCOVER,
-        ('paths_indices', infra.INDICES),
+        ('paths_indices', list(infra.INDICES.keys())),
         ('general', [
             'lc_urban',
             'lc_water']),
-        ('nlep', [
-            'lut_gbli',
-            'naturalis',
-            'osm',
-            ('catchments', [
-                'catchment_6',
-                'catchment_8',
-                'catchment_12'
-            ])
+        'lut_gbli',
+        'naturalis',
+        'osm',
+        ('catchments', [
+            'catchment_6',
+            'catchment_8',
+            'catchment_12'
         ]),
-        ('nrep', [
-            'dams',
-            'gloric'
-        ]),
+        'dams',
+        'gloric',
         ('leac_result', [YEARLY])
     ]),
     (leac.Leac.component, [
@@ -335,9 +331,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         widget_infra = self.ENCA_.findChild(QtWidgets.QWidget, infra.Infra.component + '_')
         widget_infra_indices = widget_infra.findChild(QtWidgets.QGroupBox, 'paths_indices_')
         widget_infra_indices.setLayout(QtWidgets.QFormLayout())
-        for idx in infra.INDICES:
+        for idx, label in infra.INDICES.items():
             # Add suffix '_' to index widget object names because they end in an integer
-            widget_infra_indices.layout().addRow(idx, QgsFileWidget(self, objectName=idx + '_'))
+            widget_infra_indices.layout().addRow(f'{idx}. {label}', QgsFileWidget(self, objectName=f'{idx}_'))
 
     def saveConfig(self):
         """Save current ui state as a yaml config file."""

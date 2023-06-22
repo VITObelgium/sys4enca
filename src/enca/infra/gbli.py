@@ -21,7 +21,7 @@ class GBLI(object):
         Constructor
         '''
         config = runObject.config
-        self.lut_gbli = config["infra"]["nlep"]["lut_gbli"]
+        self.lut_gbli = config["infra"]["lut_gbli"]
         self.gaussian_kernel_radius = config["infra"]["general"]["gaussian_kernel_radius"]
         self.gaussian_sigma = config["infra"]["general"]["gaussian_sigma"]
         self.leac = config["infra"]["leac_result"]

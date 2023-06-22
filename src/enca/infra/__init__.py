@@ -14,7 +14,17 @@ from enca.framework.geoprocessing import statistics_byArea, norm_1
 
 logger = logging.getLogger(__name__)
 RIVER_BUFFER = 100
-INDICES = [f'l{idx}' for idx in range(1,13)]
+INDICES = {'l1': 'Reference raster',
+           'l2': 'Burnt area',
+           'l3': 'Ecosystem vulnerability',
+           'l4': 'Species extinction index',
+           'l5': 'Mean species abundance',
+           'l6': 'Biodiversity intactness index',
+           'l7': 'Fire vulnerability',
+           'l8': 'Mine pollution risk',
+           'l9': 'Population statistics',
+           'l10': 'Fire density indicator',
+           'l11': 'Fauna density indicator'}
 
 REF_YEAR = 'ref_year'
 REF_LANDCOVER = 'ref_landcover'
@@ -32,26 +42,21 @@ class Infra(enca.ENCARun):
                 REF_YEAR: ConfigItem(optional=True),
                 REF_LANDCOVER: ConfigRaster(optional=True),
                 "paths_indices" :
-                    {layer : ConfigRaster(optional= True) for layer in INDICES},
+                    {layer: ConfigRaster(optional=True) for layer in INDICES},
                 "general" : {
                     "gaussian_kernel_radius": ConfigItem(default=10),
                     "gaussian_sigma": ConfigItem(default=50),
                     "lc_urban" : ConfigItem(),
                     "lc_water" : ConfigItem(default = [51])
                 },
-                'nlep' : {
-                    "lut_gbli" : ConfigItem(),
-                    "naturalis": ConfigRaster(), #should be changed to shape however can't seem to find original file
-                    "catchments" : {'catchment_6' : ConfigShape(),
-                                    'catchment_8' : ConfigShape(),
-                                    'catchment_12' : ConfigShape()},
-                    "osm" : ConfigShape()
-                },
-                'nrep' : {
-                    "dams" : ConfigShape(),
-                    "gloric" : ConfigShape()
-
-                },
+                "lut_gbli" : ConfigItem(),
+                "naturalis": ConfigRaster(), #should be changed to shape however can't seem to find original file
+                "catchments" : {'catchment_6' : ConfigShape(),
+                                'catchment_8' : ConfigShape(),
+                                'catchment_12' : ConfigShape()},
+                "osm" : ConfigShape(),
+                "dams" : ConfigShape(),
+                "gloric" : ConfigShape(),
                 'leac_result' : {YEARLY : ConfigRaster(optional = True)},
             }})
         self.check_leac()
@@ -467,7 +472,7 @@ class Infra(enca.ENCARun):
                 self.leac_gbli_diff[year] = os.path.join(self.temp_dir(),file)
 
         #Naturalis processing filenames
-        self.naturalis_shape = self.config["infra"]["nlep"]["naturalis"]
+        self.naturalis_shape = self.config["infra"]["naturalis"]
         basic_file = os.path.splitext(os.path.basename(self.naturalis_shape))[0]
         self.naturalis_nosm_reverse = os.path.join(self.temp_dir(), f'{basic_file}_nosm_reverse.tif')
         self.naturalis_nosm = os.path.join(self.temp_dir(), f'{basic_file}_nosm.tif')
@@ -485,8 +490,8 @@ class Infra(enca.ENCARun):
         self.lfi_meff_hybas = {}
 
 
-        for basin in self.config["infra"]["nlep"]["catchments"].keys():
-            file =self.config["infra"]["nlep"]["catchments"][basin]
+        for basin in self.config["infra"]["catchments"].keys():
+            file =self.config["infra"]["catchments"][basin]
             self.catchments_temp[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
             self.catchments_processed[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
             self.catchments_clean[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
@@ -506,7 +511,7 @@ class Infra(enca.ENCARun):
 
         #OSM
         #outfile = os.path.join(self.nlep.root_nlep_temp, os.path.splitext(os.path.basename(merged_trunkroads_railways))[0]) + '.tif'
-        osm_base = os.path.splitext(os.path.basename(self.config["infra"]["nlep"]["osm"]))[0]
+        osm_base = os.path.splitext(os.path.basename(self.config["infra"]["osm"]))[0]
         self.merged_trunkroads_railways_inv = os.path.join(self.temp_dir(), f'{osm_base}_inversed.tif')
         self.merged_RR_inversed = os.path.join(self.temp_dir(), f'vector_{osm_base}_inversed.shp')
 
@@ -521,7 +526,7 @@ class Infra(enca.ENCARun):
         #RAWI
         self.river_buffer = RIVER_BUFFER
         #self.resolution = self.accord.
-        base = os.path.splitext(os.path.basename(self.config["infra"]["nrep"]["gloric"]))[0]
+        base = os.path.splitext(os.path.basename(self.config["infra"]["gloric"]))[0]
         self.riverSRMU = os.path.join(self.maps, base + '_log_SRMU.tif')
         self.rawi_mask = os.path.join(self.temp_dir(), base + '.tif')
         self.rawi_shape = os.path.join(self.temp_dir(), base + '.shp')
@@ -537,8 +542,8 @@ class Infra(enca.ENCARun):
         #FRAGRIV
         self.fragriv = os.path.join(self.maps, "WAP_fragriv_3857.tif")
         self.fragriv_hybas = {}
-        for basin in self.config["infra"]["nlep"]["catchments"].keys() :
-            file = os.path.splitext(os.path.basename(self.config["infra"]["nlep"]["catchments"][basin]))[0]
+        for basin in self.config["infra"]["catchments"].keys() :
+            file = os.path.splitext(os.path.basename(self.config["infra"]["catchments"][basin]))[0]
             self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + 'fragriv.tif')
 
         #accounting results

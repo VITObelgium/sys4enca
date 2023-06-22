@@ -1260,6 +1260,37 @@
                   </property>
                  </widget>
                 </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_91">
+                  <property name="text">
+                   <string>Reference year</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QSpinBox" name="ref_year_">
+                  <property name="maximum">
+                   <number>9999</number>
+                  </property>
+                  <property name="value">
+                   <number>2000</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_92">
+                  <property name="text">
+                   <string>Reference landcover</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="ref_landcover_">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
+                </item>
                 <item row="3" column="0" colspan="2">
                  <widget class="QGroupBox" name="paths_indices_">
                   <property name="title">
@@ -1303,109 +1334,132 @@
                   </layout>
                  </widget>
                 </item>
-                <item row="5" column="0" colspan="2">
-                 <widget class="QGroupBox" name="nlep_">
+                <item row="5" column="0">
+                 <widget class="QLabel" name="label_95">
+                  <property name="text">
+                   <string>Greenness/biomass index lookup table</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QgsFileWidget" name="lut_gbli_">
+                  <property name="filter">
+                   <string>CSV (*.csv);; All Files (*.*)</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0" colspan="2">
+                 <widget class="QGroupBox" name="infra_vector_files">
                   <property name="title">
-                   <string>nlep</string>
+                   <string>Vector files</string>
                   </property>
                   <layout class="QFormLayout" name="formLayout_16">
                    <item row="0" column="0">
-                    <widget class="QLabel" name="label_95">
+                    <widget class="QLabel" name="label_97">
                      <property name="text">
-                      <string>LUT GBLI</string>
+                      <string>Railways / Roads</string>
                      </property>
                     </widget>
                    </item>
                    <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="lut_gbli_"/>
+                    <widget class="QgsFileWidget" name="osm_">
+                     <property name="filter">
+                      <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="0">
                     <widget class="QLabel" name="label_96">
                      <property name="text">
-                      <string>Naturalis</string>
+                      <string>Protected Areas</string>
                      </property>
                     </widget>
                    </item>
                    <item row="1" column="1">
-                    <widget class="QgsFileWidget" name="naturalis_"/>
-                   </item>
-                   <item row="3" column="0">
-                    <widget class="QLabel" name="label_97">
-                     <property name="text">
-                      <string>OSM</string>
+                    <widget class="QgsFileWidget" name="naturalis_">
+                     <property name="filter">
+                      <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
                      </property>
                     </widget>
-                   </item>
-                   <item row="3" column="1">
-                    <widget class="QgsFileWidget" name="osm_"/>
                    </item>
                    <item row="2" column="0" colspan="2">
                     <widget class="QGroupBox" name="catchments_">
                      <property name="title">
-                      <string>Catchments</string>
+                      <string>Hydrological basins at</string>
                      </property>
                      <layout class="QFormLayout" name="formLayout_17">
                       <item row="0" column="0">
                        <widget class="QLabel" name="label_98">
                         <property name="text">
-                         <string>6</string>
+                         <string>Level 6</string>
                         </property>
                        </widget>
                       </item>
                       <item row="1" column="0">
                        <widget class="QLabel" name="label_99">
                         <property name="text">
-                         <string>8</string>
+                         <string>Level 8</string>
                         </property>
                        </widget>
                       </item>
                       <item row="2" column="0">
                        <widget class="QLabel" name="label_100">
                         <property name="text">
-                         <string>12</string>
+                         <string>Level 12</string>
                         </property>
                        </widget>
                       </item>
                       <item row="0" column="1">
-                       <widget class="QgsFileWidget" name="catchment_6_"/>
+                       <widget class="QgsFileWidget" name="catchment_6_">
+                        <property name="filter">
+                         <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="1" column="1">
-                       <widget class="QgsFileWidget" name="catchment_8_"/>
+                       <widget class="QgsFileWidget" name="catchment_8_">
+                        <property name="filter">
+                         <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                       <item row="2" column="1">
-                       <widget class="QgsFileWidget" name="catchment_12_"/>
+                       <widget class="QgsFileWidget" name="catchment_12_">
+                        <property name="filter">
+                         <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                        </property>
+                       </widget>
                       </item>
                      </layout>
                     </widget>
                    </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item row="6" column="0" colspan="2">
-                 <widget class="QGroupBox" name="nrep_">
-                  <property name="title">
-                   <string>nrep</string>
-                  </property>
-                  <layout class="QFormLayout" name="formLayout_18">
-                   <item row="0" column="0">
+                   <item row="3" column="0">
                     <widget class="QLabel" name="label_101">
                      <property name="text">
-                      <string>DAMS</string>
+                      <string>Dams</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="0">
+                   <item row="3" column="1">
+                    <widget class="QgsFileWidget" name="dams_">
+                     <property name="filter">
+                      <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="0">
                     <widget class="QLabel" name="label_102">
                      <property name="text">
-                      <string>GLORIC</string>
+                      <string>River network</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="dams_"/>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QgsFileWidget" name="gloric_"/>
+                   <item row="4" column="1">
+                    <widget class="QgsFileWidget" name="gloric_">
+                     <property name="filter">
+                      <string>Vector Files (*.shp *.gpkg);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
@@ -1418,36 +1472,9 @@
                  </widget>
                 </item>
                 <item row="7" column="1">
-                 <widget class="QgsFileWidget" name="leac_result_"/>
-                </item>
-                <item row="1" column="0">
-                 <widget class="QLabel" name="label_91">
-                  <property name="text">
-                   <string>Reference year</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="2" column="0">
-                 <widget class="QLabel" name="label_92">
-                  <property name="text">
-                   <string>Reference landcover</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="ref_landcover_">
+                 <widget class="QgsFileWidget" name="leac_result_">
                   <property name="filter">
                    <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="1">
-                 <widget class="QSpinBox" name="ref_year_">
-                  <property name="maximum">
-                   <number>9999</number>
-                  </property>
-                  <property name="value">
-                   <number>2000</number>
                   </property>
                  </widget>
                 </item>
