@@ -13,7 +13,7 @@ if "%~1" == "" (
 set GIT_REV=%1
 for /f %%i in ('git rev-parse --short %GIT_REV%') do set COMMIT_HASH=%%i
 set TEMP_ENCA=%Temp%\enca_plugin_%COMMIT_HASH%
-makedir %TEMP_ENCA%
+mkdir %TEMP_ENCA%
 git archive --format tar --worktree-attributes %GIT_REV% enca_plugin ^
     --prefix enca_plugin/marvin_qgis_tools/ --add-file qgis_tools/src/marvin_qgis_tools/osgeo4w.py ^
     --prefix "" ^
