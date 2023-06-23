@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0" language="fr" sourcelanguage="">
-<context>
-    <name></name>
-    <message>
-        <location filename="../install_deps.py" line="48"/>
-        <source>ENCA plugin must install the sys4enca core package (and possible dependencies) using pip.  OK to download and install?</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
+<!DOCTYPE TS>
+<TS version="2.1" language="fr">
 <context>
     <name>Dialog</name>
     <message>
@@ -54,12 +47,12 @@
 <context>
     <name>ENCAPluginDockWidget</name>
     <message>
-        <location filename="../enca_plugin_dockwidget.py" line="353"/>
+        <location filename="../enca_plugin_dockwidget.py" line="348"/>
         <source>Load Config File</source>
         <translation type="unfinished">Ouvrir un fichier de configuration</translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget.py" line="353"/>
+        <location filename="../enca_plugin_dockwidget.py" line="348"/>
         <source>Config files (*.yaml);; All files (*.*)</source>
         <translation type="unfinished">Fichiers de configuration (*.yaml);;; Tous les fichiers (*.*)</translation>
     </message>
@@ -117,17 +110,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2184"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2212"/>
         <source>Run name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1436"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1470"/>
         <source>LEAC result</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2111"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2139"/>
         <source>Accounts</source>
         <translation type="unfinished"></translation>
     </message>
@@ -137,7 +130,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2095"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2123"/>
         <source>Vector Files (*.shp *.gpkg);; All Files (*.*)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -147,7 +140,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2039"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2067"/>
         <source>Geotiff (*.tiff *.tif);; All Files (*.*)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -347,7 +340,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="997"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1347"/>
         <source>CSV (*.csv);; All Files (*.*)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -487,7 +480,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2088"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2116"/>
         <source>River network (GLORIC)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -507,7 +500,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1273"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1304"/>
         <source>General</source>
         <translation type="unfinished"></translation>
     </message>
@@ -552,358 +545,348 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1266"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1297"/>
         <source>Indices</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1279"/>
-        <source>Gaussian radius</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1286"/>
-        <source>Gaussian sigma</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1293"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1310"/>
         <source>Urban land cover class</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1300"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1327"/>
         <source>Water land cover classes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1329"/>
-        <source>nlep</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1335"/>
-        <source>LUT GBLI</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1345"/>
-        <source>Naturalis</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1355"/>
-        <source>OSM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1365"/>
-        <source>Catchments</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1371"/>
-        <source>6</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1378"/>
-        <source>8</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1385"/>
-        <source>12</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1407"/>
-        <source>nrep</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1413"/>
-        <source>DAMS</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1420"/>
-        <source>GLORIC</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1446"/>
-        <source>LUT infra</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1467"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1495"/>
         <source>carbon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1474"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1502"/>
         <source>Carbon stock</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1480"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1508"/>
         <source>Forest litter</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1494"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1522"/>
         <source>Forest above-ground biomass</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1508"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1536"/>
         <source>Forest below-ground biomass</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1522"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1550"/>
         <source>Soil</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1536"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1564"/>
         <source>Livestock (incl. cow)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1557"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1585"/>
         <source>Cow</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1567"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1595"/>
         <source>Carbon flux</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1573"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1601"/>
         <source>Vegetation productivity (NPP)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1587"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1615"/>
         <source>Wood removal</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1601"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1629"/>
         <source>Soil erosion</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1622"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1650"/>
         <source>Fire emission</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1629"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1657"/>
         <source>Agriculture (harvest)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1635"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1663"/>
         <source>cereals</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1649"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1677"/>
         <source>fibers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1663"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1691"/>
         <source>oil crops</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1677"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1705"/>
         <source>pulses</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1691"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1719"/>
         <source>roots</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1719"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1747"/>
         <source>fruit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1733"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1761"/>
         <source>vegetables</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1747"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1775"/>
         <source>sugar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1767"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1795"/>
         <source>Health indices</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1773"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1801"/>
         <source>Adjustment for forest age (=1 if not used)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1787"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1815"/>
         <source>Fire vulnerability</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1801"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1829"/>
         <source>Soil resistance to erosion (=1 if not used)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1815"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1843"/>
         <source>Adjustment for management practices</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1832"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1860"/>
         <source>Fire Intensity</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1842"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1870"/>
         <source>Restriction of use/flow indices</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1848"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1876"/>
         <source>Limitation of use (ILUP)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1862"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1890"/>
         <source>Rastio of natural vs. man-made fires</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1890"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1918"/>
         <source>water</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1903"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1931"/>
         <source>Agricultural water usage</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1917"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1945"/>
         <source>Municipal water usage</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1931"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1959"/>
         <source>Rainfed agriculture evapotranspiration</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1945"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1973"/>
         <source>Precipitation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1959"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1987"/>
         <source>LTA precipitation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1973"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2001"/>
         <source>LTA river outflow</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1987"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2015"/>
         <source>Evapotranspiration</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2001"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2029"/>
         <source>LTA evapotranspiration</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2018"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2046"/>
         <source>Drought vulnerability</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2032"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2060"/>
         <source>River length</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2046"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2074"/>
         <source>Groundwater resources / recharge</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2060"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2088"/>
         <source>Salinity</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2074"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2102"/>
         <source>Lake &amp; reservoirs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2124"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2152"/>
         <source>Infra result</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2145"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2173"/>
         <source>Carbon result</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2152"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2180"/>
         <source>Water result</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2173"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2201"/>
         <source>total</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2191"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2219"/>
         <source>trend</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="2198"/>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="2226"/>
         <source>Total results</source>
         <translation type="unfinished"></translation>
     </message>
-    <message encoding="UTF-8">
+    <message>
         <location filename="../enca_plugin_dockwidget_base.ui" line="464"/>
         <source>Livestock distribution [heads / km²] for reference year</source>
         <translation type="unfinished"></translation>
     </message>
-    <message encoding="UTF-8">
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1705"/>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1733"/>
         <source>café</source>
         <translation type="unfinished"></translation>
     </message>
-    <message encoding="UTF-8">
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1897"/>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1925"/>
         <source>Water surface fluxes [m³/yr]</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1266"/>
+        <source>Reference year</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1283"/>
+        <source>Reference landcover</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1340"/>
+        <source>Greenness/biomass index lookup table</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1354"/>
+        <source>Vector files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1360"/>
+        <source>Railways / Roads</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1374"/>
+        <source>Protected Areas</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1388"/>
+        <source>Hydrological basins at</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1394"/>
+        <source>Level 6</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1401"/>
+        <source>Level 8</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1408"/>
+        <source>Level 12</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1439"/>
+        <source>Dams</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1453"/>
+        <source>River network</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -923,6 +906,14 @@
         <location filename="../region_picker.py" line="20"/>
         <source>Selected area codes</source>
         <translation type="unfinished">Regions selectionnées</translation>
+    </message>
+</context>
+<context>
+    <name>install_deps</name>
+    <message>
+        <location filename="../install_deps.py" line="48"/>
+        <source>ENCA plugin must install the sys4enca core package (and possible dependencies) using pip.  OK to download and install?</source>
+        <translation>L&apos;extension ENCA dépend du paquet additionel &apos;sys4enca&apos;.  Acceptez-vous d l&apos;installer?</translation>
     </message>
 </context>
 </TS>

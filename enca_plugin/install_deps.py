@@ -11,7 +11,7 @@ import tempfile
 from importlib.metadata import PackageNotFoundError, version, distributions  # pragma: no cover
 from site import getusersitepackages
 
-from PyQt5.QtWidgets import QMessageBox, QDialog
+from PyQt5.QtWidgets import QMessageBox, QDialog, QApplication
 from pkg_resources import parse_version
 from qgis.core import Qgis, QgsMessageLog
 
@@ -45,7 +45,9 @@ def get_python_interpreter():
 def install_pip_deps():
     """Install remaining dependencies using pip."""
     install_dialog = PipInstallDialog()
-    install_dialog.message.setText(self.tr(
+    # TODO below translation is never used, because we only install the translations when the plugin is fully
+    #  initialized, which happens *after* installation is complete.
+    install_dialog.message.setText(QApplication.translate('install_deps',
         'ENCA plugin must install the sys4enca core package (and possible dependencies) using pip.  '
         'OK to download and install?'))
     answer = install_dialog.exec()
