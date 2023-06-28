@@ -233,23 +233,25 @@ def calc_nlep(runObject):
             raise Error(e)
 
     #now create NLEP CHANGE map
-    if runObject.config['infra'][REF_YEAR]:
-        for idx, year in enumerate(runObject.years):
+    for idx, year in enumerate(runObject.years[1:]):
+        if os.path.exists(runObject.clep[year]):
+            print (f"Skip CLEP calculation for {year}-{runObject.years[idx]} , data exists")
+            continue
+        try:
+            grid_out = runObject.clep[year]
+            prev_year = runObject.years[idx]
 
-            if os.path.exists(runObject.clep[year]):
-                print (f"Skip CLEP calculation for {year}-{runObject.years[idx]} , data exists")
-                continue
-            try:
-                grid_out = runObject.clep[year]
+            with rasterio.open(runObject.nlep[prev_year], 'r') as A_open , \
+                    rasterio.open(runObject.nlep[year], 'r') as B_open:
+                profile = A_open.profile
+                with rasterio.open(grid_out, 'w', **dict(profile, driver='GTiff')) as ds_out:
+                    for _, window in block_window_generator(block_shape, A_open.height, A_open.width):
+                        A = A_open.read(1, window=window, masked=True)
+                        B = B_open.read(1, window=window, masked=True)
+                        #seems te me a bit strange that this is A- B and not B-A?
+                        ds_out.write(A-B, window=window, indexes=1)
 
-                with rasterio.open(runObject.nlep[ref_year], 'r') as A_open , \
-                        rasterio.open(runObject.nlep[year], 'r') as B_open:
-                    profile = A_open.profile
-                    with rasterio.open(grid_out, 'w', **dict(profile, driver='GTiff')) as ds_out:
-                        for _, window in block_window_generator(block_shape, A_open.height, A_open.width):
-                            A = A_open.read(1, window=window, masked=True)
-                            B = B_open.read(1, window=window, masked=True)
-                            ds_out.write(A-B, window=window, indexes=1)
+
 
         except Error as e:
             raise Error(e)

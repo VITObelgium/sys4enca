@@ -431,29 +431,15 @@ class Infra(enca.ENCARun):
         for year in self.years:
             if year in self.config.get("infra", {}).get("leac_result", []):
                 logger.info("leac information was manual added")
+                # basename = os.path.basename(self.config["infra"]["leac_result"][year])
                 continue
-            expected_path = os.path.join(self.maps().replace(self.component, 'leac'),
+            expected_path = os.path.join(self.temp_dir().replace(self.component, 'leac'),
                                          f'cci_LC_{year}_100m_3857_PSCLC.tif')
             if not os.path.exists(expected_path):
                 logger.error('It seems that no input leac location was given and that the default location ' +\
                              f'{expected_path} does not contain a valid raster. please run leac module first.' )
             else:
                 self.config.update({self.component : {'leac_result' : {year : expected_path}}})
-
-        if self.config['infra'][REF_YEAR]:
-            if self.config.get("infra").get(REF_LANDCOVER):
-                self.config.update({self.component : {'leac_result' : {ref_year : self.config.get("infra").get(REF_LANDCOVER)}}})
-                logger.info("leac information was manual added")
-                continue
-            ref_year = self.config['infra'][REF_YEAR]
-            expected_path = os.path.join(self.maps().replace(self.component, 'leac'),
-                                         f'cci_LC_{ref_year}_100m_3857_PSCLC.tif')
-            if not os.path.exists(expected_path):
-                logger.error('It seems that no input leac location was given and that the default location ' + \
-                             f'{expected_path} does not contain a valid raster. please run leac module first.' )
-            else:
-                self.config.update({self.component : {'leac_result' : {ref_year : expected_path}}})
-
 
     def make_output_filenames(self):
         #easier typing
@@ -474,19 +460,9 @@ class Infra(enca.ENCARun):
             self.leac_gbli_nosm[year] = os.path.join(self.temp_dir(),file)
             file = f'{basic_file}_gbli_sm{smoothing_settings}.tif'
             self.leac_gbli_sm[year] = os.path.join(self.temp_dir(),file)
-
-            if self.config['infra'][REF_YEAR]:
-                ref_year = self.config['infra'][REF_YEAR]
-                file = file.replace('gbli','gbli-change-'+str(ref_year))
+            if year != self.years[0]:
+                file = file.replace('gbli','gbli-change-'+str(self.years[idx-1]))
                 self.leac_gbli_diff[year] = os.path.join(self.temp_dir(),file)
-
-        if self.config['infra'][REF_YEAR]:
-            psclc = self.config["infra"]["ref_leac"]
-            basic_file = os.path.splitext(os.path.basename(psclc))[0]
-            file = f'{basic_file}_gbli_nosm.tif'
-            self.leac_gbli_nosm[ref_year] = os.path.join(self.temp_dir(),file)
-            file = f'{basic_file}_gbli_sm{smoothing_settings}.tif'
-            self.leac_gbli_sm[ref_year] = os.path.join(self.temp_dir(),file)
 
         #Naturalis processing filenames
         self.naturalis_shape = self.config["infra"]["naturalis"]
@@ -537,9 +513,8 @@ class Infra(enca.ENCARun):
         self.clep = {}
         for idx, year in enumerate(self.years):
             self.nlep[year]= os.path.join(self.maps, f'nlep_{str(year)[-2:]}.tif')
-            if self.config['infra'][REF_YEAR]:
-                ref_year = self.config['infra'][REF_YEAR]
-                self.clep[year]= os.path.join(self.maps, f'clep_{str(ref_year)[-2:]}-{str(year)[-2:]}.tif')
+            if idx != 0:
+                self.clep[year]= os.path.join(self.maps, f'clep_{str(year)[-2:]}.tif')
 
         #RAWI
         self.river_buffer = RIVER_BUFFER
