@@ -1143,14 +1143,18 @@
                   </property>
                  </widget>
                 </item>
-                <item row="1" column="0" colspan="2">
+                <item row="3" column="0" colspan="2">
                  <widget class="QGroupBox" name="groupBox_14">
                   <property name="title">
                    <string>Lookup Tables</string>
                   </property>
                   <layout class="QFormLayout" name="formLayout_18">
                    <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="lut_ct_lc_"/>
+                    <widget class="QgsFileWidget" name="lut_ct_lc_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_9">
@@ -1167,7 +1171,11 @@
                     </widget>
                    </item>
                    <item row="1" column="1">
-                    <widget class="QgsFileWidget" name="lut_ct_lcf_"/>
+                    <widget class="QgsFileWidget" name="lut_ct_lcf_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="2" column="0">
                     <widget class="QLabel" name="label_103">
@@ -1177,7 +1185,11 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QgsFileWidget" name="lut_lc_"/>
+                    <widget class="QgsFileWidget" name="lut_lc_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="3" column="0">
                     <widget class="QLabel" name="label_107">
@@ -1187,7 +1199,11 @@
                     </widget>
                    </item>
                    <item row="3" column="1">
-                    <widget class="QgsFileWidget" name="lut_lc2psclc_"/>
+                    <widget class="QgsFileWidget" name="lut_lc2psclc_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="4" column="0">
                     <widget class="QLabel" name="label_104">
@@ -1197,7 +1213,11 @@
                     </widget>
                    </item>
                    <item row="4" column="1">
-                    <widget class="QgsFileWidget" name="lut_lcc_"/>
+                    <widget class="QgsFileWidget" name="lut_lcc_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="5" column="0">
                     <widget class="QLabel" name="label_106">
@@ -1207,7 +1227,11 @@
                     </widget>
                    </item>
                    <item row="5" column="1">
-                    <widget class="QgsFileWidget" name="lut_lcflow_C_"/>
+                    <widget class="QgsFileWidget" name="lut_lcflow_C_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="6" column="0">
                     <widget class="QLabel" name="label_105">
@@ -1217,7 +1241,11 @@
                     </widget>
                    </item>
                    <item row="6" column="1">
-                    <widget class="QgsFileWidget" name="lut_lcflow_F_"/>
+                    <widget class="QgsFileWidget" name="lut_lcflow_F_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="7" column="0">
                     <widget class="QLabel" name="label_108">
@@ -1227,12 +1255,16 @@
                     </widget>
                    </item>
                    <item row="7" column="1">
-                    <widget class="QgsFileWidget" name="lut_lcflows_"/>
+                    <widget class="QgsFileWidget" name="lut_lcflows_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
                 </item>
-                <item row="2" column="0" colspan="2">
+                <item row="4" column="0" colspan="2">
                  <widget class="QGroupBox" name="general_1">
                   <property name="title">
                    <string>General</string>
@@ -1249,6 +1281,37 @@
                     <widget class="QgsSpinBox" name="max_lc_classes_"/>
                    </item>
                   </layout>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_109">
+                  <property name="text">
+                   <string>Reference year</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QSpinBox" name="ref_year_1">
+                  <property name="maximum">
+                   <number>9999</number>
+                  </property>
+                  <property name="value">
+                   <number>2000</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_139">
+                  <property name="text">
+                   <string>Reference landcover</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="ref_landcover_1">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
                  </widget>
                 </item>
                </layout>
@@ -1289,12 +1352,12 @@
                 <item row="2" column="0">
                  <widget class="QLabel" name="label_92">
                   <property name="text">
-                   <string>Reference landcover</string>
+                   <string>Reference LEAC</string>
                   </property>
                  </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="ref_landcover_">
+                 <widget class="QgsFileWidget" name="ref_leac_">
                   <property name="filter">
                    <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
                   </property>
