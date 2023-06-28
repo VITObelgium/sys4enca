@@ -12,6 +12,8 @@ from enca.framework.geoprocessing import add_color, block_window_generator
 from enca.classification import CSV_2_dict, reclassification
 
 logger = logging.getLogger(__name__)
+REF_YEAR = 'ref_year'
+REF_LANDCOVER = 'ref_landcover'
 
 class Leac(enca.ENCARun):
 
@@ -23,6 +25,8 @@ class Leac(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
+                REF_YEAR: ConfigItem(optional=True),
+                REF_LANDCOVER: ConfigRaster(optional=True),
                 "lut_ct_lc": ConfigItem(),
                 "lut_ct_lcf": ConfigItem(),
                 "lut_lc": ConfigItem(),
@@ -366,20 +370,27 @@ class Leac(enca.ENCARun):
 
 
         for idx,year in enumerate(self.years):
-            self.leac_clipped[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year]))
-            self.leac_out[year] = os.path.splitext(os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year])))[0]\
-                                                + '_PSCLC.tif'
-            self.leac_recl[year] = os.path.splitext(os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year])))[0] \
-                                                + '_reclassified.tif'
-            if year != self.years[-1]:
-                self.leac_change[year] = os.path.join(self.temp_dir(),f'LEAC-change_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}.tif')
-                self.final_tab[year] = os.path.join(self.reports,f'LEAC-change_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}_final.csv')
+            if self.config['leac'][REF_YEAR]:
+                ref_year = self.config['leac'][REF_YEAR]
+                self.leac_change[year] = os.path.join(self.temp_dir(),f'LEAC-change_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.final_tab[year] = os.path.join(self.reports,f'LEAC-change_{self.aoi_name}_{year}-{ref_year}_final.csv')
                 self.lcc[year] = self.leac_change[year].replace('.tif','_4digits.tif')
-                self.lcf[year] = os.path.join(self.temp_dir(),f'LEAC-flow_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}.tif')
-                self.lcf_cons[year] = os.path.join(self.temp_dir(),f'LCF_{str(year)}_consumption_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}.tif')
-                self.lcf_form[year] = os.path.join(self.temp_dir(),f'LCF_{str(self.years[idx+1])}_formation_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}.tif')
-                self.lc_cons[year] = os.path.join(self.maps, f'LEAC_consumption_{str(year)}_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}.tif')
-                self.lc_form[year] = os.path.join(self.maps, f'LEAC_formation_{str(self.years[idx+1])}_{self.aoi_name}_{self.years[idx]}-{self.years[idx+1]}.tif')
+                self.lcf[year] = os.path.join(self.temp_dir(),f'LEAC-flow_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.lcf_cons[year] = os.path.join(self.temp_dir(),f'LCF_{str(year)}_consumption_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.lcf_form[year] = os.path.join(self.temp_dir(),f'LCF_{str(ref_year)}_formation_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.lc_cons[year] = os.path.join(self.maps, f'LEAC_consumption_{str(year)}_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.lc_form[year] = os.path.join(self.maps, f'LEAC_formation_{str(ref_year)}_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_lcf_tab[year] = self.lc_cons[year].replace('consumption','LCF').replace('.tif','.csv')
+
+
+                self.years = self.years.append(ref_year)
+                self.config["land_cover"][ref_year] = self.config['leac'][REF_LANDCOVER]
+        for idx,year in enumerate(self.years):
+            self.leac_clipped[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year]))
+            self.leac_out[year] = os.path.splitext(os.path.join(self.maps, os.path.basename(self.config["land_cover"][year])))[0] \
+                                  + '_PSCLC.tif'
+            self.leac_recl[year] = os.path.splitext(os.path.join(self.maps, os.path.basename(self.config["land_cover"][year])))[0] \
+                                   + '_reclassified.tif'
+
 
 
