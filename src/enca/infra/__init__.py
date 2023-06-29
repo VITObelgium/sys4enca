@@ -444,7 +444,7 @@ class Infra(enca.ENCARun):
             if self.config.get("infra").get(REF_LANDCOVER):
                 self.config.update({self.component : {'leac_result' : {ref_year : self.config.get("infra").get(REF_LANDCOVER)}}})
                 logger.info("leac information was manual added")
-                continue
+                # continue # TODO check: this continue statement is a syntax error
             ref_year = self.config['infra'][REF_YEAR]
             expected_path = os.path.join(self.maps().replace(self.component, 'leac'),
                                          f'cci_LC_{ref_year}_100m_3857_PSCLC.tif')

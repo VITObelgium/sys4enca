@@ -251,8 +251,8 @@ def calc_nlep(runObject):
                             B = B_open.read(1, window=window, masked=True)
                             ds_out.write(A-B, window=window, indexes=1)
 
-        except Error as e:
-            raise Error(e)
+            except Error as e:
+                raise Error(e)
 
 ####################################################################################################
 # workflow to create NLEP account
