@@ -175,6 +175,8 @@ component_input_widgets = [
         ('leac_result', [YEARLY])
     ]),
     (leac.Leac.component, [
+        leac.REF_YEAR,
+        leac.REF_LANDCOVER,
         'lut_ct_lc',
         'lut_ct_lcf',
         'lut_lc',
