@@ -27,7 +27,7 @@ INDICES = {'l1': 'Reference raster',
            'l11': 'Fauna density indicator'}
 
 REF_YEAR = 'ref_year'
-REF_LANDCOVER = 'ref_leac'
+REF_LANDCOVER = 'ref_landcover'
 
 class Infra(enca.ENCARun):
 
@@ -555,7 +555,7 @@ class Infra(enca.ENCARun):
             #search for corresponding files
             #search for basic leac
 
-            self.config["land_cover"][ref_year] = self.config['leac'][REF_LANDCOVER]
+            self.config["land_cover"][ref_year] = self.config['infra'][REF_LANDCOVER]
             expected_path = os.path.join(self.maps.replace(self.component, 'leac'),
                                          f'{os.path.basename(self.config["land_cover"][ref_year])[0]}_PSCLC.tif')
             if not os.path.exists(expected_path):
