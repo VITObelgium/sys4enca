@@ -29,6 +29,7 @@ class GBLI(object):
         self.leac_gbli_nosm = runObject.leac_gbli_nosm
         self.leac_gbli_sm = runObject.leac_gbli_sm
         self.leac_gbli_diff = runObject.leac_gbli_diff
+        self.ref_year  = config['infra']['ref_year']
         self.block_shape = (4096, 4096)
 
 
@@ -58,8 +59,7 @@ class GBLI(object):
     
     def diff_gbli(self,year):
 
-        idx = self.years.index(year)
-        comp_year = self.years[idx-1]
+        comp_year = self.ref_year
 
         with rasterio.open(self.leac_gbli_sm[comp_year], 'r') as ds_open, \
                 rasterio.open(self.leac_gbli_sm[year], 'r') as ds_open2:

@@ -55,17 +55,18 @@ def create_gbli(gbli):
 
 
         #now calculate the GBLI difference between two consequetive years (doesn't seem to be necessary to be consec)
-        for year in years[1:]:
-            if os.path.exists(gbli.leac_gbli_diff[year]):
-                continue
-            logger.info("calculate difference map")
-            gbli.diff_gbli(year)
+        if gbli.ref_year:
+            for year in years:
+                if os.path.exists(gbli.leac_gbli_diff[year]):
+                    continue
+                logger.info("calculate difference map")
+                gbli.diff_gbli(year)
 
-            # post-process output data
-            # let's now translate to colored geotiff
-            # ctfile = '/data/nca_vol1/qgis/legend_gbli_change_2.txt'
-            # scale = [0, 255, 0, 255]  # scale from values to values
-            #tiffile = web.add_color(gbli_diff_sm + '.sdat', ctfile, os.path.join(pm.nlep.nlepOut.root_nlep, 'flow'),'Byte', 0, scale)
+                # post-process output data
+                # let's now translate to colored geotiff
+                # ctfile = '/data/nca_vol1/qgis/legend_gbli_change_2.txt'
+                # scale = [0, 255, 0, 255]  # scale from values to values
+                #tiffile = web.add_color(gbli_diff_sm + '.sdat', ctfile, os.path.join(pm.nlep.nlepOut.root_nlep, 'flow'),'Byte', 0, scale)
 
         logger.info("GBLI calculated")
         return
@@ -233,28 +234,27 @@ def calc_nlep(runObject):
             raise Error(e)
 
     #now create NLEP CHANGE map
-    for idx, year in enumerate(runObject.years[1:]):
-        if os.path.exists(runObject.clep[year]):
-            print (f"Skip CLEP calculation for {year}-{runObject.years[idx]} , data exists")
-            continue
-        try:
-            grid_out = runObject.clep[year]
-            prev_year = runObject.years[idx]
+    if runObject.config['infra']['ref_year']:
+        for year in runObject.years:
+            if os.path.exists(runObject.clep[year]):
+                print (f"Skip CLEP calculation for {year}-{runObject.config['infra']['ref_year']} , data exists")
+                continue
+            try:
+                grid_out = runObject.clep[year]
+                ref_year = runObject.config['infra']['ref_year']
 
-            with rasterio.open(runObject.nlep[prev_year], 'r') as A_open , \
-                    rasterio.open(runObject.nlep[year], 'r') as B_open:
-                profile = A_open.profile
-                with rasterio.open(grid_out, 'w', **dict(profile, driver='GTiff')) as ds_out:
-                    for _, window in block_window_generator(block_shape, A_open.height, A_open.width):
-                        A = A_open.read(1, window=window, masked=True)
-                        B = B_open.read(1, window=window, masked=True)
-                        #seems te me a bit strange that this is A- B and not B-A?
-                        ds_out.write(A-B, window=window, indexes=1)
+                with rasterio.open(runObject.nlep[ref_year], 'r') as A_open , \
+                        rasterio.open(runObject.nlep[year], 'r') as B_open:
+                    profile = A_open.profile
+                    with rasterio.open(grid_out, 'w', **dict(profile, driver='GTiff')) as ds_out:
+                        for _, window in block_window_generator(block_shape, A_open.height, A_open.width):
+                            A = A_open.read(1, window=window, masked=True)
+                            B = B_open.read(1, window=window, masked=True)
+                            #seems te me a bit strange that this is A- B and not B-A?
+                            ds_out.write(A-B, window=window, indexes=1)
 
-
-
-        except Error as e:
-            raise Error(e)
+            except Error as e:
+                raise Error(e)
 
 ####################################################################################################
 # workflow to create NLEP account

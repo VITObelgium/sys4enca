@@ -25,8 +25,8 @@ class Leac(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
-                REF_YEAR: ConfigItem(optional=True),
-                REF_LANDCOVER: ConfigRaster(optional=True),
+                REF_YEAR: ConfigItem(default = None, optional=True),
+                REF_LANDCOVER: ConfigRaster(default = None, optional=True),
                 "lut_ct_lc": ConfigItem(),
                 "lut_ct_lcf": ConfigItem(),
                 "lut_lc": ConfigItem(),
@@ -48,14 +48,15 @@ class Leac(enca.ENCARun):
         self.clip_reclassify()
         logger.debug("** LANDCOVER clipped ready ...\n\n")
 
-        #2. Calculate land cover change in ha
-        #options.overwrite = True
-        self.calc_lc_changes()
-        logger.debug("** LANDCOVER changes calculated  ...\n\n")
+        if REF_YEAR in self.config['leac']:
+            #2. Calculate land cover change in ha
+            #options.overwrite = True
+            self.calc_lc_changes()
+            logger.debug("** LANDCOVER changes calculated  ...\n\n")
 
-        #3. Calculate land cover stocks and flows on total area_of_interest
-        self.calc_lc_flows()
-        logger.debug("** LANDCOVER flows calculated ...\n\n")
+            #3. Calculate land cover stocks and flows on total area_of_interest
+            self.calc_lc_flows()
+            logger.debug("** LANDCOVER flows calculated ...\n\n")
 
         ######################################################################################################################
     def format_LCC_table(self, df, path_out):
@@ -196,15 +197,15 @@ class Leac(enca.ENCARun):
         logger.debug("** Land cover clipped and reclassified ...")
 
     def calc_lc_changes(self):
+        ref_year = self.ref_year
         #function to calculate the land cover changes by creating tabular output and change map
 
-        for idx, year in enumerate(self.years[:-1]):  #minus 1 as change maps require tuples
+        for idx, year in enumerate(self.years):  #minus 1 as change maps require tuples
             if os.path.exists(self.leac_change[year]):
-                pass
-                #return
+                continue
 
             lc1_reclass = self.leac_recl[year]
-            lc2_reclass = self.leac_recl[self.years[idx + 1]]
+            lc2_reclass = self.leac_recl[ref_year]
 
             profile = self.accord.ref_profile
             count = pd.DataFrame()
@@ -223,10 +224,10 @@ class Leac(enca.ENCARun):
 
 
 
-            count['first_year'] = count.index % self.config['leac']['general']['max_lc_classes'] +1
-            count['last_year'] = count.index // self.config['leac']['general']['max_lc_classes'] +1
+            count['year'] = count.index % self.config['leac']['general']['max_lc_classes'] +1
+            count['ref_year'] = count.index // self.config['leac']['general']['max_lc_classes'] +1
 
-            pivot_count = count.pivot(index ='first_year',columns='last_year', values=0).fillna(0)
+            pivot_count = count.pivot(index ='year',columns='ref_year', values=0).fillna(0)
 
             #post-process output data
             #format table : convert pixels to ha & TODO move no_change in separate col/row
@@ -238,7 +239,8 @@ class Leac(enca.ENCARun):
 
     def calc_lc_flows(self):
         #function to calculate the land cover change flows (consumption and formation)
-        for idx, year in enumerate(self.years[:-1]):# minus 1 as change maps require tuples
+        ref_year = self.ref_year
+        for idx, year in enumerate(self.years):
             if os.path.exists(self.lcc[year]) and os.path.exists(self.lcf[year]):
                 print ("Skip calculate land cover flow, data exists")
                 continue
@@ -254,7 +256,7 @@ class Leac(enca.ENCARun):
             reclass_dict = CSV_2_dict(self.config['leac']['lut_lcflows'], old_class='LC_CHANGE', new_class='ID_lcflows')
 
             with rasterio.open(self.leac_out[year], 'r') as ds_open1, \
-                    rasterio.open(self.leac_out[self.years[idx+1]],'r') as ds_open2:
+                    rasterio.open(self.leac_out[ref_year],'r') as ds_open2:
                 profile = ds_open1.profile
                 if profile["nodata"]:
                     nodata = profile["nodata"]
@@ -279,13 +281,13 @@ class Leac(enca.ENCARun):
 
 
         #C. Calculate the consumption (ref year) and formation (new year) raster + table
-        for idx, year in enumerate(self.years[:-1]):# minus 1 as change maps require tuples
+        for idx, year in enumerate(self.years):
             if os.path.exists(self.lcf_cons[year]) and os.path.exists(self.lcf_form[year]):
                 print ("Skip calculate leac consumption & formation flows, data exists")
                 continue
 
 
-            for idy, grid_in in enumerate([self.leac_out[year], self.leac_out[self.years[idx+1]]]):
+            for idy, grid_in in enumerate([self.leac_out[year], self.leac_out[ref_year]]):
                 if idy == 0:
                     account = self.lcf_cons[year]
                 else:
@@ -308,13 +310,13 @@ class Leac(enca.ENCARun):
 
 
         #D. Calculate cross-table stock-flows for consumption and formation
-        for idx, year in enumerate(self.years[:-1]):# minus 1 as change maps require tuples
+        for idx, year in enumerate(self.years):
             if os.path.exists(self.lc_lcf_tab[year]) and os.path.exists(self.tab_lcf_form[year]):
                 print ("Skip step D to calculate land cover cross tables, data exists")
                 continue
 
 
-            for idy, grid_in in enumerate([self.leac_recl[year], self.leac_recl[self.years[idx+1]]]):
+            for idy, grid_in in enumerate([self.leac_recl[year], self.leac_recl[ref_year]]):
 
                 if idy == 0:
                     grid_out = self.lc_cons[year]
@@ -338,10 +340,10 @@ class Leac(enca.ENCARun):
 
 
 
-                count['first_year'] = count.index % self.config['leac']['general']['max_lc_classes'] +1
-                count['last_year'] = count.index // self.config['leac']['general']['max_lc_classes'] +1
+                count['year'] = count.index % self.config['leac']['general']['max_lc_classes'] +1
+                count['ref_year'] = count.index // self.config['leac']['general']['max_lc_classes'] +1
 
-                pivot_count = count.pivot(index ='first_year',columns='last_year', values=0).fillna(0)
+                pivot_count = count.pivot(index ='year',columns='ref_year', values=0).fillna(0)
 
 
                 if idy == 0:
@@ -370,8 +372,9 @@ class Leac(enca.ENCARun):
 
 
         for idx,year in enumerate(self.years):
-            if self.config['leac'][REF_YEAR]:
-                ref_year = self.config['leac'][REF_YEAR]
+            if REF_YEAR in self.config['leac']:
+                self.ref_year = self.config['leac'][REF_YEAR]
+                ref_year = self.ref_year
                 self.leac_change[year] = os.path.join(self.temp_dir(),f'LEAC-change_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.final_tab[year] = os.path.join(self.reports,f'LEAC-change_{self.aoi_name}_{year}-{ref_year}_final.csv')
                 self.lcc[year] = self.leac_change[year].replace('.tif','_4digits.tif')
@@ -381,11 +384,11 @@ class Leac(enca.ENCARun):
                 self.lc_cons[year] = os.path.join(self.maps, f'LEAC_consumption_{str(year)}_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_form[year] = os.path.join(self.maps, f'LEAC_formation_{str(ref_year)}_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_lcf_tab[year] = self.lc_cons[year].replace('consumption','LCF').replace('.tif','.csv')
-
-
-                self.years = self.years.append(ref_year)
                 self.config["land_cover"][ref_year] = self.config['leac'][REF_LANDCOVER]
-        for idx,year in enumerate(self.years):
+                years = self.years + [ref_year]
+            else : years = self.years
+
+        for idx,year in enumerate(years):
             self.leac_clipped[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year]))
             self.leac_out[year] = os.path.splitext(os.path.join(self.maps, os.path.basename(self.config["land_cover"][year])))[0] \
                                   + '_PSCLC.tif'
