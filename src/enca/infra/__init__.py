@@ -551,7 +551,7 @@ class Infra(enca.ENCARun):
                        for year in self.years}
 
         #Ref check
-        if self.config['infra'][REF_YEAR]:
+        if REF_YEAR in self.config['infra']:
             #search for corresponding files
             #search for basic leac
 

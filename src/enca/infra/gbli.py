@@ -29,7 +29,10 @@ class GBLI(object):
         self.leac_gbli_nosm = runObject.leac_gbli_nosm
         self.leac_gbli_sm = runObject.leac_gbli_sm
         self.leac_gbli_diff = runObject.leac_gbli_diff
-        self.ref_year  = config['infra']['ref_year']
+        if 'ref_year' in config['infra']:
+            self.ref_year  = config['infra']['ref_year']
+        else:
+            self.ref_year = 0
         self.block_shape = (4096, 4096)
 
 

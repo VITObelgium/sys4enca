@@ -234,7 +234,7 @@ def calc_nlep(runObject):
             raise Error(e)
 
     #now create NLEP CHANGE map
-    if runObject.config['infra']['ref_year']:
+    if 'ref_year' in runObject.config['infra']:
         for year in runObject.years:
             if os.path.exists(runObject.clep[year]):
                 print (f"Skip CLEP calculation for {year}-{runObject.config['infra']['ref_year']} , data exists")
