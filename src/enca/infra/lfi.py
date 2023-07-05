@@ -178,7 +178,7 @@ class LFI(object):
         return self.mask[year]
     
     def calc_mesh(self, year ,basin):
-        if year == self.years[0]:
+        if not os.path.exists(self.lfi_mesh_clean[basin]):
             adding_stats([self.mask[year]],self.lfi_mesh[basin] ,self.lfi_mesh[basin] , [np.sum])
         else:
             adding_stats([self.mask[year]],self.lfi_mesh_clean[basin] ,self.lfi_mesh_clean[basin] , [np.sum])

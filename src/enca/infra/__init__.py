@@ -246,17 +246,11 @@ class Infra(enca.ENCARun):
 
         # read in country file
         gdf_country = self.reporting_shape
-        # filter
-        selection = gdf_country.loc[['BFA']]
-
-        # check
-        if selection.empty:
-            raise RuntimeError('the chosen area is not existing in the region shapefile')
 
         # intersect
         gdf['HYBAS_HA'] = gdf.geometry.area/(10000.)
         gdf[ID_FIELD] = gdf.index
-        gdf = gpd.overlay(gdf, selection, how='intersection')
+        gdf = gpd.overlay(gdf, gdf_country, how='intersection')
         gdf['AREA_HA'] = gdf.geometry.area/(10000.)
         # calculate factor of hybas_area used after cut (<1.0 means hybas not fully used)
         gdf['F_AREA'] = gdf['AREA_HA'] / gdf['HYBAS_HA']
@@ -452,7 +446,7 @@ class Infra(enca.ENCARun):
         self.leac_gbli_sm = dict()
         self.leac_gbli_diff = dict()
 
-        for year in enumerate(self.years):
+        for year in self.years:
             psclc = self.config["infra"]["leac_result"][year]
             basic_file = os.path.splitext(os.path.basename(psclc))[0]
             file = f'{basic_file}_gbli_nosm.tif'
@@ -551,21 +545,21 @@ class Infra(enca.ENCARun):
                        for year in self.years}
 
         #Ref check
-        if REF_YEAR in self.config['infra']:
+        if self.config['infra'][REF_YEAR]:
             #search for corresponding files
             #search for basic leac
 
-            self.config["land_cover"][ref_year] = self.config['infra'][REF_LANDCOVER]
+            self.config["land_cover"][ref_year] = self.config_template['infra'][REF_LANDCOVER].value
             expected_path = os.path.join(self.maps.replace(self.component, 'leac'),
-                                         f'{os.path.basename(self.config["land_cover"][ref_year])[0]}_PSCLC.tif')
+                                         f'{os.path.splitext(os.path.basename(self.config["land_cover"][ref_year]))[0]}_PSCLC.tif')
             if not os.path.exists(expected_path):
                 logger.error(f'It seems that leac was not yet run for {ref_year} ' + \
                              f'{expected_path} does not contain a valid raster. please run leac module first.' )
             else:
-                self.leac_result[ref_year] = expected_path
+                self.config['infra']['leac_result'][ref_year] = expected_path
 
-            psclc = self.config["infra"]["leac_result"][ref_year]
-            basic_file = os.path.splitext(os.path.basename(psclc))[0]
+            ref_land = self.config_template["infra"][REF_LANDCOVER].value
+            basic_file =  os.path.splitext(os.path.basename(ref_land))[0]  + '_PSCLC'
             file = f'{basic_file}_gbli_sm{smoothing_settings}.tif'
             expected_path = os.path.join(self.temp_dir(),file)
             if not os.path.exists(expected_path):
@@ -575,7 +569,7 @@ class Infra(enca.ENCARun):
                 self.leac_gbli_sm[ref_year] = expected_path
 
 
-            expect_path = os.path.join(self.maps, f'nlep_{str(year)[-2:]}.tif')
+            expect_path = os.path.join(self.maps, f'nlep_{str(ref_year)[-2:]}.tif')
             if not os.path.exists(expected_path):
                 logger.error(f'It seems that nlep was not yet run for {ref_year} ' + \
                              f'{expected_path} does not contain a valid raster. please run nlep module for ref year first.' )
