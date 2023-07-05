@@ -13,6 +13,7 @@ Created on Oct 28, 2019
 import rasterio
 from enca.framework.geoprocessing import block_window_generator, GSM
 from enca.classification import CSV_2_dict, reclassification
+import os
 
 class GBLI(object):
 

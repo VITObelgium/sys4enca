@@ -48,7 +48,7 @@ class Leac(enca.ENCARun):
         self.clip_reclassify()
         logger.debug("** LANDCOVER clipped ready ...\n\n")
 
-        if REF_YEAR in self.config['leac']:
+        if self.config['leac'][REF_YEAR]:
             #2. Calculate land cover change in ha
             #options.overwrite = True
             self.calc_lc_changes()
@@ -120,8 +120,6 @@ class Leac(enca.ENCARun):
         classes = df_c.columns
         r = df_c.index
 
-        #create LCF dataframe with number of flows (saga creates empty flow rows to match number of LC lcasses)
-        df1 = df_c.iloc[:flows,:]
         #add total consumption (losses) and initial stock
         df_c = df_c.append(pd.Series(df_c.loc[r[:-1], classes].sum(axis=0), name='Total consumption of land cover (losses)')) #classes 9 excluded since no change
         df_c = df_c.append(pd.Series(df_c.loc[r, classes].sum(axis=0), name='Stock Land Cover yr1'))
@@ -246,12 +244,15 @@ class Leac(enca.ENCARun):
                 continue
 
             #A. combine the 2 input grids into 4-digit number (temporary step) #seems to be not necessary we have the data? needs to be for the reclass
+            '''
+            Needs to be removed or not
             if self.tier == 2:
                 multi = 1000
                 dtype = np.uint32
             else:
-                multi = 100
-                dtype = np.uint16
+            '''
+            multi = 100
+            dtype = np.uint16
 
             reclass_dict = CSV_2_dict(self.config['leac']['lut_lcflows'], old_class='LC_CHANGE', new_class='ID_lcflows')
 
@@ -311,7 +312,7 @@ class Leac(enca.ENCARun):
 
         #D. Calculate cross-table stock-flows for consumption and formation
         for idx, year in enumerate(self.years):
-            if os.path.exists(self.lc_lcf_tab[year]) and os.path.exists(self.tab_lcf_form[year]):
+            if os.path.exists(self.lc_lcf_tab[year]):
                 print ("Skip step D to calculate land cover cross tables, data exists")
                 continue
 
@@ -380,9 +381,9 @@ class Leac(enca.ENCARun):
                 self.lcc[year] = self.leac_change[year].replace('.tif','_4digits.tif')
                 self.lcf[year] = os.path.join(self.temp_dir(),f'LEAC-flow_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lcf_cons[year] = os.path.join(self.temp_dir(),f'LCF_{str(year)}_consumption_{self.aoi_name}_{year}-{ref_year}.tif')
-                self.lcf_form[year] = os.path.join(self.temp_dir(),f'LCF_{str(ref_year)}_formation_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.lcf_form[year] = os.path.join(self.temp_dir(),f'LCF_{str(year)}_formation_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_cons[year] = os.path.join(self.maps, f'LEAC_consumption_{str(year)}_{self.aoi_name}_{year}-{ref_year}.tif')
-                self.lc_form[year] = os.path.join(self.maps, f'LEAC_formation_{str(ref_year)}_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.lc_form[year] = os.path.join(self.maps, f'LEAC_formation_{str(year)}_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_lcf_tab[year] = self.lc_cons[year].replace('consumption','LCF').replace('.tif','.csv')
                 self.config["land_cover"][ref_year] = self.config['leac'][REF_LANDCOVER]
                 years = self.years + [ref_year]
