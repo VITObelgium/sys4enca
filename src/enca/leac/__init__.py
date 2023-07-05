@@ -31,18 +31,18 @@ class Leac(enca.ENCARun):
                 "lut_ct_lcf": ConfigItem(),
                 "lut_lc": ConfigItem(),
                 "lut_lc2psclc": ConfigItem(optional=True),
-                "lut_lcc": ConfigItem(),
                 "lut_lcflow_C": ConfigItem(),
                 "lut_lcflow_F": ConfigItem(),
-                "lut_lcflows": ConfigItem(),
-                "general" :
-                    {"max_lc_classes" : ConfigItem()}
+                "lut_lcflows": ConfigItem()
                 },
         })
         self.make_output_filenames()
 
     def _start(self):
         logger.debug('Hello from ENCA Leac')
+        #calc max_lc_classes
+        df = pd.read_csv(self.config['leac']['lut_lc'], comment='#')
+        self.config['leac']['max_lc_classes'] = df['PSCLC_RANK'].size
 
         #1. Clip land cover maps for region and reclassify
         self.clip_reclassify()
@@ -214,7 +214,7 @@ class Leac(enca.ENCARun):
                         aBlock2 = ds_open2.read(1, window=window, masked=True)
                         #factor 15 should be "soft coded" TODO
                         aBlock1[aBlock1 == ds_open1.nodata]
-                        change = (aBlock1-1) + ((aBlock2-1)*self.config['leac']['general']['max_lc_classes'])
+                        change = (aBlock1-1) + ((aBlock2-1)*self.config['leac']['max_lc_classes'])
 
                         ds_out.write(change, window=window, indexes=1)
 
@@ -222,8 +222,8 @@ class Leac(enca.ENCARun):
 
 
 
-            count['year'] = count.index % self.config['leac']['general']['max_lc_classes'] +1
-            count['ref_year'] = count.index // self.config['leac']['general']['max_lc_classes'] +1
+            count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
+            count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
 
             pivot_count = count.pivot(index ='year',columns='ref_year', values=0).fillna(0)
 
@@ -333,7 +333,7 @@ class Leac(enca.ENCARun):
                         aBlock2 = ds_open2.read(1, window=window, masked=True).astype(np.uint32)
 
                         aBlock1[aBlock1 == ds_open1.nodata]
-                        change = (aBlock1-1) + ((aBlock2-1)*self.config['leac']['general']['max_lc_classes'])
+                        change = (aBlock1-1) + ((aBlock2-1)*self.config['leac']['max_lc_classes'])
 
                         ds_out.write(change, window=window, indexes=1)
 
@@ -341,8 +341,8 @@ class Leac(enca.ENCARun):
 
 
 
-                count['year'] = count.index % self.config['leac']['general']['max_lc_classes'] +1
-                count['ref_year'] = count.index // self.config['leac']['general']['max_lc_classes'] +1
+                count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
+                count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
 
                 pivot_count = count.pivot(index ='year',columns='ref_year', values=0).fillna(0)
 
