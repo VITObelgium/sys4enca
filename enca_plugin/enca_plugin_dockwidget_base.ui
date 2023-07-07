@@ -1143,23 +1143,54 @@
                   </property>
                  </widget>
                 </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_109">
+                  <property name="text">
+                   <string>Reference year</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QSpinBox" name="ref_year_1">
+                  <property name="maximum">
+                   <number>9999</number>
+                  </property>
+                  <property name="value">
+                   <number>2000</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_139">
+                  <property name="text">
+                   <string>Reference landcover</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QgsFileWidget" name="ref_landcover_1">
+                  <property name="filter">
+                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
+                  </property>
+                 </widget>
+                </item>
                 <item row="3" column="0" colspan="2">
                  <widget class="QGroupBox" name="groupBox_14">
                   <property name="title">
                    <string>Lookup Tables</string>
                   </property>
                   <layout class="QFormLayout" name="formLayout_18">
-                   <item row="0" column="1">
-                    <widget class="QgsFileWidget" name="lut_ct_lc_">
-                     <property name="filter">
-                      <string>CSV (*.csv);; All Files (*.*)</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_9">
                      <property name="text">
                       <string>Color landcover classes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QgsFileWidget" name="lut_ct_lc_">
+                     <property name="filter">
+                      <string>CSV (*.csv);; All Files (*.*)</string>
                      </property>
                     </widget>
                    </item>
@@ -1206,55 +1237,41 @@
                     </widget>
                    </item>
                    <item row="4" column="0">
-                    <widget class="QLabel" name="label_104">
-                     <property name="text">
-                      <string>Reporting table</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="1">
-                    <widget class="QgsFileWidget" name="lut_lcc_">
-                     <property name="filter">
-                      <string>CSV (*.csv);; All Files (*.*)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="5" column="0">
                     <widget class="QLabel" name="label_106">
                      <property name="text">
                       <string>Consumption landcover flows</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="5" column="1">
+                   <item row="4" column="1">
                     <widget class="QgsFileWidget" name="lut_lcflow_C_">
                      <property name="filter">
                       <string>CSV (*.csv);; All Files (*.*)</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="6" column="0">
+                   <item row="5" column="0">
                     <widget class="QLabel" name="label_105">
                      <property name="text">
                       <string>Formation land cover flows</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="6" column="1">
+                   <item row="5" column="1">
                     <widget class="QgsFileWidget" name="lut_lcflow_F_">
                      <property name="filter">
                       <string>CSV (*.csv);; All Files (*.*)</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="7" column="0">
+                   <item row="6" column="0">
                     <widget class="QLabel" name="label_108">
                      <property name="text">
                       <string>Cross-table to flows</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="7" column="1">
+                   <item row="6" column="1">
                     <widget class="QgsFileWidget" name="lut_lcflows_">
                      <property name="filter">
                       <string>CSV (*.csv);; All Files (*.*)</string>
@@ -1262,56 +1279,6 @@
                     </widget>
                    </item>
                   </layout>
-                 </widget>
-                </item>
-                <item row="4" column="0" colspan="2">
-                 <widget class="QGroupBox" name="general_1">
-                  <property name="title">
-                   <string>General</string>
-                  </property>
-                  <layout class="QFormLayout" name="formLayout_19">
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_13">
-                     <property name="text">
-                      <string>max landcover classes</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QgsSpinBox" name="max_lc_classes_"/>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item row="1" column="0">
-                 <widget class="QLabel" name="label_109">
-                  <property name="text">
-                   <string>Reference year</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="1">
-                 <widget class="QSpinBox" name="ref_year_1">
-                  <property name="maximum">
-                   <number>9999</number>
-                  </property>
-                  <property name="value">
-                   <number>2000</number>
-                  </property>
-                 </widget>
-                </item>
-                <item row="2" column="0">
-                 <widget class="QLabel" name="label_139">
-                  <property name="text">
-                   <string>Reference landcover</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="2" column="1">
-                 <widget class="QgsFileWidget" name="ref_landcover_1">
-                  <property name="filter">
-                   <string>Geotiff (*.tiff *.tif);; All Files (*.*)</string>
-                  </property>
                  </widget>
                 </item>
                </layout>
