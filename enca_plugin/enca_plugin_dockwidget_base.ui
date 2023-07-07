@@ -1156,7 +1156,7 @@
                    <number>9999</number>
                   </property>
                   <property name="value">
-                   <number>2000</number>
+                   <number>0</number>
                   </property>
                  </widget>
                 </item>
@@ -1312,7 +1312,7 @@
                    <number>9999</number>
                   </property>
                   <property name="value">
-                   <number>2000</number>
+                   <number>0</number>
                   </property>
                  </widget>
                 </item>
