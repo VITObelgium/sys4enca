@@ -6,7 +6,7 @@ import os
 import time
 from calendar import monthrange
 
-#import netCDF4
+import netCDF4
 import numpy as np
 import rasterio
 
