@@ -10,6 +10,7 @@ import scipy.stats as stats
 
 import enca
 from enca.framework.config_check import ConfigItem
+from enca.framework.errors import Error
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,9 @@ class Trend(enca.ENCARun):
         stats_files = glob.glob(os.path.join(self.config[self.component]['total_result'],
                                              'statistics', 'SELU_stats_*.csv'))
         logger.debug('Found following total SELU stats files: %s', stats_files)
-
+        if not stats_files:
+            logger.error('Found no SELU stats files (SELU_stats_yyyy.csv) in folder %s', os.path.join(self.config[self.component]['total_result'], 'statistics'))
+            raise Error(f"Found no SELU stats files (SELU_stats_yyyy.csv) in folder {os.path.join(self.config[self.component]['total_result'], 'statistics')}")
         df_merged = None
         years = []
         year_suffixes = []
