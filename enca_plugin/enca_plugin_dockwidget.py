@@ -181,13 +181,9 @@ component_input_widgets = [
         'lut_ct_lcf',
         'lut_lc',
         'lut_lc2psclc',
-        'lut_lcc',
         'lut_lcflow_C',
         'lut_lcflow_F',
         'lut_lcflows',
-        ('general', [
-            'max_lc_classes'
-        ])
     ]),
     (total.Total.component, [
         'infra_result',
