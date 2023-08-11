@@ -71,11 +71,13 @@ class Leac(enca.ENCARun):
 
         #add total
         df['Total'] = df.loc[classes, classes].sum(axis=1)
-        df = df.append(pd.Series(df.loc[classes, classes].sum(axis=0), name='Total'))
+        #df = df.append(pd.Series(df.loc[classes, classes].sum(axis=0), name='Total'))
+        df.loc['Total'] = df.sum()
 
         #move no change to separate col/row and sum formation and consumption
         df['No change'] = 0
-        df = df.append(pd.Series(name='No change'))
+        #df = df.append(pd.Series(name='No change'))
+        df.loc['No change'] = 0
         for idx,lc_code in enumerate(classes):
             df.loc[lc_code,'No change'] = df.iloc[idx,idx]
             df.loc['No change',lc_code] = df.iloc[idx,idx]
@@ -83,7 +85,8 @@ class Leac(enca.ENCARun):
 
         #sum formation and consumption
         df['Total consumption'] = df.loc[classes, classes].sum(axis=1)
-        df = df.append(pd.Series(df.loc[classes, classes].sum(axis=0), name='Total formation'))
+        #df = df.append(pd.Series(df.loc[classes, classes].sum(axis=0), name='Total formation'))
+        df.loc['Total formation'] = df.loc[classes, classes].sum(axis=0)
 
         #move 'order' : Total consumption/formation -> No change -> Total
         classes1 = list(classes)
@@ -94,11 +97,13 @@ class Leac(enca.ENCARun):
         df = df.reindex(classes2)
 
         #add percentage of area
-        total_area = df['Total'].sum()
+        total_area = df.loc['Total'].sum() / 2
         df['% of area'] = df['Total'] / total_area * 100
         df['% of area changed'] = df['Total consumption'] / total_area * 100
-        df = df.append(pd.Series(df.loc['Total', :] / total_area * 100, name='% of area'))
-        df = df.append(pd.Series(df.loc['Total formation', :] / total_area * 100, name='% of area changed'))
+        #df = df.append(pd.Series(df.loc['Total', :] / total_area * 100, name='% of area'))
+        df.loc['% of area'] = df.loc['Total',:] / total_area*100
+        #df = df.append(pd.Series(df.loc['Total formation', :] / total_area * 100, name='% of area changed'))
+        df.loc['% of area changed'] = df.loc['Total formation',:] / total_area*100
 
         #TODO replace numbers by class-names and PSCLC codes
 
@@ -114,15 +119,17 @@ class Leac(enca.ENCARun):
 
         #transform to pixels to hectares
         pix2ha = self.accord.pixel_area_m2() / 10000 #m2 to hectares
-        df_c = df_c * 1/pix2ha
-        df_f = df_f * 1/pix2ha
+        df_c = df_c * pix2ha
+        df_f = df_f * pix2ha
 
         classes = df_c.columns
         r = df_c.index
 
         #add total consumption (losses) and initial stock
-        df_c = df_c.append(pd.Series(df_c.loc[r[:-1], classes].sum(axis=0), name='Total consumption of land cover (losses)')) #classes 9 excluded since no change
-        df_c = df_c.append(pd.Series(df_c.loc[r, classes].sum(axis=0), name='Stock Land Cover yr1'))
+        #df_c = df_c.append(pd.Series(df_c.loc[r[:-1], classes].sum(axis=0), name='Total consumption of land cover (losses)')) #classes 9 excluded since no change
+        #df_c = df_c.append(pd.Series(df_c.loc[r, classes].sum(axis=0), name='Stock Land Cover yr1'))
+        df_c['Total consumption of land cover (losses)'] = df_c.iloc[:-1].sum(axis=1)
+        df_c['Stock land cover yr1'] = df_c.sum(axis=1)
         dict_lcf_c={}
         for i in r:
             dict_lcf_c[i] = 'lcf'+str(i+1)+'_c'
@@ -131,8 +138,10 @@ class Leac(enca.ENCARun):
         classes = df_f.columns
         r = df_f.index
         # add total consumption (losses) and initial stock
-        df_f = df_f.append(pd.Series(df_f.loc[r[:-1], classes].sum(axis=0), name='Total formation of land cover (gains)'))
-        df_f = df_f.append(pd.Series(df_f.loc[r, classes].sum(axis=0), name='Stock Land Cover yr2'))
+        #df_f = df_f.append(pd.Series(df_f.loc[r[:-1], classes].sum(axis=0), name='Total formation of land cover (gains)'))
+        #df_f = df_f.append(pd.Series(df_f.loc[r, classes].sum(axis=0), name='Stock Land Cover yr2'))
+        df_f['Total formation of land cover (gains)'] = df_f.iloc[:-1].sum(axis=0)
+        df_f['Stock land cover Yr2'] = df_f.sum(axis=0)
         dict_lcf_f = {}
         for i in r:
             dict_lcf_f[i] = 'lcf' + str(i+1) + '_f'
@@ -178,8 +187,11 @@ class Leac(enca.ENCARun):
                 if profile["nodata"]:
                     nodata = profile["nodata"]
                 else: nodata = 0
+                # force PSCLC output to be 16 bits (values > 255)
+                profile2 = profile.copy()
+                profile2['dtype'] = np.uint16
                 with rasterio.open(self.leac_recl[year], 'w', **dict(profile, nodata = nodata)) as ds_out,\
-                    rasterio.open(self.leac_out[year], 'w', **dict(profile, nodata = nodata)) as ds_out2:
+                    rasterio.open(self.leac_out[year], 'w', **dict(profile2, nodata = nodata)) as ds_out2:
                     for _, window in block_window_generator((2048,2048), ds_open.height, ds_open.width):
                         aBlock = ds_open.read(1, window=window, masked=True)
                         #Doesn't seem a nodata value was set
@@ -187,9 +199,9 @@ class Leac(enca.ENCARun):
                         ds_out.write(reclassified, window=window, indexes=1)
 
                         if self.config['leac']['lut_lc2psclc']:
-                            leac_outdata, dict_classes  = reclassification(aBlock, reclass_dict1, nodata, nodata)
+                            leac_outdata, dict_classes  = reclassification(aBlock.astype(np.uint16), reclass_dict1, nodata, nodata)
                         else:
-                            leac_outdata = aBlock
+                            leac_outdata = aBlock.astype(np.uint16)
                         ds_out2.write(leac_outdata, window=window, indexes=1)
 
         logger.debug("** Land cover clipped and reclassified ...")
@@ -208,24 +220,25 @@ class Leac(enca.ENCARun):
             profile = self.accord.ref_profile
             count = pd.DataFrame()
             with rasterio.open(lc1_reclass, 'r') as ds_open1, rasterio.open(lc2_reclass, 'r') as ds_open2,\
+                    rasterio.open(self.reporting_raster, 'r') as ds_mask,\
                     rasterio.open(self.leac_change[year], 'w', **dict(profile)) as ds_out:
                     for _, window in block_window_generator((2048,2048), ds_open1.height, ds_open1.width):
                         aBlock1 = ds_open1.read(1, window=window, masked=True)
                         aBlock2 = ds_open2.read(1, window=window, masked=True)
-                        #factor 15 should be "soft coded" TODO
-                        aBlock1[aBlock1 == ds_open1.nodata]
+                        aMask   = ds_mask.read(1, window=window, masked=False)
+                        #mask any area outside reporting area
+                        aBlock1 = np.ma.masked_where(aMask == 0,aBlock1)
+                        aBlock2 = np.ma.masked_array(aBlock2, aBlock1.mask)
                         change = (aBlock1-1) + ((aBlock2-1)*self.config['leac']['max_lc_classes'])
 
                         ds_out.write(change, window=window, indexes=1)
 
                         count = count.add(pd.DataFrame(pd.Series(change.flatten()).value_counts()), fill_value = 0)
 
-
-
             count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
             count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
 
-            pivot_count = count.pivot(index ='year',columns='ref_year', values=0).fillna(0)
+            pivot_count = count.pivot(index ='year',columns='ref_year', values='count').fillna(0)
 
             #post-process output data
             #format table : convert pixels to ha & TODO move no_change in separate col/row
@@ -244,15 +257,8 @@ class Leac(enca.ENCARun):
                 continue
 
             #A. combine the 2 input grids into 4-digit number (temporary step) #seems to be not necessary we have the data? needs to be for the reclass
-            '''
-            Needs to be removed or not
-            if self.tier == 2:
-                multi = 1000
-                dtype = np.uint32
-            else:
-            '''
-            multi = 100
-            dtype = np.uint16
+            multi = 1000
+            dtype = np.uint32
 
             reclass_dict = CSV_2_dict(self.config['leac']['lut_lcflows'], old_class='LC_CHANGE', new_class='ID_lcflows')
 
@@ -327,25 +333,25 @@ class Leac(enca.ENCARun):
                 profile = self.accord.ref_profile
                 count = pd.DataFrame()
                 with rasterio.open(self.lcf[year], 'r') as ds_open1, rasterio.open(grid_in, 'r') as ds_open2, \
+                        rasterio.open(self.reporting_raster, 'r') as ds_mask, \
                         rasterio.open(grid_out, 'w', **dict(profile, dtype=np.uint32)) as ds_out:
                     for _, window in block_window_generator((2048,2048), ds_open1.height, ds_open1.width):
                         aBlock1 = ds_open1.read(1, window=window, masked=True).astype(np.uint32)
                         aBlock2 = ds_open2.read(1, window=window, masked=True).astype(np.uint32)
-
-                        aBlock1[aBlock1 == ds_open1.nodata]
+                        aMask   = ds_mask.read(1, window=window, masked=False)
+                        #mask any area outside reporting area
+                        aBlock1 = np.ma.masked_where(aMask == 0,aBlock1)
+                        aBlock2 = np.ma.masked_array(aBlock2, aBlock1.mask)
                         change = (aBlock1-1) + ((aBlock2-1)*self.config['leac']['max_lc_classes'])
 
                         ds_out.write(change, window=window, indexes=1)
 
                         count = count.add(pd.DataFrame(pd.Series(change.flatten()).value_counts()), fill_value = 0)
 
-
-
                 count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
                 count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
 
-                pivot_count = count.pivot(index ='year',columns='ref_year', values=0).fillna(0)
-
+                pivot_count = count.pivot(index ='year',columns='ref_year', values='count').fillna(0)
 
                 if idy == 0:
                     cons = pivot_count.copy()
@@ -384,7 +390,7 @@ class Leac(enca.ENCARun):
                 self.lcf_form[year] = os.path.join(self.temp_dir(),f'LCF_{str(year)}_formation_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_cons[year] = os.path.join(self.maps, f'LEAC_consumption_{str(year)}_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_form[year] = os.path.join(self.maps, f'LEAC_formation_{str(year)}_{self.aoi_name}_{year}-{ref_year}.tif')
-                self.lc_lcf_tab[year] = self.lc_cons[year].replace('consumption','LCF').replace('.tif','.csv')
+                self.lc_lcf_tab[year] = os.path.join(self.reports,f'LEAC_consumption_{str(year)}_{self.aoi_name}_{year}-{ref_year}.csv')
                 self.config["land_cover"][ref_year] = self.config['leac'][REF_LANDCOVER]
                 years = self.years + [ref_year]
             else : years = self.years
