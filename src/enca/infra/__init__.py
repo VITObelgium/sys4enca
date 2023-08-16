@@ -51,8 +51,8 @@ class Infra(enca.ENCARun):
                 },
                 "lut_gbli" : ConfigItem(),
                 "naturalis": ConfigRaster(), #should be changed to shape however can't seem to find original file
-                "catchments" : {'catchment_6' : ConfigShape(),
-                                'catchment_8' : ConfigShape(),
+                "catchments" : {'catchment_6' : ConfigShape(optional = True),
+                                'catchment_8' : ConfigShape(optional = True),
                                 'catchment_12' : ConfigShape()},
                 "osm" : ConfigShape(),
                 "dams" : ConfigShape(),
@@ -476,22 +476,30 @@ class Infra(enca.ENCARun):
         self.lfi_meff = {}
         self.lfi_meff_hybas = {}
 
-
+        keys_to_remove = []
         for basin in self.config["infra"]["catchments"].keys():
             file =self.config["infra"]["catchments"][basin]
+            if file is None:
+                logger.warning('No catchment config found for {}, removed level'.format(basin))
+                keys_to_remove.append(basin)
+                continue
             self.catchments_temp[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
             self.catchments_processed[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
             self.catchments_clean[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
 
             self.lfi_mesh[basin] = os.path.join(self.temp_dir(),
-                                                f"MESH_intersect_WAP_{basin}_EPSG{epsg}.shp")
+                                                f"MESH_intersect_{self.config['aoi_name']}_{basin}_EPSG{epsg}.shp")
             self.lfi_mesh_clean[basin] = os.path.join(self.temp_dir(),
-                                                      f"MESH_intersect_WAP_{basin}_EPSG{epsg}_clean.shp")
+                                                      f"MESH_intersect_{self.config['aoi_name']}_{basin}_EPSG{epsg}_clean.shp")
             self.lfi_meff_hybas[basin] = {}
             for idx, year in enumerate(self.years):
                 self.lfi_meff_hybas[basin][year] = os.path.join(self.temp_dir(),
-                                                    f"WAP_TIER{str(self.tier)}_hybas{str(basin)}_{epsg}_clean_" + \
+                                                    f"{self.config['aoi_name']}_TIER{str(self.tier)}_hybas{str(basin)}_{epsg}_clean_" + \
                                                           f"EPSG{epsg}_FRAG{str(year)[-2:]}_{lc_urban}.tif")
+
+        # remove unconfigured catchment levels, TODO check why appearing despite optional
+        for key in keys_to_remove:
+            self.config["infra"]["catchments"].pop(key)
 
         for idx, year in enumerate(self.years):
             self.lfi_meff[year] = os.path.join(self.maps, f"meff_{str(year)}_{lc_urban}.tif")
@@ -523,11 +531,11 @@ class Infra(enca.ENCARun):
             self.rawi[year] = os.path.join(self.maps, base + f'_SRMU_RAWI_{year}.tif')
 
         #NATRIV
-        #should be generalized to WAP or other shortnames
-        self.natriv = os.path.join(self.maps, 'WAP_natriv_3857.tif')
+        #should be generalized to AOI or other shortnames
+        self.natriv = os.path.join(self.maps, f"{self.config['aoi_name']}_natriv_3857.tif")
 
         #FRAGRIV
-        self.fragriv = os.path.join(self.maps, "WAP_fragriv_3857.tif")
+        self.fragriv = os.path.join(self.maps, f"{self.config['aoi_name']}_fragriv_3857.tif")
         self.fragriv_hybas = {}
         for basin in self.config["infra"]["catchments"].keys() :
             file = os.path.splitext(os.path.basename(self.config["infra"]["catchments"][basin]))[0]

@@ -36,6 +36,7 @@ class Catchment(object):
         self.scale2ha = scale ** 2 / 10000
         self.catchment = runObject.config["infra"]["catchments"][basin]
         self.catchment_temp = runObject.catchments_temp[basin]
+        self.reporting_profile_epsg = runObject.reporting_shape.crs.to_epsg()
         self.basin = basin
     
     def addArea(self):
@@ -43,6 +44,8 @@ class Catchment(object):
         #check if all required columns are available
         try:
             data = gpd.read_file(self.catchment).sort_index()
+            #write out new cleaned MEFF shapefile in reporting projection
+            data = data.to_crs(epsg=int(self.reporting_profile_epsg))
             #Add area + scaling to polygons
             data['AREA'] = data['geometry'].area * self.scale2ha
             #clean up the shapefile
@@ -54,7 +57,6 @@ class Catchment(object):
             for col in cols_to_rename:
                 if list(col.keys())[0] in data.columns:
                     data = data.rename(index=str, columns={list(col.keys())[0]:list(col.values())[0]})
-            #write out new cleaned MEFF shapefile
             data.to_file(self.catchment_temp, drivers='ESRI Shapefile')
         except Error as e:
             raise Error(e)
@@ -77,6 +79,7 @@ class OSM(object):
         self.merged_trunkroads_railways = runObject.config["infra"]['osm']
         self.merged_trunkroads_railways_inv = runObject.merged_trunkroads_railways_inv
         self.merged_RR_inversed = runObject.merged_RR_inversed
+        self.reporting_profile_epsg = runObject.reporting_shape.crs.to_epsg()
 
         
     def merge_road_railways(self):
@@ -93,7 +96,20 @@ class OSM(object):
         return outfile
     
     def inverse_RR(self):
-        self.accord.rasterize_burn(self.merged_trunkroads_railways,self.merged_trunkroads_railways_inv, nodata_value=0,
+        #gdal_rasterize does not warp (a_srs option is only for correcting invalid SRS), so first warp if needed
+        try:
+            df = gpd.read_file(self.merged_trunkroads_railways, rows=1)
+            if df.crs.to_epsg() != self.reporting_profile_epsg:
+                self.merged_trunkroads_railways_warped = os.path.join(self.temp_dir, os.path.splitext(os.path.basename(self.merged_trunkroads_railways))[0]+'_'+str(self.reporting_profile_epsg)+'.shp')
+                self.merged_trunkroads_railways_inv = os.path.join(self.temp_dir, os.path.splitext(os.path.basename(self.merged_trunkroads_railways))[0]+'_'+str(self.reporting_profile_epsg)+'_inv.tif')
+                self.merged_RR_inversed = os.path.join(self.temp_dir, 'vector_'+os.path.splitext(os.path.basename(self.merged_trunkroads_railways))[0]+'_'+str(self.reporting_profile_epsg)+'_inv.shp')
+                self.accord.vector_2_AOI(self.merged_trunkroads_railways,self.merged_trunkroads_railways_warped,mode='reporting')
+            else:
+                self.merged_trunkroads_railways_warped = self.merged_trunkroads_railways
+        except:
+            raise RuntimeError('Failed to read {}.'.format(self.merged_trunkroads_railways))
+
+        self.accord.rasterize_burn(self.merged_trunkroads_railways_warped,self.merged_trunkroads_railways_inv, nodata_value=1,
                                    burn_value=0, dtype='Byte')
     
     def vectorize_RR(self):
@@ -143,7 +159,8 @@ class LFI(object):
 
         gdf_merger_RR = gpd.read_file(merged_roadrails)
         gdf_catchment = gpd.read_file(self.catchments_processed[basin])
-        data = gdf_merger_RR.overlay(gdf_catchment, how='intersection').explode(index_parts=True)
+        #data = gdf_merger_RR.overlay(gdf_catchment, how='intersection').explode(index_parts=True)
+        data = gdf_catchment.overlay(gdf_merger_RR, how='symmetric_difference').explode(index_parts=True)
 
         #clean-up
         data['AREA'] = data['geometry'].area * self.scale2ha
