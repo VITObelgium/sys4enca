@@ -61,7 +61,7 @@ class CarbonNPP(enca.ENCARun):
                     gdmp_year += (gdmp * _GDMP_scaling * num_days).filled(0)
 
                 # convert to NPP [tonne / ha] (GDMP input is [kg / day / ha])
-                npp_year = (gdmp_year / 1000.) * gdmp_2_npp_factor**2
+                npp_year = (gdmp_year / 1000.) * gdmp_2_npp_factor
 
                 ds_out.write(npp_year, 1, window=window)
                 # TODO metadata
