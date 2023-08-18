@@ -150,10 +150,13 @@ class Infra(enca.ENCARun):
                 stats["sum"] = stats["sum"] *1.5
             elif keys[idx] == 'l11':
                 stats["sum"] = stats["sum"] *10
+            stats.index.names = [ID_FIELD]
             if keys[idx] in ['l2','l9']:
-                df[lColumns[idx]] = stats["sum"]*pix2ha
+                df[lColumns[idx]] = (stats["sum"]*pix2ha).values
             else:
-                df[lColumns[idx]]= stats["sum"]/stats['px_count']
+                df[lColumns[idx]]= (stats["sum"]/stats['px_count']).values
+
+            pass
 
         #join with base table
         df2 = gpd.read_file(path_SELU)

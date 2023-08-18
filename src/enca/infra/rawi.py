@@ -43,11 +43,13 @@ class RAWI(object):
         self.lc_water = config["infra"]["general"]["lc_water"]
         self.years = runObject.years
         self.block_shape = (2048,2048)
+        self.reporting_profile_epsg = runObject.reporting_shape.crs.to_epsg()
 
     def assign_RELU(self):
 
         #overwriting input
-        outfile = self.rawi_shape
+        outfile = os.path.splitext(self.rawi_shape)[0]+'_'+str(self.reporting_profile_epsg)+'.shp'
+        self.rawi_shape = outfile
 
         #TODO move to lut table
         river_class_name = 'HSRU'
@@ -59,6 +61,9 @@ class RAWI(object):
 
         data = gpd.read_file(self.gloric)
         data[river_class_name] = 0
+
+        # transform to reporting CRS to enable rasterization
+        data = data.to_crs(epsg=int(self.reporting_profile_epsg))
 
         #inverse the log avg discharge m3/sec
         data['Q_avg'] = 10 ** data['Log_Q_avg']
@@ -219,6 +224,7 @@ class RAWI(object):
     def rasterize_rawi(self, shape, outfile, ID_FIELD):
 
         gdb = gpd.read_file(shape)
+
         #actually no buffer is applied in original 'reproducing this for standard -> not for difference
         if self.accord.ref_profile.get('transform')[0] >= self.river_buffer:
             pass
