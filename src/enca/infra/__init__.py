@@ -9,7 +9,7 @@ import enca
 from enca.infra.nlep import create_NLEP
 from enca.infra.nrep import create_NREP
 from enca.framework.config_check import ConfigItem, ConfigRaster, ConfigShape, YEARLY
-from enca.framework.geoprocessing import statistics_byArea, norm_1
+from enca.framework.geoprocessing import statistics_byArea, norm_1, SHAPE_ID
 
 
 logger = logging.getLogger(__name__)
@@ -144,8 +144,9 @@ class Infra(enca.ENCARun):
 
         for idx,path in enumerate(paths):
             stats = statistics_byArea(path, self.statistics_raster,
-                                      {row[0] : row[1]['SHAPE_ID'] for row in self.statistics_shape.iterrows()}
+                                      self.statistics_shape[SHAPE_ID]
                                       , transform=function[keys[idx]])
+            stats.index = stats.index.astype(str)
             if keys[idx] == 'l5':
                 stats["sum"] = stats["sum"] *1.5
             elif keys[idx] == 'l11':
@@ -368,7 +369,7 @@ class Infra(enca.ENCARun):
         df['Area_poly'] = df.area * m2_2ha
 
         for idx,path in enumerate(lPaths):
-            stats = statistics_byArea(path, self.statistics_raster, {row[0] : row[1]['SHAPE_ID'] for row in self.statistics_shape.iterrows()})
+            stats = statistics_byArea(path, self.statistics_raster, self.statistics_shape[SHAPE_ID])
             if idx == 0:
                 df["Area_rast"] = stats['px_count']*pix2ha
                 #normalize GBLI
