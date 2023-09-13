@@ -543,7 +543,7 @@ class Infra(enca.ENCARun):
         self.fragriv_hybas = {}
         for basin in self.config["infra"]["catchments"].keys() :
             file = os.path.splitext(os.path.basename(self.config["infra"]["catchments"][basin]))[0]
-            self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + 'fragriv.tif')
+            self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + '_fragriv.tif')
 
         #accounting results
 
