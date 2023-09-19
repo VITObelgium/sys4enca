@@ -67,7 +67,7 @@ def create_rawi(rawi):
 def create_natriv(natriv,rawi_mask):
 
     if os.path.exists(natriv.natriv):
-        print ("Skip NATRIV calculation, data exists")
+        logger.warning("Skip NATRIV calculation, data exists")
         return
 
 
@@ -78,10 +78,10 @@ def create_natriv(natriv,rawi_mask):
 def create_fragriv(oFragriv, catchlevel):
 
     if os.path.exists(oFragriv.fragriv_hybas[catchlevel]):
-        print ("Skip FRAGRIV calculation for level {}, data exists".format(catchlevel))
+        logger.warning("Skip FRAGRIV calculation for level {}, data exists".format(catchlevel))
         return
 
-    print('Calculate river fragmentation at level {}'.format(catchlevel))
+    logger.info('Calculate river fragmentation at level {}'.format(catchlevel))
     oFragriv.count_dams_perHybas(catchlevel)
 
 

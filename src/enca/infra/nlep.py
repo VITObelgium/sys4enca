@@ -155,7 +155,6 @@ def create_lfi(lfi):
 ##################
 def join_lfi(lfi):
 
-
     for idx, year in enumerate(lfi.years):
         if os.path.exists(lfi.lfi_meff[year]):
             print (f"Skip FRAGMEFF join, {lfi.lfi_meff[year]} exists")
@@ -186,7 +185,14 @@ def join_lfi(lfi):
                             aData[i,:,:] = src.read(window=window)
 
                     aData[aData==src_profile['nodata']]= 0.0  #urban only area's should be set to highest fragmentation
-                    aOut = aData[0,:,:]*0.2 + aData[1,:,:]*0.3 + aData[2,:,:]*0.5
+                    if aData.shape[0] == 1:
+                        aOut = aData[0,:,:]*1.0
+                    elif aData.shape[0] == 2:
+                        aOut = aData[0,:,:]*0.3 + aData[1,:,:]*0.7
+                    elif aData.shape[0] == 3:
+                        aOut = aData[0,:,:]*0.2 + aData[1,:,:]*0.3 + aData[2,:,:]*0.5
+                    else:
+                        raise("Error : Not able to join LFI, check catchment levels")
                     ds_out.write(aOut.astype(rasterio.float32), 1, window=window)
 
                     # free

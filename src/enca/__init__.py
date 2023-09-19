@@ -74,7 +74,7 @@ class ENCARun(Run):
     id_col_statistics = HYBAS_ID
     id_col_reporting = REP_ID
 
-    epsg = 3857
+    epsg = 3857  #TODO add overwrite to keep another reporting projection (e.g. 32629 or UTM29N)
     _indices_average = None  #: List of SELU-wide indicators, to be defined in each subclass
 
     def __init__(self, config):

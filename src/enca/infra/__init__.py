@@ -9,7 +9,7 @@ import enca
 from enca.infra.nlep import create_NLEP
 from enca.infra.nrep import create_NREP
 from enca.framework.config_check import ConfigItem, ConfigRaster, ConfigShape, YEARLY
-from enca.framework.geoprocessing import statistics_byArea, norm_1
+from enca.framework.geoprocessing import statistics_byArea, norm_1, SHAPE_ID
 
 
 logger = logging.getLogger(__name__)
@@ -51,8 +51,8 @@ class Infra(enca.ENCARun):
                 },
                 "lut_gbli" : ConfigItem(),
                 "naturalis": ConfigRaster(), #should be changed to shape however can't seem to find original file
-                "catchments" : {'catchment_6' : ConfigShape(),
-                                'catchment_8' : ConfigShape(),
+                "catchments" : {'catchment_6' : ConfigShape(optional = True),
+                                'catchment_8' : ConfigShape(optional = True),
                                 'catchment_12' : ConfigShape()},
                 "osm" : ConfigShape(),
                 "dams" : ConfigShape(),
@@ -144,16 +144,20 @@ class Infra(enca.ENCARun):
 
         for idx,path in enumerate(paths):
             stats = statistics_byArea(path, self.statistics_raster,
-                                      {row[0] : row[1]['SHAPE_ID'] for row in self.statistics_shape.iterrows()}
+                                      self.statistics_shape[SHAPE_ID]
                                       , transform=function[keys[idx]])
+            stats.index = stats.index.astype(str)
             if keys[idx] == 'l5':
                 stats["sum"] = stats["sum"] *1.5
             elif keys[idx] == 'l11':
                 stats["sum"] = stats["sum"] *10
+            stats.index.names = [ID_FIELD]
             if keys[idx] in ['l2','l9']:
-                df[lColumns[idx]] = stats["sum"]*pix2ha
+                df[lColumns[idx]] = (stats["sum"]*pix2ha).values
             else:
-                df[lColumns[idx]]= stats["sum"]/stats['px_count']
+                df[lColumns[idx]]= (stats["sum"]/stats['px_count']).values
+
+            pass
 
         #join with base table
         df2 = gpd.read_file(path_SELU)
@@ -368,7 +372,7 @@ class Infra(enca.ENCARun):
         df['Area_poly'] = df.area * m2_2ha
 
         for idx,path in enumerate(lPaths):
-            stats = statistics_byArea(path, self.statistics_raster, {row[0] : row[1]['SHAPE_ID'] for row in self.statistics_shape.iterrows()})
+            stats = statistics_byArea(path, self.statistics_raster, self.statistics_shape[SHAPE_ID])
             if idx == 0:
                 df["Area_rast"] = stats['px_count']*pix2ha
                 #normalize GBLI
@@ -475,23 +479,33 @@ class Infra(enca.ENCARun):
         self.lfi_mesh_clean= {}
         self.lfi_meff = {}
         self.lfi_meff_hybas = {}
+        self.catchments_processed_aoi = {}
 
-
+        keys_to_remove = []
         for basin in self.config["infra"]["catchments"].keys():
             file =self.config["infra"]["catchments"][basin]
+            if file is None:
+                logger.warning('No catchment config found for {}, removed level'.format(basin))
+                keys_to_remove.append(basin)
+                continue
             self.catchments_temp[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
             self.catchments_processed[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
+            self.catchments_processed_aoi[basin] = os.path.join(self.temp_dir(), os.path.splitext(os.path.basename(file))[0] + '_aoi.shp')
             self.catchments_clean[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
 
             self.lfi_mesh[basin] = os.path.join(self.temp_dir(),
-                                                f"MESH_intersect_WAP_{basin}_EPSG{epsg}.shp")
+                                                f"MESH_intersect_{self.config['aoi_name']}_{basin}_EPSG{epsg}.shp")
             self.lfi_mesh_clean[basin] = os.path.join(self.temp_dir(),
-                                                      f"MESH_intersect_WAP_{basin}_EPSG{epsg}_clean.shp")
+                                                      f"MESH_intersect_{self.config['aoi_name']}_{basin}_EPSG{epsg}_clean.shp")
             self.lfi_meff_hybas[basin] = {}
             for idx, year in enumerate(self.years):
                 self.lfi_meff_hybas[basin][year] = os.path.join(self.temp_dir(),
-                                                    f"WAP_TIER{str(self.tier)}_hybas{str(basin)}_{epsg}_clean_" + \
+                                                    f"{self.config['aoi_name']}_TIER{str(self.tier)}_hybas{str(basin)}_{epsg}_clean_" + \
                                                           f"EPSG{epsg}_FRAG{str(year)[-2:]}_{lc_urban}.tif")
+
+        # remove unconfigured catchment levels, TODO check why appearing despite optional
+        for key in keys_to_remove:
+            self.config["infra"]["catchments"].pop(key)
 
         for idx, year in enumerate(self.years):
             self.lfi_meff[year] = os.path.join(self.maps, f"meff_{str(year)}_{lc_urban}.tif")
@@ -523,15 +537,15 @@ class Infra(enca.ENCARun):
             self.rawi[year] = os.path.join(self.maps, base + f'_SRMU_RAWI_{year}.tif')
 
         #NATRIV
-        #should be generalized to WAP or other shortnames
-        self.natriv = os.path.join(self.maps, 'WAP_natriv_3857.tif')
+        #should be generalized to AOI or other shortnames
+        self.natriv = os.path.join(self.maps, f"{self.config['aoi_name']}_natriv_3857.tif")
 
         #FRAGRIV
-        self.fragriv = os.path.join(self.maps, "WAP_fragriv_3857.tif")
+        self.fragriv = os.path.join(self.maps, f"{self.config['aoi_name']}_fragriv_3857.tif")
         self.fragriv_hybas = {}
         for basin in self.config["infra"]["catchments"].keys() :
             file = os.path.splitext(os.path.basename(self.config["infra"]["catchments"][basin]))[0]
-            self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + 'fragriv.tif')
+            self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + '_fragriv.tif')
 
         #accounting results
 
