@@ -479,6 +479,7 @@ class Infra(enca.ENCARun):
         self.lfi_mesh_clean= {}
         self.lfi_meff = {}
         self.lfi_meff_hybas = {}
+        self.catchments_processed_aoi = {}
 
         keys_to_remove = []
         for basin in self.config["infra"]["catchments"].keys():
@@ -489,6 +490,7 @@ class Infra(enca.ENCARun):
                 continue
             self.catchments_temp[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
             self.catchments_processed[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
+            self.catchments_processed_aoi[basin] = os.path.join(self.temp_dir(), os.path.splitext(os.path.basename(file))[0] + '_aoi.shp')
             self.catchments_clean[basin] = os.path.join(self.temp_dir(), os.path.basename(file))
 
             self.lfi_mesh[basin] = os.path.join(self.temp_dir(),

@@ -139,6 +139,7 @@ class LFI(object):
         self.meshOutlier_ha = int(10*100)   #10km2
         self.catchments = runObject.config["infra"]["catchments"]
         self.catchments_processed = runObject.catchments_processed
+        self.catchments_processed_aoi = runObject.catchments_processed_aoi
         self.catchments_clean = runObject.catchments_clean
         self.lfi_mesh = runObject.lfi_mesh
         self.lfi_mesh_clean = runObject.lfi_mesh_clean
@@ -158,7 +159,9 @@ class LFI(object):
     def intersect_Catchment_OSM(self,basin,merged_roadrails):
 
         gdf_merger_RR = gpd.read_file(merged_roadrails)
-        gdf_catchment = gpd.read_file(self.catchments_processed[basin])
+        self.accord.vector_2_AOI(self.catchments_processed[basin],self.catchments_processed_aoi[basin])
+
+        gdf_catchment = gpd.read_file(self.catchments_processed_aoi[basin])
         #data = gdf_merger_RR.overlay(gdf_catchment, how='intersection').explode(index_parts=True)
         data = gdf_catchment.overlay(gdf_merger_RR, how='symmetric_difference').explode(index_parts=True)
 
@@ -177,7 +180,7 @@ class LFI(object):
 
         #write out MESH shapefile
         data.to_file(self.lfi_mesh[basin], drivers='ESRI Shapefile')
-    
+
     def intersect_LCclass(self, year, lcName='None'):
         
         #filename first 10 chars will be used later in mesh
