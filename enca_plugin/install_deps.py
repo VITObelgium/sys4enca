@@ -19,8 +19,8 @@ from .pip_install_dialog import PipInstallDialog
 from .marvin_qgis_tools import osgeo4w
 
 _package_dist_name = 'sys4enca'  # Python package with core functionality
-_min_version = '0.8.0'  # Minimum required package version for the plugin.
-_version_next = '0.9.0'  # Next package version which may no longer be compatible with this version of the plugin.
+_min_version = '0.9.0'  # Minimum required package version for the plugin.
+_version_next = '1.0.0'  # Next package version which may no longer be compatible with this version of the plugin.
 _repo_url = 'https://artifactory.vgt.vito.be/api/pypi/python-packages/simple'
 
 
