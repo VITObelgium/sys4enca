@@ -233,12 +233,12 @@ class Leac(enca.ENCARun):
 
                         ds_out.write(change, window=window, indexes=1)
 
-                        count = count.add(pd.DataFrame(pd.Series(change.flatten()).value_counts()), fill_value = 0)
+                        count = count.add(pd.DataFrame(pd.Series(change.flatten()).value_counts(), columns=['count']), fill_value = 0)
 
             count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
             count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
 
-            pivot_count = count.pivot(index ='year',columns='ref_year').fillna(0)
+            pivot_count = count.pivot(index ='year',columns='ref_year', values='count').fillna(0)
 
             #post-process output data
             #format table : convert pixels to ha & TODO move no_change in separate col/row
@@ -346,12 +346,12 @@ class Leac(enca.ENCARun):
 
                         ds_out.write(change, window=window, indexes=1)
 
-                        count = count.add(pd.DataFrame(pd.Series(change.flatten()).value_counts()), fill_value = 0)
+                        count = count.add(pd.DataFrame(pd.Series(change.flatten()).value_counts(),columns=['count']), fill_value = 0)
 
                 count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
                 count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
 
-                pivot_count = count.pivot(index ='year',columns='ref_year').fillna(0)
+                pivot_count = count.pivot(index ='year',columns='ref_year', values='count').fillna(0)
 
                 if idy == 0:
                     cons = pivot_count.copy()
