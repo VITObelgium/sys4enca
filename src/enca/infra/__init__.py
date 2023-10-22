@@ -249,7 +249,7 @@ class Infra(enca.ENCARun):
         gdf = self.statistics_shape
 
         # read in country file
-        gdf_country = self.reporting_shape
+        gdf_country = self.reporting_shape.loc[[pArea]]
 
         # intersect
         gdf['HYBAS_HA'] = gdf.geometry.area/(10000.)
@@ -269,6 +269,8 @@ class Infra(enca.ENCARun):
 
         #1. read in results of SELU file for year
         df = gpd.read_file(path_INFRA_shp).drop('geometry', axis=1)
+        #seems to read in column as object not as int might be interesting to convert to string since ID's does not imply numbers
+        df[ID_FIELD] = df[ID_FIELD].astype(int)
 
         #read dataframe with code explanation
         with files(enca).joinpath(f'data/LUT_INFRA_INDEX_CAL_EN.csv').open() as f:
