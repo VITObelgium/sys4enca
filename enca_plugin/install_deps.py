@@ -106,7 +106,6 @@ def check_dependencies():
                                    'netCDF4': 'python3-netcdf4',
                                    'rasterio': 'python3-rasterio',
                                    'rtree': 'python3-rtree',
-                                   'sklearn': 'python3-scikit-learn',
                                    'scipy': 'python3-scipy',
                                    'pip': 'python3-pip',
                                    'setuptools': 'python3-setuptools'}):
