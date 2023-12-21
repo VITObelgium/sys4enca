@@ -23,6 +23,9 @@ _nodata_out = -9999
 # assuming soil_loss unit: tonne / ha / year, carbon_soil unit: 'g / kg', we need the following conversion factor
 _conversion_factor = 0.001
 
+_GDAL_FILLNODATA = 'gdal_fillnodata.bat' if os.name == 'nt' else 'gdal_fillnodata.py'
+_GDAL_EDIT = 'gdal_edit.bat' if os.name == 'nt' else 'gdal_edit.py'
+
 
 class CarbonErosion(enca.ENCARun):
     """Carbon Soil Erosion preprocessing run."""
@@ -204,10 +207,10 @@ def Resample2AOI(path_in, path_out, target_crs, bbox, tresolution, wResampling='
 
 def FillHoles(path_in, path_out):
     """Fill nodata holes."""
-    cmd = 'gdal_fillnodata.py -md 25 "{}" "{}"'.format(path_in, path_out)
+    cmd = '"{}" -md 25 "{}" "{}"'.format(_GDAL_FILLNODATA , path_in, path_out)
     subprocess.check_call(cmd, shell=True)
     # bring back the nodata value in the file
     with rasterio.open(path_in) as src:
         nodata = src.nodata
-    cmd = 'gdal_edit.py -a_nodata "{}" "{}"'.format(nodata, path_out)
+    cmd = '"{}" -a_nodata "{}" "{}"'.format(_GDAL_EDIT, nodata, path_out)
     subprocess.check_call(cmd, shell=True)

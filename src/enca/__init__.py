@@ -74,7 +74,7 @@ class ENCARun(Run):
     id_col_statistics = HYBAS_ID
     id_col_reporting = REP_ID
 
-    epsg = 3857  #TODO add overwrite to keep another reporting projection (e.g. 32629 or UTM29N)
+
     _indices_average = None  #: List of SELU-wide indicators, to be defined in each subclass
 
     def __init__(self, config):
@@ -197,6 +197,7 @@ class ENCARun(Run):
         except Exception:
             raise ConfigError('Please provide an administrative boundaries shapefile with a valid EPSG projection.',
                               [_ADMIN_BOUNDS])
+
         if check_epsg != self.epsg:
             self.admin_shape.to_crs(epsg=self.epsg, inplace=True)
             logger.debug('Warped administrative boundaries vector file.')

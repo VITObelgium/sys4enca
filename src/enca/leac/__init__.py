@@ -1,5 +1,5 @@
-import logging
 import os
+import logging
 import numpy as np
 import geopandas as gpd
 import pandas as pd
@@ -30,9 +30,6 @@ class Leac(enca.ENCARun):
                 "lut_ct_lc": ConfigItem(),
                 "lut_ct_lcf": ConfigItem(),
                 "lut_lc": ConfigItem(),
-                "lut_lc2psclc": ConfigItem(optional=True),
-                "lut_lcflow_C": ConfigItem(),
-                "lut_lcflow_F": ConfigItem(),
                 "lut_lcflows": ConfigItem()
                 },
         })
@@ -42,7 +39,7 @@ class Leac(enca.ENCARun):
         logger.debug('Hello from ENCA Leac')
         #calc max_lc_classes
         df = pd.read_csv(self.config['leac']['lut_lc'], comment='#')
-        self.config['leac']['max_lc_classes'] = df['PSCLC_RANK'].size
+        self.config['leac']['max_lc_classes'] = df['RANK'].max()
 
         #1. Clip land cover maps for region and reclassify
         self.clip_reclassify()
@@ -63,14 +60,14 @@ class Leac(enca.ENCARun):
 
         #add land cover names, transform to ha, move noChange, calculate % of area, total formation and consumption of land
         table_out = path_out
-        classes = df.columns  #exclude Total column
-
+        column_classes = df.columns  #exclude Total column
+        index_classes = df.index
         #transform to pixels to hectares
         pix2ha = self.accord.pixel_area_m2() / 10000 #m2 to hectares
         df = df * pix2ha
 
         #add total
-        df['Total'] = df.loc[classes, classes].sum(axis=1)
+        df['Total'] = df.loc[index_classes, column_classes].sum(axis=1)
         #df = df.append(pd.Series(df.loc[classes, classes].sum(axis=0), name='Total'))
         df.loc['Total'] = df.sum()
 
@@ -78,19 +75,22 @@ class Leac(enca.ENCARun):
         df['No change'] = 0
         #df = df.append(pd.Series(name='No change'))
         df.loc['No change'] = 0
-        for idx,lc_code in enumerate(classes):
-            df.loc[lc_code,'No change'] = df.iloc[idx,idx]
-            df.loc['No change',lc_code] = df.iloc[idx,idx]
-            df.iloc[idx,idx] = 0
+        for idx,lc_code_column in enumerate(column_classes):
+            for idy, lc_code_index in enumerate(index_classes):
+                if lc_code_column.rsplit(' ',1)[0] != lc_code_index.rsplit(' ',1)[0] :
+                    continue
+                df.loc[lc_code_index,f'No change'] = df.iloc[idx,idx]
+                df.loc[f'No change',lc_code_column] = df.iloc[idx,idx]
+                df.iloc[idx,idx] = 0
 
         #sum formation and consumption
-        df['Total consumption'] = df.loc[classes, classes].sum(axis=1)
+        df['Total consumption'] = df.loc[index_classes, column_classes].sum(axis=1)
         #df = df.append(pd.Series(df.loc[classes, classes].sum(axis=0), name='Total formation'))
-        df.loc['Total formation'] = df.loc[classes, classes].sum(axis=0)
+        df.loc['Total formation'] = df.loc[index_classes, column_classes].sum(axis=0)
 
         #move 'order' : Total consumption/formation -> No change -> Total
-        classes1 = list(classes)
-        classes2 = classes1.copy()
+        classes1 = list(column_classes)
+        classes2 = list(index_classes)
         classes1.extend(['Total consumption', 'No change', 'Total'])
         df = df[classes1]
         classes2.extend(['Total formation', 'No change', 'Total'])
@@ -105,13 +105,11 @@ class Leac(enca.ENCARun):
         #df = df.append(pd.Series(df.loc['Total formation', :] / total_area * 100, name='% of area changed'))
         df.loc['% of area changed'] = df.loc['Total formation',:] / total_area*100
 
-        #TODO replace numbers by class-names and PSCLC codes
-
         df.to_csv(table_out, sep=',')
         return table_out
 
     ######################################################################################################################
-    def format_LCF_table(self, table_consumption, table_formation, table_out):
+    def format_LCF_table(self, table_consumption, table_formation, table_out, year, ref_year):
 
         #join consumption & formation flow tables and format
         df_c = table_consumption
@@ -129,7 +127,7 @@ class Leac(enca.ENCARun):
         #df_c = df_c.append(pd.Series(df_c.loc[r[:-1], classes].sum(axis=0), name='Total consumption of land cover (losses)')) #classes 9 excluded since no change
         #df_c = df_c.append(pd.Series(df_c.loc[r, classes].sum(axis=0), name='Stock Land Cover yr1'))
         df_c['Total consumption of land cover (losses)'] = df_c.iloc[:-1].sum(axis=1)
-        df_c['Stock land cover yr1'] = df_c.sum(axis=1)
+        df_c[f'Stock land cover {str(year)}'] = df_c.sum(axis=1)
         dict_lcf_c={}
         for i in r:
             dict_lcf_c[i] = 'lcf'+str(i+1)+'_c'
@@ -141,7 +139,7 @@ class Leac(enca.ENCARun):
         #df_f = df_f.append(pd.Series(df_f.loc[r[:-1], classes].sum(axis=0), name='Total formation of land cover (gains)'))
         #df_f = df_f.append(pd.Series(df_f.loc[r, classes].sum(axis=0), name='Stock Land Cover yr2'))
         df_f['Total formation of land cover (gains)'] = df_f.iloc[:-1].sum(axis=0)
-        df_f['Stock land cover Yr2'] = df_f.sum(axis=0)
+        df_f[f'stock land cover {str(ref_year)}'] = df_f.sum(axis=0)
         dict_lcf_f = {}
         for i in r:
             dict_lcf_f[i] = 'lcf' + str(i+1) + '_f'
@@ -155,13 +153,11 @@ class Leac(enca.ENCARun):
     def clip_reclassify(self):
         #function to clip the land cover maps to Area of Interest (region) and reclassify classes to subsequent numbering scheme
         for year in self.years:
-            if os.path.exists(self.leac_out[year]):
+            if os.path.exists(self.leac_clipped[year]):
                 pass
                 #continue
-            grid_out = self.leac_out[year]
-            lc = 'lc'+str(year)
 
-            self.leac_clipped[year] = self.accord.AutomaticBring2AOI(self.config["land_cover"][year], path_out = self.leac_clipped[year])
+            self.accord.Bring2AOI(self.config["land_cover"][year], path_out = self.leac_clipped[year])
 
             #let's now translate to colored geotiff
             ctfile = self.config['leac']['lut_ct_lc']  #'/data/nca_vol1/qgis/legend_CGLOPS_NCA_L2-fr.txt'
@@ -173,12 +169,8 @@ class Leac(enca.ENCARun):
         for year in self.years:
             if os.path.exists(self.leac_recl[year]):
                 pass
-            if self.config['leac']['lut_lc2psclc']:
-                reclass_dict1 = CSV_2_dict(self.config['leac']['lut_lc2psclc'], old_class='PSCLC_CD', new_class='PSCLC_RANK')
-                reclass_dict2 = CSV_2_dict(self.config['leac']['lut_lc'], old_class='PSCLC_CD', new_class='PSCLC_RANK')
-                reclass_dict = {item[0]:reclass_dict2.get(item[1]) for item in reclass_dict1.items()}
-            else:
-                reclass_dict = CSV_2_dict(self.config['leac']['lut_lc'], old_class='PSCLC_CD', new_class='PSCLC_RANK')
+
+            reclass_dict = CSV_2_dict(self.config['leac']['lut_lc'], old_class='CD', new_class='RANK')
 
             with rasterio.open(self.leac_clipped[year], 'r') as ds_open:
                 profile = ds_open.profile
@@ -187,22 +179,15 @@ class Leac(enca.ENCARun):
                 if profile["nodata"]:
                     nodata = profile["nodata"]
                 else: nodata = 0
-                # force PSCLC output to be 16 bits (values > 255)
+
                 profile2 = profile.copy()
                 profile2['dtype'] = np.uint16
-                with rasterio.open(self.leac_recl[year], 'w', **dict(profile, nodata = nodata)) as ds_out,\
-                    rasterio.open(self.leac_out[year], 'w', **dict(profile2, nodata = nodata)) as ds_out2:
+                with rasterio.open(self.leac_recl[year], 'w', **dict(profile, nodata = nodata)) as ds_out:
                     for _, window in block_window_generator((2048,2048), ds_open.height, ds_open.width):
                         aBlock = ds_open.read(1, window=window, masked=True)
                         #Doesn't seem a nodata value was set
                         reclassified, dict_classes  = reclassification(aBlock, reclass_dict, nodata, nodata)
                         ds_out.write(reclassified, window=window, indexes=1)
-
-                        if self.config['leac']['lut_lc2psclc']:
-                            leac_outdata, dict_classes  = reclassification(aBlock.astype(np.uint16), reclass_dict1, nodata, nodata)
-                        else:
-                            leac_outdata = aBlock.astype(np.uint16)
-                        ds_out2.write(leac_outdata, window=window, indexes=1)
 
         logger.debug("** Land cover clipped and reclassified ...")
 
@@ -212,7 +197,7 @@ class Leac(enca.ENCARun):
 
         for idx, year in enumerate(self.years):  #minus 1 as change maps require tuples
             if os.path.exists(self.leac_change[year]):
-                continue
+                pass
 
             lc1_reclass = self.leac_recl[year]
             lc2_reclass = self.leac_recl[ref_year]
@@ -238,11 +223,13 @@ class Leac(enca.ENCARun):
             count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
             count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
 
-            pivot_count = count.pivot(index ='year',columns='ref_year', values='count').fillna(0)
-
+            pivot_count = count.pivot(index ='ref_year',columns='year', values='count').fillna(0)
+            reclass_dict = CSV_2_dict(self.config['leac']['lut_lc'], old_class='RANK', new_class='DESC')
+            pivot_count.index = [reclass_dict[index]+ f' {ref_year}' for index in pivot_count.index]
+            pivot_count.columns = [reclass_dict[column] + f' {year}' for column in pivot_count.columns]
             #post-process output data
             #format table : convert pixels to ha & TODO move no_change in separate col/row
-            table_out_formatted = self.format_LCC_table(pivot_count, path_out = self.final_tab[year])
+            table_out_formatted = self.format_LCC_table(pivot_count, self.final_tab[year])
 
             logger.debug("** LEAC change matrix ready ...")
 
@@ -252,9 +239,6 @@ class Leac(enca.ENCARun):
         #function to calculate the land cover change flows (consumption and formation)
         ref_year = self.ref_year
         for idx, year in enumerate(self.years):
-            if os.path.exists(self.lcc[year]) and os.path.exists(self.lcf[year]):
-                print ("Skip calculate land cover flow, data exists")
-                continue
 
             #A. combine the 2 input grids into 4-digit number (temporary step) #seems to be not necessary we have the data? needs to be for the reclass
             multi = 1000
@@ -262,8 +246,8 @@ class Leac(enca.ENCARun):
 
             reclass_dict = CSV_2_dict(self.config['leac']['lut_lcflows'], old_class='LC_CHANGE', new_class='ID_lcflows')
 
-            with rasterio.open(self.leac_out[year], 'r') as ds_open1, \
-                    rasterio.open(self.leac_out[ref_year],'r') as ds_open2:
+            with rasterio.open(self.leac_clipped[year], 'r') as ds_open1, \
+                    rasterio.open(self.leac_clipped[ref_year],'r') as ds_open2:
                 profile = ds_open1.profile
                 if profile["nodata"]:
                     nodata = profile["nodata"]
@@ -289,12 +273,7 @@ class Leac(enca.ENCARun):
 
         #C. Calculate the consumption (ref year) and formation (new year) raster + table
         for idx, year in enumerate(self.years):
-            if os.path.exists(self.lcf_cons[year]) and os.path.exists(self.lcf_form[year]):
-                print ("Skip calculate leac consumption & formation flows, data exists")
-                continue
-
-
-            for idy, grid_in in enumerate([self.leac_out[year], self.leac_out[ref_year]]):
+            for idy, grid_in in enumerate([self.leac_clipped[year], self.leac_clipped[ref_year]]):
                 if idy == 0:
                     account = self.lcf_cons[year]
                 else:
@@ -318,11 +297,6 @@ class Leac(enca.ENCARun):
 
         #D. Calculate cross-table stock-flows for consumption and formation
         for idx, year in enumerate(self.years):
-            if os.path.exists(self.lc_lcf_tab[year]):
-                print ("Skip step D to calculate land cover cross tables, data exists")
-                continue
-
-
             for idy, grid_in in enumerate([self.leac_recl[year], self.leac_recl[ref_year]]):
 
                 if idy == 0:
@@ -348,10 +322,10 @@ class Leac(enca.ENCARun):
 
                         count = count.add(pd.DataFrame(pd.Series(change.flatten()).value_counts(),columns=['count']), fill_value = 0)
 
-                count['year'] = count.index % self.config['leac']['max_lc_classes'] +1
-                count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1
+                count['year'] = count.index % self.config['leac']['max_lc_classes'] +1 #block1 year lcf[year]
+                count['ref_year'] = count.index // self.config['leac']['max_lc_classes'] +1 #block2 ref_year (grid_in)
 
-                pivot_count = count.pivot(index ='year',columns='ref_year', values='count').fillna(0)
+                pivot_count = count.pivot(index ='ref_year',columns='year', values='count').fillna(0)
 
                 if idy == 0:
                     cons = pivot_count.copy()
@@ -360,12 +334,11 @@ class Leac(enca.ENCARun):
 
 
             #format table and convert to hectares
-            self.format_LCF_table(cons, form, self.lc_lcf_tab[year])
+            self.format_LCF_table(cons, form, self.lc_lcf_tab[year], ref_year, year)
 
 
     def make_output_filenames(self):
         self.leac_clipped = {}
-        self.leac_out = {}
         self.leac_recl = {}
         self.leac_change = {}
         self.final_tab = {}
@@ -397,8 +370,6 @@ class Leac(enca.ENCARun):
 
         for idx,year in enumerate(years):
             self.leac_clipped[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year]))
-            self.leac_out[year] = os.path.splitext(os.path.join(self.maps, os.path.basename(self.config["land_cover"][year])))[0] \
-                                  + '_PSCLC.tif'
             self.leac_recl[year] = os.path.splitext(os.path.join(self.maps, os.path.basename(self.config["land_cover"][year])))[0] \
                                    + '_reclassified.tif'
 
