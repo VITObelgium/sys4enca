@@ -58,6 +58,9 @@ class Total(enca.ENCARun):
                 'carbon_result': ConfigItem(),
                 'water_result': ConfigItem(),
                 'infra_result': ConfigItem(),
+                'ECUadj_Carbon': ConfigItem(default=10),# normalize to 10 tC/Yr/ha
+                'ECUadj_Water': ConfigItem(default=10000),# rc7*100, #normalize to 10000m3
+                'ECUadj_Infra': ConfigItem(default=1)
             }
         })
 
@@ -111,9 +114,9 @@ class Total(enca.ENCARun):
             df['WEIUV'] = df['WEH'] * df['SIWU']
 
         # normalize
-        df['NECP_n'] = df['NECP'] / self.parameters['ECUadj_Carbon']  # (Scaled) gross capability
-        df['NEWP_n'] = df['NEWP'] / self.parameters['ECUadj_Water']
-        df['TEIP_n'] = df['TEIP'] / self.parameters['ECUadj_Infra']
+        df['NECP_n'] = df['NECP'] / config['ECUadj_Carbon']  # (Scaled) gross capability
+        df['NEWP_n'] = df['NEWP'] / config[['ECUadj_Water']
+        df['TEIP_n'] = df['TEIP'] / config['ECUadj_Infra']
 
         # calculate ECU
         df['ECU'] = (df['CEIUV'] + df['WEIUV'] + df['EIIUV']) / 3  # unit-less

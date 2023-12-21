@@ -160,6 +160,7 @@ class Run:
             with rasterio.open(land_cover_year0) as src:
                 self.src_profile = src.profile
                 self.src_res = src.res
+                self.epsg = src.crs.to_epsg()
         except Exception as e:
             raise ConfigError(f'Failed to open land cover file for year {self.years[0]}: "{e}"',
                               [_LAND_COVER, self.years[0]])
