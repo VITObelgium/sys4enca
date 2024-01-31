@@ -149,31 +149,41 @@ class WaterPrecipEvapo(enca.ENCARun):
         ncfileKEYS = ncfile.variables.keys()
 
         # check that the variable time is available
+        lat_key = 'latitude'
+        lon_key = 'longitude'
         if 'time' not in ncfileKEYS:
             raise ValueError("Time variable can not be found in the NetCDF.")
-        elif 'latitude' not in ncfileKEYS:
-            raise ValueError("latitude variable can not be found in the NetCDF.")
-        elif 'longitude' not in ncfileKEYS:
-            raise ValueError("longitude variable can not be found in the NetCDF.")
+        if lat_key not in ncfileKEYS:
+            if 'lat' not in ncfileKEYS:
+                raise ValueError("latitude variable can not be found in the NetCDF.")
+            lat_key = 'lat'
+        if lon_key not in ncfileKEYS:
+            if 'lon' not in ncfileKEYS:
+                raise ValueError("longitude variable can not be found in the NetCDF.")
+            lon_key = 'lon'
 
         # get the profile info together
-        lats = ncfile.variables['latitude'][:]
-        lons = ncfile.variables['longitude'][:]
+        lats = ncfile.variables[lat_key][:]
+        lons = ncfile.variables[lon_key][:]
         psizey = (lats.min() - lats.max()) / (lats.shape[0] - 1)
         psizex = (lons.max() - lons.min()) / (lons.shape[0] - 1)
         if abs(psizex) != abs(psizey):
             raise ValueError("Problem with the pixel resolution. pix_x and pix_y have not the same size.")
         # these netCDFs are special lons.min() is all the time zeros, but we know that this is a global dataset (subtract 180)
         # but do a check
-        if lons.min() < 0.0:
-            # is a normal netCDF ranging from -180 to +180 in longitude
-            UL_x, UL_y = lons.min() - psizex/2, lats.max() - psizey/2
-            data_roll = False
+
+        #patch MADAGSCAR
+        #if lons.min() < 0.0:
+        # is a normal netCDF ranging from -180 to +180 in longitude
+        UL_x, UL_y = lons.min() - psizex/2, lats.max() - psizey/2
+        data_roll = False
+        '''
         else:
             # is a special netCDF ranging from 0 - 360 in longitude
             # do a data rolling by 180deg and change Image origin
             UL_x, UL_y = lons.min() - 180 - psizex/2, lats.max() - psizey/2
             data_roll = True
+        '''
 
         # add the other needed profile info
         new_profile = {
@@ -238,7 +248,8 @@ class WaterPrecipEvapo(enca.ENCARun):
                             NODATA_value=-32767,
                             unit='mm',
                             data_year=year)
-            dst.write(aOut, 1)
+            #patch Madagascar
+            dst.write(np.flipud(aOut), 1)
 
         return path_out_file
 
