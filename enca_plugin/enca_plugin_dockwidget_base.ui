@@ -1223,55 +1223,13 @@
                     </widget>
                    </item>
                    <item row="3" column="0">
-                    <widget class="QLabel" name="label_107">
-                     <property name="text">
-                      <string>Conversion to pseudocorine</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="1">
-                    <widget class="QgsFileWidget" name="lut_lc2psclc_">
-                     <property name="filter">
-                      <string>CSV (*.csv);; All Files (*.*)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="0">
-                    <widget class="QLabel" name="label_106">
-                     <property name="text">
-                      <string>Consumption landcover flows</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="1">
-                    <widget class="QgsFileWidget" name="lut_lcflow_C_">
-                     <property name="filter">
-                      <string>CSV (*.csv);; All Files (*.*)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="5" column="0">
-                    <widget class="QLabel" name="label_105">
-                     <property name="text">
-                      <string>Formation land cover flows</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="5" column="1">
-                    <widget class="QgsFileWidget" name="lut_lcflow_F_">
-                     <property name="filter">
-                      <string>CSV (*.csv);; All Files (*.*)</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="6" column="0">
                     <widget class="QLabel" name="label_108">
                      <property name="text">
                       <string>Cross-table to flows</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="6" column="1">
+                   <item row="3" column="1">
                     <widget class="QgsFileWidget" name="lut_lcflows_">
                      <property name="filter">
                       <string>CSV (*.csv);; All Files (*.*)</string>
@@ -2224,6 +2182,48 @@
              <widget class="QgsFileWidget" name="water_result_">
               <property name="storageMode">
                <enum>QgsFileWidget::GetDirectory</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_210">
+              <property name="text">
+               <string>ECUadj Carbon</string>
+              </property>
+             </widget>
+            </item>
+           <item row="4" column="1">
+             <widget class="QLineEdit" name="ECUadj_Carbon_">
+              <property name="text">
+               <string>10</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_211">
+              <property name="text">
+               <string>ECUadj Water</string>
+              </property>
+             </widget>
+            </item>
+           <item row="5" column="1">
+             <widget class="QLineEdit" name="ECUadj_Water_">
+              <property name="text">
+               <string>10000</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_212">
+              <property name="text">
+               <string>ECUadj Infra</string>
+              </property>
+             </widget>
+            </item>
+           <item row="6" column="1">
+             <widget class="QLineEdit" name="ECUadj_Infra_">
+              <property name="text">
+               <string>1</string>
               </property>
              </widget>
             </item>
