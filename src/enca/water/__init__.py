@@ -9,8 +9,8 @@ import pandas as pd
 
 import enca
 from enca import AREA_RAST
-from enca.framework.config_check import ConfigRaster, ConfigShape
-from enca.framework.geoprocessing import RasterType
+from enca.framework.config_check import ConfigRaster, ConfigShape, ConfigItem
+from enca.framework.geoprocessing import RasterType, statistics_byArea, block_window_generator
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +113,7 @@ class Water(enca.ENCARun):
                 SALINITY: ConfigShape(),
                 HYDRO_LAKES: ConfigShape(),
                 GLORIC: ConfigShape(),
+                'LC_code_lakes' : ConfigItem()
                 }
             })
 
@@ -123,10 +124,13 @@ class Water(enca.ENCARun):
         water_config = self.config[self.component]
 
         water_stats = self.additional_water_stats()
+        for year in self.years:
+            water_stats = self.check_waterstats(water_stats, year)
         water_stats.to_csv(os.path.join(self.statistics, 'SELU_additional-water-stats.csv'))
 
         area_stats = self.area_stats()
         for year in self.years:
+            self.check_waterstats(water_stats, year)
             stats = self.selu_stats({key: water_config[key] for key in self.input_rasters if water_config[key]})
             stats[enca.AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
@@ -216,9 +220,40 @@ class Water(enca.ENCARun):
                                                               TOTAL_LAKE_RUNOFF,
                                                               HYBAS_LAKE_AREA,
                                                               HYBAS_LAKE_VOL]].sum())
+
+
         del gdf_lake
 
         return result.fillna(0)
+
+    def check_waterstats(self, water_stats, year):
+
+        #voorlopig hard coded 512
+        code = self.config[self.component]['LC_code_lakes']
+        if (code is not None) and (code != '') :
+            import rasterio
+            #now try to rasterize
+            LC_lakes = os.path.join(self.temp_dir(), f'Lakes_obtained_from_LC_{year}.tif')
+            with rasterio.open(LC_lakes, 'w', **self.accord.ref_profile) as dst, \
+                    rasterio.open(self.config['land_cover'][year]) as src:
+                for _, window in block_window_generator( (4096,4096), src.profile['height'], src.profile['width']):
+                    output = src.read(1, window =window) == code
+                    dst.write(output, 1, window =window)
+
+            stats = statistics_byArea(LC_lakes,self.statistics_raster,self.statistics_shape['SHAPE_ID'])
+            #alsp conversion from m*m to ha
+            stats[f'LC_lake_area_ha_{year}'] = stats['px_count']*self.accord.pixel_area_m2()/(100*100)
+            water_stats= water_stats.merge(stats[f'LC_lake_area_ha_{year}'], left_index=True, right_index=True)
+            if np.any(water_stats['hybas_lake_area'] > 10* (stats[f'LC_lake_area_ha_{year}']+1)) or \
+                np.any((water_stats['hybas_lake_area']+1)*10 < stats[f'LC_lake_area_ha_{year}']):
+                logger.warning("Size of lakes from shapefile does not match size of lakes from landcover, within an order of magnitude and at least 10 hectares")
+
+
+        else:
+            logger.info("Not enough information to do a check between LC and water_stats")
+
+        return water_stats
+
 
     def selu_inflow_outflow(self, selu_stats, year):
         """Calculate annual in- and outflow per SELU.
