@@ -115,7 +115,7 @@ class Total(enca.ENCARun):
 
         # normalize
         df['NECP_n'] = df['NECP'] / config['ECUadj_Carbon']  # (Scaled) gross capability
-        df['NEWP_n'] = df['NEWP'] / config[['ECUadj_Water']
+        df['NEWP_n'] = df['NEWP'] / config['ECUadj_Water']
         df['TEIP_n'] = df['TEIP'] / config['ECUadj_Infra']
 
         # calculate ECU
