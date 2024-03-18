@@ -161,6 +161,9 @@ class Run:
                 self.src_profile = src.profile
                 self.src_res = src.res
                 self.epsg = src.crs.to_epsg()
+                if self.epsg == 4326:
+                    logger.exception(f'Land cover {land_cover_year0} is in EPSG:4326 is not supported, please reproject')
+                    raise ConfigError(f'Land cover {land_cover_year0} is in EPSG:4326 is not supported, please reproject')
         except Exception as e:
             raise ConfigError(f'Failed to open land cover file for year {self.years[0]}: "{e}"',
                               [_LAND_COVER, self.years[0]])
