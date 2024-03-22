@@ -44,6 +44,10 @@ def create_gbli(gbli):
                 continue
             logger.info("rate each land cover class on greeness")
             gbli.reclassify_PSCLC(year, nodata = 0)
+            # "account for tree density"
+            r = gbli.apply_treecover(year, nodata = 0)
+            if r == 0:
+                logger.info("no tree cover correction done for GBLI")
             # "smooth greeness maps"
             gbli.gaussian_smooth(year)
 
