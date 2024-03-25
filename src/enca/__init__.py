@@ -307,7 +307,7 @@ class ENCARun(Run):
             for index in self._indices_average:
                 results.loc[index] /= results.loc[AREA_RAST]
 
-            results = pd.merge(results, self.load_lut(), left_index=True, right_index=True)
+            results = pd.merge(self.load_lut(), results, left_index=True, right_index=True)
             results.to_csv(os.path.join(self.reports, f'NCA_{self.component}_report_{area.Index}_{year}.csv'))
 
     @classmethod

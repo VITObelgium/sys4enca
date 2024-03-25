@@ -3,14 +3,14 @@
 import logging
 import os
 
+import pandas as pd
+
 import enca
+from enca.carbon import Carbon
 from enca.framework.config_check import ConfigItem
 from enca.framework.errors import Error
-from enca.carbon import Carbon
-from enca.water import Water
 from enca.infra import Infra
-
-import pandas as pd
+from enca.water import Water
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class Total(enca.ENCARun):
 
         # normalize
         df['NECP_n'] = df['NECP'] / config['ECUadj_Carbon']  # (Scaled) gross capability
-        df['NEWP_n'] = df['NEWP'] / config[['ECUadj_Water']
+        df['NEWP_n'] = df['NEWP'] / config['ECUadj_Water']
         df['TEIP_n'] = df['TEIP'] / config['ECUadj_Infra']
 
         # calculate ECU
