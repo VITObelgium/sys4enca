@@ -92,7 +92,8 @@ component_input_widgets = [
         water.AQUIFER,
         water.SALINITY,
         water.HYDRO_LAKES,
-        water.GLORIC]),
+        water.GLORIC,
+        'LC_code_lakes']),
     (water_precip_evapo.WaterPrecipEvapo.component, [
         water_precip_evapo._WORLDCLIM,
         water_precip_evapo._CGIAR_AET,

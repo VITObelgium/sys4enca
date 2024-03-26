@@ -51,6 +51,7 @@ HYBAS_LAKE_AREA = 'hybas_lake_area'
 HYBAS_LAKE_VOL = 'hybas_lake_vol'
 MAJOR_AQUIFER = 'Major-aquifer'
 LOCAL_AQUIFER = 'Local-aquifer'
+LC_LAKES ='LC_code_lakes'
 
 input_codes = dict(
     CoastID=COAST,
@@ -113,7 +114,7 @@ class Water(enca.ENCARun):
                 SALINITY: ConfigShape(),
                 HYDRO_LAKES: ConfigShape(),
                 GLORIC: ConfigShape(),
-                'LC_code_lakes' : ConfigItem()
+                LC_LAKES : ConfigItem()
                 }
             })
 
