@@ -7,7 +7,6 @@ import time
 from datetime import datetime, timedelta, date
 from calendar import monthrange
 
-#import netCDF4
 import numpy as np
 import rasterio
 
@@ -49,14 +48,14 @@ class WaterPrecipEvapo(enca.ENCARun):
 
     def _start(self):
         # precipitation:
-        #lta_precip_aoi = self.lta_annual_precipitation()  # [mm]
+        lta_precip_aoi = self.lta_annual_precipitation()  # [mm]
         self.lta_precip = os.path.join(self.maps, 'NCA_WATER_LTA-precipitation_m3.tif')
-        #mm_to_m3(lta_precip_aoi, 'LTA Annual precipitation in m3 per pixel.', self.lta_precip)
+        mm_to_m3(lta_precip_aoi, 'LTA Annual precipitation in m3 per pixel.', self.lta_precip)
 
         # evapotranspiration:
         self.lta_evapo = os.path.join(self.maps, 'NCA_WATER_LTA-evapotranspiration_m3.tif')
-        # mm_to_m3(self.config[self.component][_CGIAR_AET],
-        #         'LTA Annual evapotranspiration in m3 per pixel.', self.lta_evapo)
+        mm_to_m3(self.config[self.component][_CGIAR_AET],
+                 'LTA Annual evapotranspiration in m3 per pixel.', self.lta_evapo)
 
         for year in self.years:
             precipitation_mm = self.convert_copernicus_netcdf(year)
