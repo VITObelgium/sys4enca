@@ -93,7 +93,7 @@ component_input_widgets = [
         water.SALINITY,
         water.HYDRO_LAKES,
         water.GLORIC,
-        'LC_code_lakes']),
+        water.LC_LAKES]),
     (water_precip_evapo.WaterPrecipEvapo.component, [
         water_precip_evapo._WORLDCLIM,
         water_precip_evapo._CGIAR_AET,
