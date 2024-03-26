@@ -228,8 +228,6 @@ class Water(enca.ENCARun):
         return result.fillna(0)
 
     def check_waterstats(self, water_stats, year):
-
-        #voorlopig hard coded 512
         code = self.config[self.component]['LC_code_lakes']
         if (code is not None) and (code != '') :
             import rasterio
