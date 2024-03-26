@@ -1,15 +1,15 @@
-import os
 import logging
-import numpy as np
+import os
+
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import rasterio
 
-
 import enca
-from enca.framework.config_check import ConfigItem, ConfigRaster, ConfigShape, YEARLY
-from enca.framework.geoprocessing import add_color, block_window_generator
 from enca.classification import CSV_2_dict, reclassification
+from enca.framework.config_check import YEARLY, ConfigItem, ConfigRaster, ConfigShape
+from enca.framework.geoprocessing import add_color, block_window_generator
 
 logger = logging.getLogger(__name__)
 REF_YEAR = 'ref_year'

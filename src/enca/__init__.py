@@ -3,26 +3,38 @@ import logging
 import math
 import os
 from enum import Enum
-
 from importlib.metadata import PackageNotFoundError, version
 from importlib.resources import as_file, files
 
+import geopandas as gpd
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-
-import geopandas as gpd
 import pandas as pd
 import pyproj
 import rasterio
 
 import enca
 import enca.parameters
-from enca.framework.config_check import YEARLY, ConfigError, ConfigItem, ConfigRaster, check_csv
-from enca.framework.run import Run, _LAND_COVER
-from enca.framework.geoprocessing import number_blocks, block_window_generator, statistics_byArea, RasterType, \
-    SHAPE_ID, POLY_MIN_SIZE, MINIMUM_RESOLUTION, GeoProcessing
+from enca.framework.config_check import (
+    YEARLY,
+    ConfigError,
+    ConfigItem,
+    ConfigRaster,
+    check_csv,
+)
 from enca.framework.errors import Error
+from enca.framework.geoprocessing import (
+    MINIMUM_RESOLUTION,
+    POLY_MIN_SIZE,
+    SHAPE_ID,
+    GeoProcessing,
+    RasterType,
+    block_window_generator,
+    number_blocks,
+    statistics_byArea,
+)
+from enca.framework.run import _LAND_COVER, Run
 
 try:
     dist_name = 'sys4enca'
@@ -295,7 +307,7 @@ class ENCARun(Run):
             for index in self._indices_average:
                 results.loc[index] /= results.loc[AREA_RAST]
 
-            results = pd.merge(results, self.load_lut(), left_index=True, right_index=True)
+            results = pd.merge(self.load_lut(), results, left_index=True, right_index=True)
             results.to_csv(os.path.join(self.reports, f'NCA_{self.component}_report_{area.Index}_{year}.csv'))
 
     @classmethod
