@@ -2121,6 +2121,23 @@
                   </property>
                  </widget>
                 </item>
+	         <item row="8" column="0">
+                    <widget class="QLabel" name="label_95">
+                     <property name="text">
+                      <string>Lakes land cover classes</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="8" column="1">
+                     <widget class="QSpinBox" name="LC_code_lakes_">
+                  <property name="maximum">
+                   <number>9999</number>
+                  </property>
+                  <property name="value">
+                   <number>0</number>
+                  </property>
+                 </widget>
+                   </item>
                </layout>
               </widget>
              </widget>

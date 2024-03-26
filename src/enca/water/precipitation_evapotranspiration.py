@@ -4,9 +4,9 @@ import glob
 import logging
 import os
 import time
+from datetime import datetime, timedelta, date
 from calendar import monthrange
 
-import netCDF4
 import numpy as np
 import rasterio
 
@@ -144,41 +144,34 @@ class WaterPrecipEvapo(enca.ENCARun):
     def convert_copernicus_netcdf(self, year):
         """Convert Copernicus precipitation data from netCDF4 format to GeoTiff."""
         # open dataset
-        ncfile = netCDF4.Dataset(self.config[self.component][_COPERNICUS_PRECIPITATION][year], 'r')
-        # getting all variables
-        ncfileKEYS = ncfile.variables.keys()
+        with rasterio.open(self.config[self.component][_COPERNICUS_PRECIPITATION][year]) as src:
+            tags = src.tags()
+            profile = src.profile
+            bounds = src.bounds
+            psizex, psizey= src.res
 
         # check that the variable time is available
-        if 'time' not in ncfileKEYS:
+        if "NETCDF_DIM_time_VALUES" not in tags.keys():
             raise ValueError("Time variable can not be found in the NetCDF.")
-        elif 'latitude' not in ncfileKEYS:
-            raise ValueError("latitude variable can not be found in the NetCDF.")
-        elif 'longitude' not in ncfileKEYS:
-            raise ValueError("longitude variable can not be found in the NetCDF.")
 
-        # get the profile info together
-        lats = ncfile.variables['latitude'][:]
-        lons = ncfile.variables['longitude'][:]
-        psizey = (lats.min() - lats.max()) / (lats.shape[0] - 1)
-        psizex = (lons.max() - lons.min()) / (lons.shape[0] - 1)
-        if abs(psizex) != abs(psizey):
-            raise ValueError("Problem with the pixel resolution. pix_x and pix_y have not the same size.")
+
         # these netCDFs are special lons.min() is all the time zeros, but we know that this is a global dataset (subtract 180)
         # but do a check
-        if lons.min() < 0.0:
+        if (bounds.right < 180.5) :
             # is a normal netCDF ranging from -180 to +180 in longitude
-            UL_x, UL_y = lons.min() - psizex/2, lats.max() - psizey/2
+            affine = profile['transform']
             data_roll = False
         else:
             # is a special netCDF ranging from 0 - 360 in longitude
             # do a data rolling by 180deg and change Image origin
-            UL_x, UL_y = lons.min() - 180 - psizex/2, lats.max() - psizey/2
+            UL_x, UL_y = bounds.left - 180, bounds.top
+            affine = rasterio.transform.from_origin(UL_x, UL_y, abs(psizex), abs(psizey))
             data_roll = True
 
         # add the other needed profile info
         new_profile = {
             'crs': rasterio.crs.CRS.from_epsg(4326),
-            'transform': rasterio.transform.from_origin(UL_x, UL_y, abs(psizex), abs(psizey)),
+            'transform': affine,
             'driver': 'GTiff',
             'compress': 'lzw',
             'tiled': 'False',
@@ -186,44 +179,45 @@ class WaterPrecipEvapo(enca.ENCARun):
             'count': 1,
             'dtype': rasterio.float32,
             'nodata': -32767,
-            'height': lats.shape[0],
-            'width': lons.shape[0]
+            'height': profile['height'],
+            'width': profile['width']
         }
 
-        # get the timestamps out of the time variable
-        nctime = ncfile.variables['time']
-        timesteps = netCDF4.num2date(nctime[:], nctime.units, nctime.calendar)
-        # get the number of timesteps in the datasset to process for this pYear
-        timesteps_idices = []
-        for idx, element in enumerate(timesteps):
-            if element.year == year:
-                timesteps_idices.append(idx)
-
-        # figure out with aux-dataset we process
-        auxName = 'tp'
         conversion_factor = 1000  # from meter to milimeter
+        #actual this means evarge meter per day
+        if tags['tp#units'] != 'm':
+            raise ValueError(f"Unit of the netCDF does not seem te be correct. It was expected to be in m but is in {tags['tp#units']}")
 
         # ini output raster
-        aOut = np.zeros((lats.shape[0], lons.shape[0]), dtype=np.float32)
+        aOut = np.zeros((profile['height'], profile['width']), dtype=np.float32)
 
         # loop over all timesteps
-        for i in timesteps_idices:
-            logger.debug("* Working on timestep: %s/%s", timesteps[i].month, timesteps[i].year)
-            # read out data for first time step (scaling and offset is directly applied)
-            datax = ncfile.variables[auxName][i][:]
-            # check if masked array - if not create
-            if type(datax) != np.ma.core.MaskedArray:
-                datax = np.ma.core.MaskedArray(datax, np.zeros(datax.shape, dtype=bool))
+        with rasterio.open(self.config[self.component][_COPERNICUS_PRECIPITATION][year]) as src:
+            for i in range(profile['count']):
+                tags_band = src.tags(i+1)
+                refdate  =  date(1900, 1,1)
+                timeref = tags_band['NETCDF_DIM_time']
+                time_coverage_start = refdate + timedelta(hours=int(timeref))
+                startday,days = monthrange(int(year), time_coverage_start.month)
 
-            # do the data_roll if needed to bring data in -180 to +180 longitude format
-            if data_roll:
-                logger.debug("** do a data roll to get 0deg center meridian.. ")
-                datax = np.roll(datax, int(datax.shape[1]/2), axis=1)
+                logger.debug("* Working on timestep: %s/%s")
+                # read out data for first time step (scaling and offset is directly applied)
+                datax = src.read(i+1, masked = True)*float(tags['tp#scale_factor'])+ float(tags['tp#add_offset'])
+                logger.info(datax.dtype)
+                # check if masked array - if not create
+                if type(datax) != np.ma.core.MaskedArray:
+                    datax = np.ma.core.MaskedArray(datax, np.zeros(datax.shape, dtype=bool))
 
-            aOut += (datax.filled(0) * conversion_factor * (monthrange(timesteps[i].year, timesteps[i].month)[1]))
+                # do the data_roll if needed to bring data in -180 to +180 longitude format
+                if data_roll:
+                    logger.debug("** do a data roll to get 0deg center meridian.. ")
+                    datax = np.roll(datax, int(datax.shape[1]/2), axis=1)
+
+                aOut += datax.filled(0) * conversion_factor * days
 
         aOut[aOut < 0] = 0
-
+        if np.any(aOut > 40000):
+            logger.warning(f"** It seems that the total percipitation {year} is unusual high please check input and output data")
         path_out_file = os.path.join(self.temp_dir(), f'Copernicus_C3S_ERA5_Total-precipitation_mm_{year}.tif')
 
         # write out the geoTif with new data
@@ -233,8 +227,8 @@ class WaterPrecipEvapo(enca.ENCARun):
 
         with rasterio.open(path_out_file, 'w', **new_profile) as dst:
             dst.update_tags(file_creation=time.asctime(),
-                            creator='Dr. Marcel Buchhorn (VITO)',
-                            Info='Global dataset for annual total precipitation retrieved from C3S webpage.',
+                            creator='Dr. Bert De Roo (VITO)',
+                            Info='Global dataset for annual total precipitation retrieved from reanalysis era5 land monthly webpage.',
                             NODATA_value=-32767,
                             unit='mm',
                             data_year=year)
