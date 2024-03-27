@@ -3,14 +3,14 @@
 import logging
 import os
 
+import pandas as pd
+
 import enca
+from enca.carbon import Carbon
 from enca.framework.config_check import ConfigItem
 from enca.framework.errors import Error
-from enca.carbon import Carbon
-from enca.water import Water
 from enca.infra import Infra
-
-import pandas as pd
+from enca.water import Water
 
 logger = logging.getLogger(__name__)
 

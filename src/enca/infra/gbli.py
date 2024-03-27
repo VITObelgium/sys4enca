@@ -77,7 +77,7 @@ class GBLI(object):
                     aTreeCover= ds2_open.read(1, window=window, masked=True)
                     aForestMask = ds3_open.read(1, window=window, masked=False)
                     #Tree cover density has to be between 0 and 100
-                    if (aTreeCover.max() > 100) or (aTreeCover.max() <= 1):
+                    if (aTreeCover.max() > 100) or ((aTreeCover.max() <= 1) and (aTreeCover.max() != 0)):
                         raise RuntimeError('Tree cover density should be between 0 and 100 {}.'.format(self.treecover[year]))
                     #mask all but forest to avoid altering the other land cover types
                     aTreeCover[aForestMask==0] = aBlock[aForestMask==0]

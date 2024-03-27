@@ -4,46 +4,44 @@ import os
 import threading
 from functools import reduce
 
+import enca
+import enca.carbon as carbon
+import enca.carbon.agriculture as carbon_agriculture
+import enca.carbon.fire as carbon_fire
+import enca.carbon.fire_vuln as carbon_fire_vuln
+import enca.carbon.forest as carbon_forest
+import enca.carbon.livestock as carbon_livestock
+import enca.carbon.npp as carbon_npp
+import enca.carbon.soil as carbon_soil
+import enca.carbon.soil_erosion as carbon_soil_erosion
+import enca.components
+import enca.framework
+import enca.infra as infra
+import enca.leac as leac
+import enca.total as total
+import enca.trend as trend
+import enca.water as water
+import enca.water.drought_vuln as water_drought_vuln
+import enca.water.precipitation_evapotranspiration as water_precip_evapo
+import enca.water.river_length_pixel as water_river_length_px
+import enca.water.usage as water_usage
 import yaml
+from enca.components import get_component_long_name
+from enca.framework.config_check import ConfigError, YEARLY
+from enca.framework.errors import Error
+from enca.framework.run import Cancelled
 from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsTask
 from qgis.gui import QgsFileWidget, QgsDoubleSpinBox
 from qgis.utils import iface
 
-import enca
-import enca.carbon as carbon
-import enca.carbon.npp as carbon_npp
-import enca.carbon.soil as carbon_soil
-import enca.carbon.soil_erosion as carbon_soil_erosion
-import enca.carbon.livestock as carbon_livestock
-import enca.carbon.fire_vuln as carbon_fire_vuln
-import enca.carbon.agriculture as carbon_agriculture
-import enca.carbon.fire as carbon_fire
-import enca.carbon.forest as carbon_forest
-import enca.components
-import enca.framework
-import enca.water as water
-import enca.water.precipitation_evapotranspiration as water_precip_evapo
-import enca.water.usage as water_usage
-import enca.water.drought_vuln as water_drought_vuln
-import enca.water.river_length_pixel as water_river_length_px
-import enca.infra as infra
-import enca.leac as leac
-import enca.total as total
-import enca.trend as trend
-from enca.components import get_component_long_name
-from enca.framework.errors import Error
-from enca.framework.config_check import ConfigError, YEARLY
-from enca.framework.run import Cancelled
-
 from .help import show_help
-from .qt_tools import writeWidget, expand_template
 from .qgis_tools import load_vector_layer
+from .qt_tools import writeWidget, expand_template
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'enca_plugin_dockwidget_base.ui'))
-
 
 # We need to keep a reference to our tasks prevent tasks from "disappearing" when we pass them on to the taskmanager.
 _tasks = []  #: global reference to currently launched tasks.
@@ -92,7 +90,8 @@ component_input_widgets = [
         water.AQUIFER,
         water.SALINITY,
         water.HYDRO_LAKES,
-        water.GLORIC]),
+        water.GLORIC,
+        water.LC_LAKES]),
     (water_precip_evapo.WaterPrecipEvapo.component, [
         water_precip_evapo._WORLDCLIM,
         water_precip_evapo._CGIAR_AET,
@@ -180,15 +179,15 @@ component_input_widgets = [
         'lut_ct_lc',
         'lut_ct_lcf',
         'lut_lc',
-        'lut_lc2psclc',
-        'lut_lcflow_C',
-        'lut_lcflow_F',
         'lut_lcflows',
     ]),
     (total.Total.component, [
         'infra_result',
         'carbon_result',
-        'water_result'
+        'water_result',
+        'ECUadj_Carbon',
+        'ECUadj_Water',
+        'ECUadj_Infra'
     ]),
     (trend.Trend.component, [
         'total_result'
@@ -206,6 +205,7 @@ component_vector_layers = {
         color_ramp='Blues'))],
     carbon_livestock.CarbonLivestock.component: []
 }
+
 
 def findChild(widget: QtWidgets.QWidget, name: str):
     """Helper function to deal with the fact that .ui compilation does not allow duplicate widget names.
@@ -225,7 +225,6 @@ def findChild(widget: QtWidgets.QWidget, name: str):
 
 
 class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
-
     closingPlugin = pyqtSignal()
 
     def __init__(self, parent=None):
@@ -457,7 +456,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 name, children = entry
                 result[name] = self.build_template_tree(children, findChild(root_widget, name))
             else:
-                assert isinstance(entry, str)   # entry is the name of a widget
+                assert isinstance(entry, str)  # entry is the name of a widget
                 result[entry] = findChild(root_widget, entry)
         return result
 
@@ -481,6 +480,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         except ValueError:  # Some pages are currently incomplete
             pass
         return template
+
 
 class Task(QgsTask):
 
