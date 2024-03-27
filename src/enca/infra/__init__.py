@@ -50,6 +50,7 @@ class Infra(enca.ENCARun):
                     "lc_water" : ConfigItem(default = [51])
                 },
                 "lut_gbli" : ConfigItem(),
+                "tree_cover" : {YEARLY : ConfigRaster(optional=True)},
                 "naturalis": ConfigRaster(), #should be changed to shape however can't seem to find original file
                 "catchments" : {'catchment_6' : ConfigShape(optional = True),
                                 'catchment_8' : ConfigShape(optional = True),
@@ -448,15 +449,21 @@ class Infra(enca.ENCARun):
         epsg = str(self.epsg)
 
         #GBLI processing filenames
+        self.leac_gbli_forest_mask = dict()
         self.leac_gbli_nosm = dict()
+        self.leac_gbli_nosm_tree = dict()
         self.leac_gbli_sm = dict()
         self.leac_gbli_diff = dict()
 
         for year in self.years:
             psclc = self.config["infra"]["leac_result"][year]
             basic_file = os.path.splitext(os.path.basename(psclc))[0]
+            file = f'{basic_file}_forest_mask.tif'
+            self.leac_gbli_forest_mask[year] = os.path.join(self.temp_dir(),file)
             file = f'{basic_file}_gbli_nosm.tif'
             self.leac_gbli_nosm[year] = os.path.join(self.temp_dir(),file)
+            file = f'{basic_file}_gbli_nosm_tcd.tif'
+            self.leac_gbli_nosm_tree[year] = os.path.join(self.temp_dir(),file)
             file = f'{basic_file}_gbli_sm{smoothing_settings}.tif'
             self.leac_gbli_sm[year] = os.path.join(self.temp_dir(),file)
             if self.config['infra'][REF_YEAR]:
