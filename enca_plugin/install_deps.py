@@ -111,8 +111,7 @@ def check_dependencies():
                                    'rasterio': 'python3-rasterio',
                                    'rtree': 'python3-rtree',
                                    'scipy': 'python3-scipy',
-                                   'pip': 'python3-pip',
-                                   'setuptools': 'python3-setuptools'}):
+                                   'pip': 'python3-pip'}):
         return False
 
     # Now check installed package version; if package is not available or not the right version, run pip.
