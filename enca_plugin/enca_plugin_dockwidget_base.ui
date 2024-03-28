@@ -1455,7 +1455,7 @@
                                 <item row="8" column="0">
                                   <widget class="QLabel" name="label_12">
                                     <property name="text">
-                                      <string>Landcover output</string>
+                                      <string>Landcover account</string>
                                     </property>
                                   </widget>
                                 </item>

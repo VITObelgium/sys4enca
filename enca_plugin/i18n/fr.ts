@@ -890,9 +890,9 @@
         <translation>Réseau fluvial</translation>
     </message>
     <message>
-        <location filename="../enca_plugin_dockwidget_base.ui" line="1459"/>
-        <source>Landcover output</source>
-        <translation>Couverture des terres</translation>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1458"/>
+        <source>Landcover account</source>
+        <translation>Comptabilité couverture des terres</translation>
     </message>
     <message>
         <location filename="../enca_plugin_dockwidget_base.ui" line="1474"/>
