@@ -889,6 +889,16 @@
         <source>River network</source>
         <translation>Réseau fluvial</translation>
     </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1459"/>
+        <source>Landcover output</source>
+        <translation>Couverture des terres</translation>
+    </message>
+    <message>
+        <location filename="../enca_plugin_dockwidget_base.ui" line="1474"/>
+        <source>Treecover</source>
+        <translation>Densité Arbres</translation>
+    </message>
 </context>
 <context>
     <name>RegionPicker</name>
