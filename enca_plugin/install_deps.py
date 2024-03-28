@@ -8,18 +8,22 @@ import os
 import subprocess
 import sys
 import tempfile
-from importlib.metadata import PackageNotFoundError, version, distributions  # pragma: no cover
+from importlib.metadata import (  # pragma: no cover
+    PackageNotFoundError,
+    distributions,
+    version,
+)
 from site import getusersitepackages
 
-from PyQt5.QtWidgets import QMessageBox, QDialog, QApplication
 from pkg_resources import parse_version
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox
 from qgis.core import Qgis, QgsMessageLog
 
-from .pip_install_dialog import PipInstallDialog
 from .marvin_qgis_tools import osgeo4w
+from .pip_install_dialog import PipInstallDialog
 
 _package_dist_name = 'sys4enca'  # Python package with core functionality
-_min_version = '0.9.2'  # Minimum required package version for the plugin.
+_min_version = '0.9.5'  # Minimum required package version for the plugin.
 _version_next = '1.0.0'  # Next package version which may no longer be compatible with this version of the plugin.
 _repo_url = 'https://artifactory.vgt.vito.be/artifactory/api/pypi/python-packages/simple'
 
