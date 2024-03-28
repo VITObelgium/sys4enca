@@ -9,8 +9,12 @@ import pandas as pd
 
 import enca
 from enca import AREA_RAST
-from enca.framework.config_check import ConfigRaster, ConfigShape, ConfigItem
-from enca.framework.geoprocessing import RasterType, statistics_byArea, block_window_generator
+from enca.framework.config_check import ConfigItem, ConfigRaster, ConfigShape
+from enca.framework.geoprocessing import (
+    RasterType,
+    block_window_generator,
+    statistics_byArea,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +55,7 @@ HYBAS_LAKE_AREA = 'hybas_lake_area'
 HYBAS_LAKE_VOL = 'hybas_lake_vol'
 MAJOR_AQUIFER = 'Major-aquifer'
 LOCAL_AQUIFER = 'Local-aquifer'
-LC_LAKES ='LC_code_lakes'
+LC_LAKES = 'LC_code_lakes'
 
 input_codes = dict(
     CoastID=COAST,
@@ -115,8 +119,8 @@ class Water(enca.ENCARun):
                 HYDRO_LAKES: ConfigShape(),
                 GLORIC: ConfigShape(),
                 LC_LAKES : ConfigItem()
-                }
-            })
+            }
+        })
 
         self.input_rasters = [PRECIPITATION, EVAPO, USE_MUNI, USE_AGRI, DROUGHT_VULN, EVAPO_RAINFED,
                               RIVER_LENGTH, LT_PRECIPITATION, LT_EVAPO]
@@ -231,6 +235,7 @@ class Water(enca.ENCARun):
         code = self.config[self.component]['LC_code_lakes']
         if (code is not None) and (code != '') :
             import rasterio
+
             #now try to rasterize
             LC_lakes = os.path.join(self.temp_dir(), f'Lakes_obtained_from_LC_{year}.tif')
             with rasterio.open(LC_lakes, 'w', **self.accord.ref_profile) as dst, \

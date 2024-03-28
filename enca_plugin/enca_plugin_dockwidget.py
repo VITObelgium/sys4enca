@@ -4,6 +4,13 @@ import os
 import threading
 from functools import reduce
 
+import yaml
+from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsTask
+from qgis.gui import QgsDoubleSpinBox, QgsFileWidget
+from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
+from qgis.PyQt.QtCore import pyqtSignal
+from qgis.utils import iface
+
 import enca
 import enca.carbon as carbon
 import enca.carbon.agriculture as carbon_agriculture
@@ -25,20 +32,14 @@ import enca.water.drought_vuln as water_drought_vuln
 import enca.water.precipitation_evapotranspiration as water_precip_evapo
 import enca.water.river_length_pixel as water_river_length_px
 import enca.water.usage as water_usage
-import yaml
 from enca.components import get_component_long_name
-from enca.framework.config_check import ConfigError, YEARLY
+from enca.framework.config_check import YEARLY, ConfigError
 from enca.framework.errors import Error
 from enca.framework.run import Cancelled
-from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
-from qgis.PyQt.QtCore import pyqtSignal
-from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsTask
-from qgis.gui import QgsFileWidget, QgsDoubleSpinBox
-from qgis.utils import iface
 
 from .help import show_help
 from .qgis_tools import load_vector_layer
-from .qt_tools import writeWidget, expand_template
+from .qt_tools import expand_template, writeWidget
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'enca_plugin_dockwidget_base.ui'))
@@ -171,7 +172,8 @@ component_input_widgets = [
         ]),
         'dams',
         'gloric',
-        ('leac_result', [YEARLY])
+        ('leac_result', [YEARLY]),
+        ('tree_cover', [YEARLY])
     ]),
     (leac.Leac.component, [
         leac.REF_YEAR,
