@@ -5,10 +5,10 @@ import threading
 from functools import reduce
 
 import yaml
-from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsTask
+from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsSettings, QgsTask
 from qgis.gui import QgsDoubleSpinBox, QgsFileWidget
 from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
-from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtCore import QLocale, pyqtSignal
 from qgis.utils import iface
 
 import enca
@@ -32,6 +32,7 @@ import enca.water.drought_vuln as water_drought_vuln
 import enca.water.precipitation_evapotranspiration as water_precip_evapo
 import enca.water.river_length_pixel as water_river_length_px
 import enca.water.usage as water_usage
+from enca.carbon.livestock import get_livestock_long_name
 from enca.components import get_component_long_name
 from enca.framework.config_check import YEARLY, ConfigError
 from enca.framework.errors import Error
@@ -226,12 +227,50 @@ def findChild(widget: QtWidgets.QWidget, name: str):
     return result
 
 
+_common_labels = {
+    "Continue existing run": {
+        "en": "Continue existing run",
+        "fr": "Continuer l'exécution existante",
+    },
+    "Load Configuration": {
+        "en": "Load Configuration",
+        "fr": "Charger la configuration",
+    },
+    "Save Configuration": {
+        "en": "Save Configuration",
+        "fr": "Enregistrer la configuration",
+    },
+    "Run": {
+        "en": "Run",
+        "fr": "Exécuter",
+    },
+    "Help": {
+        "en": "Help",
+        "fr": "Aide",
+    },
+}
+
+
+def translate_common(locale: str, key: str):
+    """Translate a common key to the current locale."""
+    # The locale is usually in the format 'en_US', 'fr_FR', etc.
+    # If you only need the first two characters (e.g., 'en', 'fr')
+    language_code = locale[0:2]
+    return _common_labels.get(key, {}).get(language_code, "Unknown label")
+
+
 class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     closingPlugin = pyqtSignal()
 
     def __init__(self, parent=None):
         """Constructor."""
         super(ENCAPluginDockWidget, self).__init__(parent)
+
+        # Get the current locale from QGIS settings
+        settings = QgsSettings()
+        locale = settings.value("locale/userLocale", QLocale.system().name())
+
+        
         # Set up the user interface from Designer.
         # After setupUI you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see
@@ -239,18 +278,18 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
-        self.set_up_component_dropdowns()
-        self.set_up_carbon_livestock()
+        self.set_up_component_dropdowns(locale)
+        self.set_up_carbon_livestock(locale)
         self.set_up_infra()
 
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setIconSize(iface.iconSize(dockedToolbar=True))
 
         self.loadact = QtWidgets.QAction(QtGui.QIcon(":/plugins/enca_plugin/mActionFileOpen.svg"),
-                                         'Load Configuration', self)
+                                         translate_common(locale, 'Load Configuration'), self)
         self.loadact.triggered.connect(self.loadConfig)
         self.saveact = QtWidgets.QAction(QtGui.QIcon(":/plugins/enca_plugin/mActionFileSaveAs.svg"),
-                                         'Save Configuration', self)
+                                         translate_common(locale, 'Save Configuration'), self)
         self.saveact.triggered.connect(self.saveConfig)
         self.toolbar.addAction(self.loadact)
         self.toolbar.addAction(self.saveact)
@@ -258,11 +297,11 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.runact = QtWidgets.QAction(
             QtGui.QIcon(":/plugins/enca_plugin/play-button-svgrepo-com.svg"),
-            'Run', self)
+            translate_common(locale, 'Run'), self)
         self.runact.triggered.connect(self.run)
         self.toolbar.addAction(self.runact)
 
-        self.continue_run = QtWidgets.QCheckBox('Continue existing run')
+        self.continue_run = QtWidgets.QCheckBox(translate_common(locale, 'Continue existing run'))
         self.continue_run.setObjectName('continue_run')
         self.toolbar.addWidget(self.continue_run)
 
@@ -270,7 +309,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         spacer.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         self.toolbar.addWidget(spacer)
 
-        self.helpact = QtWidgets.QAction('Help', self)
+        self.helpact = QtWidgets.QAction(translate_common(locale, 'Help'), self)
         self.helpact.triggered.connect(show_help)
         self.toolbar.addAction(self.helpact)
 
@@ -298,7 +337,7 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         }
         self.component_templates = self.build_template_tree(component_input_widgets, self.run_types)
 
-    def set_up_component_dropdowns(self):
+    def set_up_component_dropdowns(self, locale: str):
         """Fill the dropdown menu for preprocessing/run/ accounts tabs, and connect signals."""
         for i in range(self.run_types.count()):
             tab = self.run_types.widget(i)
@@ -306,10 +345,10 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             components_stack = findChild(tab, 'components_stack')
             for j in range(components_stack.count()):
                 name = components_stack.widget(j).objectName()[:-1]  # cut off trailing '_'
-                dropdown.addItem(get_component_long_name(name), name)
+                dropdown.addItem(get_component_long_name(name, locale), name)
             dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
-    def set_up_carbon_livestock(self):
+    def set_up_carbon_livestock(self, locale: str):
         """Set up Carbon livestock key-value widgets."""
         self.livestock_carbon_.setLayout(QtWidgets.QFormLayout())
         self.livestock_distribution_.setLayout(QtWidgets.QFormLayout())
@@ -317,13 +356,13 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for key in enca.carbon.livestock._livestock_types:
             carbon_widget = QgsFileWidget(self, objectName=key + '_')
             carbon_widget.setFilter('CSV (*.csv);; All Files (*.*)')
-            self.livestock_carbon_.layout().addRow(key, carbon_widget)
+            self.livestock_carbon_.layout().addRow(get_livestock_long_name(key, locale), carbon_widget)
             distribution_widget = QgsFileWidget(self, objectName=key + '_')
             distribution_widget.setFilter('Geotiff (*.tiff *.tif);; All Files (*.*)')
-            self.livestock_distribution_.layout().addRow(key, distribution_widget)
+            self.livestock_distribution_.layout().addRow(get_livestock_long_name(key, locale), distribution_widget)
             widget_weight = QgsDoubleSpinBox(self, objectName=key + '_')
             widget_weight.setRange(0., 1000.)
-            self.weights_.layout().addRow(key, widget_weight)
+            self.weights_.layout().addRow(get_livestock_long_name(key, locale), widget_weight)
 
     def set_up_infra(self):
         """Set up Infra indices input widgets."""
