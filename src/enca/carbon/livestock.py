@@ -6,7 +6,7 @@ import pandas as pd
 
 import enca
 from enca.framework.config_check import ConfigItem, ConfigRaster, check_csv
-from enca.framework.geoprocessing import RasterType, SHAPE_ID, sum_rasters
+from enca.framework.geoprocessing import SHAPE_ID, RasterType, sum_rasters
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,28 @@ _conversion_factor = _weight_2_carbon * _kg_2_tons * _tKm2_2_tHa
 
 _livestock_types = [CATTLE, CHICKEN, SHEEP, GOAT, PIG]
 
+_livestock_long_names = {
+    CATTLE: {
+        "en": "Cattle",
+        "fr": "Bovins",
+    },
+    CHICKEN: {
+        "en": "Chicken",
+        "fr": "Poulet",
+    },
+    SHEEP: {
+        "en": "Sheep",
+        "fr": "Mouton",
+    },
+    GOAT: {
+        "en": "Goat",
+        "fr": "Chèvre",
+    },
+    PIG: {
+        "en": "Pig",
+        "fr": "Porc",
+    },
+}
 
 class CarbonLivestock(enca.ENCARunAdminAOI):
 
@@ -84,3 +106,17 @@ class CarbonLivestock(enca.ENCARunAdminAOI):
             self.accord.spatial_disaggregation_byArea(raster_dist, data,
                                                       self.admin_raster, self.admin_shape[SHAPE_ID],
                                                       out_file)
+
+
+def get_livestock_long_name(livestock_key, locale="en"):
+    """
+    Fetches the component name in the specified language.
+
+    :param livestock_key: The key identifier for the component.
+    :param lang: The language code ('en' for English, 'fr' for French).
+    :return: The name of the component in the specified language.
+    """
+    # The locale is usually in the format 'en_US', 'fr_FR', etc.
+    # If you only need the first two characters (e.g., 'en', 'fr')
+    language_code = locale[0:2]
+    return _livestock_long_names.get(livestock_key, {}).get(language_code, "Unknown livestock type")

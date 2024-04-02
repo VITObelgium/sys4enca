@@ -2232,7 +2232,7 @@
                         <item row="4" column="0">
                           <widget class="QLabel" name="label_210">
                             <property name="text">
-                              <string>ECUadj Carbon</string>
+                              <string>ECUadj - carbon</string>
                             </property>
                           </widget>
                         </item>
@@ -2246,7 +2246,7 @@
                         <item row="5" column="0">
                           <widget class="QLabel" name="label_211">
                             <property name="text">
-                              <string>ECUadj Water</string>
+                              <string>ECUadj - water</string>
                             </property>
                           </widget>
                         </item>
@@ -2260,108 +2260,109 @@
                         <item row="6" column="0">
                           <widget class="QLabel" name="label_212">
                             <property name="text">
-                              <string>ECUadj Infra</string>
-                            </property>
-                          </widget>
-                        </item>
-                        <item row="6" column="1">
-                          <widget class="QLineEdit" name="ECUadj_Infra_">
-                            <property name="text">
-                              <string>1</string>
-                            </property>
-                          </widget>
-                        </item>
-                        <item row="0" column="0">
-                          <widget class="QLabel" name="label_112">
-                            <property name="text">
-                              <string>Run name</string>
-                            </property>
-                          </widget>
-                        </item>
-                        <item row="0" column="1">
-                          <widget class="QLineEdit" name="run_name_">
-                            <property name="text">
-                              <string>total</string>
-                            </property>
-                          </widget>
-                        </item>
-                      </layout>
-                    </widget>
-                    <widget class="QWidget" name="TREND_">
-                      <layout class="QFormLayout" name="formLayout_21">
-                        <item row="0" column="0">
-                          <widget class="QLabel" name="label_113">
-                            <property name="text">
-                              <string>Run name</string>
-                            </property>
-                          </widget>
-                        </item>
-                        <item row="0" column="1">
-                          <widget class="QLineEdit" name="run_name_">
-                            <property name="text">
-                              <string>trend</string>
-                            </property>
-                          </widget>
-                        </item>
-                        <item row="1" column="0">
-                          <widget class="QLabel" name="label_114">
-                            <property name="text">
-                              <string>Total results</string>
-                            </property>
-                          </widget>
-                        </item>
-                        <item row="1" column="1">
-                          <widget class="QgsFileWidget" name="total_result_">
-                            <property name="storageMode">
-                              <enum>QgsFileWidget::GetDirectory</enum>
-                            </property>
-                          </widget>
-                        </item>
-                      </layout>
-                    </widget>
-                  </widget>
-                </item>
-              </layout>
-            </widget>
-          </widget>
-        </item>
-      </layout>
-    </widget>
-  </widget>
-  <customwidgets>
-    <customwidget>
-      <class>QgsDoubleSpinBox</class>
-      <extends>QDoubleSpinBox</extends>
-      <header>qgsdoublespinbox.h</header>
-    </customwidget>
-    <customwidget>
-      <class>QgsFileWidget</class>
-      <extends>QWidget</extends>
-      <header>qgsfilewidget.h</header>
-      <container>1</container>
-    </customwidget>
-    <customwidget>
-      <class>QgsSpinBox</class>
-      <extends>QSpinBox</extends>
-      <header>qgsspinbox.h</header>
-    </customwidget>
-    <customwidget>
-      <class>RegionPicker</class>
-      <extends>QGroupBox</extends>
-      <header>enca_plugin/region_picker.h</header>
-      <container>1</container>
-    </customwidget>
-    <customwidget>
-      <class>IntList</class>
-      <extends>QLineEdit</extends>
-      <header location="global">enca_plugin/integerlist.h</header>
-    </customwidget>
-  </customwidgets>
-  <tabstops>
-    <tabstop>tier</tabstop>
-    <tabstop>run_types</tabstop>
-    <tabstop>year</tabstop>
-  </tabstops>
-  <resources />
-  <connections />
+                              <string>ECUadj - infrastructure</string>
+                             </property>
+                           </widget>
+                         </item>
+                         <item  row="6"  column="1">
+                           <widget  class="QLineEdit"  name="ECUadj_Infra_">
+                             <property  name="text">
+                               <string>1</string>
+                             </property>
+                           </widget>
+                         </item>
+                         <item  row="0"  column="0">
+                           <widget  class="QLabel"  name="label_112">
+                             <property  name="text">
+                               <string>Run name</string>
+                             </property>
+                           </widget>
+                         </item>
+                         <item  row="0"  column="1">
+                           <widget  class="QLineEdit"  name="run_name_">
+                             <property  name="text">
+                               <string>total</string>
+                             </property>
+                           </widget>
+                         </item>
+                       </layout>
+                     </widget>
+                     <widget  class="QWidget"  name="TREND_">
+                       <layout  class="QFormLayout"  name="formLayout_21">
+                         <item  row="0"  column="0">
+                           <widget  class="QLabel"  name="label_113">
+                             <property  name="text">
+                               <string>Run name</string>
+                             </property>
+                           </widget>
+                         </item>
+                         <item  row="0"  column="1">
+                           <widget  class="QLineEdit"  name="run_name_">
+                             <property  name="text">
+                               <string>trend</string>
+                             </property>
+                           </widget>
+                         </item>
+                         <item  row="1"  column="0">
+                           <widget  class="QLabel"  name="label_114">
+                             <property  name="text">
+                               <string>Total results</string>
+                             </property>
+                           </widget>
+                         </item>
+                         <item  row="1"  column="1">
+                           <widget  class="QgsFileWidget"  name="total_result_">
+                             <property  name="storageMode">
+                               <enum>QgsFileWidget::GetDirectory</enum>
+                             </property>
+                           </widget>
+                         </item>
+                       </layout>
+                     </widget>
+                   </widget>
+                 </item>
+               </layout>
+             </widget>
+           </widget>
+         </item>
+       </layout>
+     </widget>
+   </widget>
+   <customwidgets>
+     <customwidget>
+       <class>QgsDoubleSpinBox</class>
+       <extends>QDoubleSpinBox</extends>
+       <header>qgsdoublespinbox.h</header>
+     </customwidget>
+     <customwidget>
+       <class>QgsFileWidget</class>
+       <extends>QWidget</extends>
+       <header>qgsfilewidget.h</header>
+       <container>1</container>
+     </customwidget>
+     <customwidget>
+       <class>QgsSpinBox</class>
+       <extends>QSpinBox</extends>
+       <header>qgsspinbox.h</header>
+     </customwidget>
+     <customwidget>
+       <class>RegionPicker</class>
+       <extends>QGroupBox</extends>
+       <header>enca_plugin/region_picker.h</header>
+       <container>1</container>
+     </customwidget>
+     <customwidget>
+       <class>IntList</class>
+       <extends>QLineEdit</extends>
+       <header  location="global">enca_plugin/integerlist.h</header>
+     </customwidget>
+   </customwidgets>
+   <tabstops>
+     <tabstop>tier</tabstop>
+     <tabstop>run_types</tabstop>
+     <tabstop>year</tabstop>
+   </tabstops>
+   <resources  />
+   <connections  />
+
 </ui>
