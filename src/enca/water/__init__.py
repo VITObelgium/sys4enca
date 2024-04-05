@@ -131,7 +131,6 @@ class Water(enca.ENCARun):
 
         area_stats = self.area_stats()
         for year in self.years:
-            self.check_waterstats(water_stats, year)
             stats = self.selu_stats({key: water_config[key] for key in self.input_rasters if water_config[key]})
             stats[enca.AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
@@ -228,7 +227,7 @@ class Water(enca.ENCARun):
         return result.fillna(0)
 
     def check_waterstats(self, water_stats, year):
-        code = self.config[self.component]['LC_code_lakes']
+        code = self.config[self.component][LC_LAKES]
         if (code is not None) and (code != '') :
             import rasterio
             #now try to rasterize

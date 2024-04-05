@@ -1,8 +1,8 @@
+from datetime import datetime, timedelta, date
 import glob
 import logging
-import os
-
 import numpy as np
+import os
 import rasterio
 
 import enca
@@ -37,23 +37,36 @@ class DroughtVuln(enca.ENCARun):
             sum = 0
             count = 0
 
-            profile = None
-
-            nc_files = glob.glob(os.path.join(self.config[self.component][DROUGHT_CODE][year], '*.nc'))
+            nc_files = self.config[self.component][DROUGHT_CODE][year]
             logger.debug('Calculate drought code average for year %s.  Found %s netCDF input files.',
                          year, len(nc_files))
-            for f in nc_files:
-                with rasterio.open(f) as src:
-                    data = src.read(1)
-                    valid = data != src.nodata
+            with rasterio.open(nc_files) as src:
+                profile = src.profile
+                tags = src.tags()
+                time_units = tags.get('time#units').split(' since ')[0]
+                time_start = tags.get('time#units').split(' since ')[1].split('-')
+                refdate  =  date(int(time_start[0]), int(time_start[1]),int(time_start[2]))
+                times = tags.get('NETCDF_DIM_time_VALUES')[1:-1].split(',')
+                if 'sec' in time_units:
+                    time_coverage = [refdate + timedelta(seconds=int(secs)) for secs in times]
+                else:
+                    logger.error(f"The unit of the time dimension was expected to be in seconds however it is in {time_units}")
+
+
+                for i in range(profile.get('count')):
+                    if time_coverage[i].year != int(year):
+                        continue
+                    data = src.read(i +1)
+                    valid = (data != src.nodata) & (~np.isnan(data))
                     count += valid
                     sum += np.where(valid, data, 0)
-                    if profile is None:
-                        profile = src.profile
+
+
 
             annual = np.divide(sum, count, where=count != 0, out=sum)
             path_out = os.path.join(self.temp_dir(), f'drought_code_annual-average_{year}.tif')
             with rasterio.open(path_out, 'w', **dict(profile,
+                                                     count=1,
                                                      driver='Gtiff',
                                                      crs='EPSG:4326',
                                                      dtype=np.float32)) as dst:

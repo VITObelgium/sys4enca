@@ -94,17 +94,11 @@ class WaterPrecipEvapo(enca.ENCARun):
     def lta_annual_precipitation(self):
         worldclim_dir = self.config[self.component][_WORLDCLIM]
         worldclim_files = glob.glob(os.path.join(worldclim_dir, '*.tif'))
+        annual_precip = os.path.join(self.temp_dir(), 'WORLDCLIM_LTA_annual_precipitation_mm.tif')
 
         data = None
-        for f in worldclim_files:
-            with rasterio.open(f) as ds:
-                data_month = ds.read(1)
-                if data is None:  # first iteration
-                    out_profile = ds.profile
-                    data = np.zeros_like(data_month)
-                data[data_month > 0] += data_month[data_month > 0]
-
-        annual_precip = os.path.join(self.temp_dir(), 'WORLDCLIM_LTA_annual_precipitation_mm.tif')
+        worldclim_dss = [rasterio.open(f) for f in worldclim_files ]
+        out_profile = worldclim_dss[0].profile
         with rasterio.open(annual_precip, 'w',
                            **dict(out_profile,
                                   compress='lzw',
@@ -118,7 +112,14 @@ class WaterPrecipEvapo(enca.ENCARun):
                                NODATA_value=out_profile['nodata'],
                                VALUES='valid: > 0',
                                PIXEL_UNIT='mm water')
-            ds_out.write(data, 1)
+            for _, window in block_window_generator(_block_shape, ds_out.profile['height'], ds_out.profile['width']):
+                for idx, worldclim_ds in enumerate(worldclim_dss):
+                    data_month = worldclim_ds.read(1, window=window)
+                    if idx == 0:  # first iteration
+                        data = np.zeros_like(data_month)
+                    data[data_month > 0] += data_month[data_month > 0]
+
+                ds_out.write(data, 1, window=window)
 
         return self.accord.AutomaticBring2AOI(annual_precip, RasterType.ABSOLUTE_POINT, secure_run=True)
 

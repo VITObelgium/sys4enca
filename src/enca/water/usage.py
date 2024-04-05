@@ -57,6 +57,7 @@ class Usage(enca.ENCARun):
             agri_mask = self.prepare_agri_mask(year)
             # multiply agri mask with agri water consumption per country.
             # We use spatial disaggregation function for this, setting proxy_sums = 1.
+            # This seems to me to overly complicate things. Best to remove th proxy_sums and use the proxy_sums = None and total use (not per hectare) in new interation?
             data_agri = df_agri[f'AWWm3ha_{year}'] * pixel_area_ha
             path_agriusage = os.path.join(self.maps, f'NCA_WATER_AGRIusage_m3_{year}.tif')
             self.accord.spatial_disaggregation_byArea(agri_mask, data_agri,
