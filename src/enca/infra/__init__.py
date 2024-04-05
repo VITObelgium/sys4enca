@@ -537,24 +537,24 @@ class Infra(enca.ENCARun):
         self.river_buffer = RIVER_BUFFER
         #self.resolution = self.accord.
         base = os.path.splitext(os.path.basename(self.config["infra"]["gloric"]))[0]
-        self.riverSRMU = os.path.join(self.maps, base + '_log_SRMU.tif')
-        self.rawi_mask = os.path.join(self.temp_dir(), base + '.tif')
-        self.rawi_shape = os.path.join(self.temp_dir(), base + '.shp')
-        self.rawi_selu = os.path.join(self.maps, base + '_SRMU.shp')
+        self.riverSRMU = os.path.join(self.maps, base + f'_log_SRMU_EPSG{epsg}.tif')
+        self.rawi_mask = os.path.join(self.temp_dir(), base + f'_EPSG{epsg}.tif')
+        self.rawi_shape = os.path.join(self.temp_dir(), base + f'_EPSG{epsg}.shp')
+        self.rawi_selu = os.path.join(self.maps, base + f'_EPSG{epsg}_SRMU.shp')
         self.rawi = {}
         for year in self.years:
-            self.rawi[year] = os.path.join(self.maps, base + f'_SRMU_RAWI_{year}.tif')
+            self.rawi[year] = os.path.join(self.maps, base + f'_SRMU_RAWI_EPSG{epsg}_{year}.tif')
 
         #NATRIV
         #should be generalized to AOI or other shortnames
-        self.natriv = os.path.join(self.maps, f"{self.config['aoi_name']}_natriv_3857.tif")
+        self.natriv = os.path.join(self.maps, f"{self.config['aoi_name']}_natriv_EPSG{epsg}.tif")
 
         #FRAGRIV
-        self.fragriv = os.path.join(self.maps, f"{self.config['aoi_name']}_fragriv_3857.tif")
+        self.fragriv = os.path.join(self.maps, f"{self.config['aoi_name']}_fragriv_EPSG{epsg}.tif")
         self.fragriv_hybas = {}
         for basin in self.config["infra"]["catchments"].keys() :
             file = os.path.splitext(os.path.basename(self.config["infra"]["catchments"][basin]))[0]
-            self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + '_fragriv.tif')
+            self.fragriv_hybas[basin] = os.path.join(self.temp_dir(), file + f'_fragriv_EPSG{epsg}.tif')
 
         #accounting results
 

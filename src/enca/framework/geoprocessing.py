@@ -93,7 +93,7 @@ class Metadata(object):
         self.module = module
         self.master_tags = {"creator": creator,
                             "Module": self.module,
-                            "ENCA-version": version('sys4enca'),
+                            "ENCA-version": "1.0",
                             "software_raster_processing": "rasterio {} (on GDAL {}); "
                                                           "GDAL binary {}".format(rasterio.__version__,
                                                                                   rasterio.__gdal_version__,
@@ -1376,6 +1376,7 @@ class GeoProcessing(object):
         cmd = ['ogr2ogr', '-overwrite',
                '-t_srs', str(out_crs).replace('"', '\\"'),
                '-clipdst',  str(pextent.left), str(pextent.bottom), str(pextent.right), str(pextent.top),
+               '-nlt', 'POLYGON',
                outfile, infile]
 
         subprocess.run(cmd, check=True)
