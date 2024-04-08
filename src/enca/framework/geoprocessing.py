@@ -93,7 +93,7 @@ class Metadata(object):
         self.module = module
         self.master_tags = {"creator": creator,
                             "Module": self.module,
-                            "ENCA-version": "1.0",
+                            "ENCA-version": version('sys4enca'),
                             "software_raster_processing": "rasterio {} (on GDAL {}); "
                                                           "GDAL binary {}".format(rasterio.__version__,
                                                                                   rasterio.__gdal_version__,
