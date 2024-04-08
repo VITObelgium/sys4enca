@@ -1376,6 +1376,7 @@ class GeoProcessing(object):
         cmd = ['ogr2ogr', '-overwrite',
                '-t_srs', str(out_crs).replace('"', '\\"'),
                '-clipdst',  str(pextent.left), str(pextent.bottom), str(pextent.right), str(pextent.top),
+               '-nlt', 'POLYGON',
                outfile, infile]
 
         subprocess.run(cmd, check=True)
