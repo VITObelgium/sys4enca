@@ -1190,7 +1190,7 @@
                    <item row="0" column="1">
                     <widget class="QgsFileWidget" name="lut_ct_lc_">
                      <property name="filter">
-                      <string>CSV (*.csv);; All Files (*.*)</string>
+                      <string>All Files (*.*)</string>
                      </property>
                     </widget>
                    </item>
@@ -1204,7 +1204,7 @@
                    <item row="1" column="1">
                     <widget class="QgsFileWidget" name="lut_ct_lcf_">
                      <property name="filter">
-                      <string>CSV (*.csv);; All Files (*.*)</string>
+                      <string>All Files (*.*)</string>
                      </property>
                     </widget>
                    </item>
