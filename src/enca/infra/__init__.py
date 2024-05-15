@@ -158,7 +158,7 @@ class Infra(enca.ENCARun):
             else:
                 df[lColumns[idx]]= (stats["sum"]/stats['px_count']).values
 
-            pass
+
 
         #join with base table
         df2 = gpd.read_file(path_SELU)
@@ -434,7 +434,7 @@ class Infra(enca.ENCARun):
                 logger.info("leac information was manual added")
                 continue
             expected_path = os.path.join((self.maps).replace(self.component, 'leac'),
-                                         f'{os.path.basename(os.path.splitext(self.config["land_cover"][year])[0])}_PSCLC.tif')
+                                         f'{os.path.basename(os.path.splitext(self.config["land_cover"][year])[0])}_reclassified.tif')
             if not os.path.exists(expected_path):
                 logger.error('It seems that no input leac location was given and that the default location ' +\
                              f'{expected_path} does not contain a valid raster. please run leac module first.' )
@@ -456,8 +456,8 @@ class Infra(enca.ENCARun):
         self.leac_gbli_diff = dict()
 
         for year in self.years:
-            psclc = self.config["infra"]["leac_result"][year]
-            basic_file = os.path.splitext(os.path.basename(psclc))[0]
+            leac_results = self.config["infra"]["leac_result"][year]
+            basic_file = os.path.splitext(os.path.basename(leac_results))[0]
             file = f'{basic_file}_forest_mask.tif'
             self.leac_gbli_forest_mask[year] = os.path.join(self.temp_dir(),file)
             file = f'{basic_file}_gbli_nosm.tif'
@@ -574,7 +574,7 @@ class Infra(enca.ENCARun):
 
             self.config["land_cover"][ref_year] = self.config_template['infra'][REF_LANDCOVER].value
             expected_path = os.path.join(self.maps.replace(self.component, 'leac'),
-                                         f'{os.path.splitext(os.path.basename(self.config["land_cover"][ref_year]))[0]}_PSCLC.tif')
+                                         f'{os.path.splitext(os.path.basename(self.config["land_cover"][ref_year]))[0]}_reclassified.tif')
             if not os.path.exists(expected_path):
                 logger.error(f'It seems that leac was not yet run for {ref_year} ' + \
                              f'{expected_path} does not contain a valid raster. please run leac module first.' )
@@ -582,7 +582,7 @@ class Infra(enca.ENCARun):
                 self.config['infra']['leac_result'][ref_year] = expected_path
 
             ref_land = self.config_template["infra"][REF_LANDCOVER].value
-            basic_file =  os.path.splitext(os.path.basename(ref_land))[0]  + '_PSCLC'
+            basic_file =  os.path.splitext(os.path.basename(ref_land))[0]  + '_reclassified'
             file = f'{basic_file}_gbli_sm{smoothing_settings}.tif'
             expected_path = os.path.join(self.temp_dir(),file)
             if not os.path.exists(expected_path):
