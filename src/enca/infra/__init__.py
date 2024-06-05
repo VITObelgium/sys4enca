@@ -14,17 +14,16 @@ from enca.framework.geoprocessing import statistics_byArea, norm_1, SHAPE_ID
 
 logger = logging.getLogger(__name__)
 RIVER_BUFFER = 100
-INDICES = {'l1': 'Reference raster',
-           'l2': 'Burnt area',
-           'l3': 'Ecosystem vulnerability',
-           'l4': 'Species extinction index',
-           'l5': 'Mean species abundance',
-           'l6': 'Biodiversity intactness index',
-           'l7': 'Fire vulnerability',
-           'l8': 'Mine pollution risk',
-           'l9': 'Population statistics',
-           'l10': 'Fire density indicator',
-           'l11': 'Fauna density indicator'}
+INDICES = {'l1': 'Burnt area',
+           'l2': 'Ecosystem vulnerability',
+           'l3': 'Species extinction index',
+           'l4': 'Mean species abundance',
+           'l5': 'Biodiversity intactness index',
+           'l6': 'Fire vulnerability',
+           'l7': 'Mine pollution risk',
+           'l8': 'Population statistics',
+           'l9': 'Fire density indicator',
+           'l10': 'Fauna density indicator'}
 
 REF_YEAR = 'ref_year'
 REF_LANDCOVER = 'ref_landcover'
@@ -116,25 +115,25 @@ class Infra(enca.ENCARun):
 
         #TODO move to yaml incl key to indicate layer for indexing
         #note indexing the layer starts from 0
-        # Layer-1 = Dummy
-        # Layer-2 = Burnt Area (ad_8)
-        # Layer-3 = Ecosystem Vulnerability (ad_6)
-        # Layer-4 = Species Extinction Index (ad_7)
-        # Layer-5 = Mean Species Abundance (ad_5)
-        # Layer-6 = Biodiversity Intactness Index (ad_4)
-        # Layer-7 = Fire Vulnerability (ad_9)
-        # Layer-8 = Mine Pollution Risk (ad_10)
-        # Layer-9 = Population statsitcs (ad_3)
+        # Layer-1 = Burnt Area (ad_8)
+        # Layer-2 = Ecosystem Vulnerability (ad_6)
+        # Layer-3 = Species Extinction Index (ad_7)
+        # Layer-4 = Mean Species Abundance (ad_5)
+        # Layer-5 = Biodiversity Intactness Index (ad_4)
+        # Layer-6 = Fire Vulnerability (ad_9)
+        # Layer-7 = Mine Pollution Risk (ad_10)
+        # Layer-8 = Population statsitcs (ad_3)
         paths= [path for path in self.config["infra"]["paths_indices"].values()]
         keys = [keys for keys in self.config["infra"]["paths_indices"].keys()]
-        rename_dict= {'l1':'dummy','l2':'ad_8','l3':'ad_6',
-                      'l4':'ad_7','l5':'ad_5','l6':'ad_4',
-                      'l7':'ad_9','l8':'ad_10','l9':'ad_3',
-                      'l10':'ad_11','l11':'ad_12'}
-        function = {'l1':None, 'l2':None, 'l3':norm_1,
-                    'l4':norm_1, 'l5':None, 'l6':None,
-                    'l7':None,'l8':None,'l9':None,
-                    'l10':None,'l11':None}
+        rename_dict= {'l1':'ad_8','l2':'ad_6',
+                      'l3':'ad_7','l4':'ad_5','l5':'ad_4',
+                      'l6':'ad_9','l7':'ad_10','l8':'ad_3',
+                      'l9':'ad_11','l10':'ad_12'}
+        function = {'l1':None, 'l2':norm_1,
+                    'l3':norm_1, 'l4':None,
+                    'l5':None, 'l6':None,
+                    'l7':None, 'l8':None, 'l9':None,
+                    'l10':None}
         lColumns= [rename_dict.get(key) for key in keys]
 
 
@@ -148,12 +147,12 @@ class Infra(enca.ENCARun):
                                       self.statistics_shape[SHAPE_ID]
                                       , transform=function[keys[idx]])
             stats.index = stats.index.astype(str)
-            if keys[idx] == 'l5':
+            if keys[idx] == 'l4':
                 stats["sum"] = stats["sum"] *1.5
-            elif keys[idx] == 'l11':
+            elif keys[idx] == 'l10':
                 stats["sum"] = stats["sum"] *10
             stats.index.names = [ID_FIELD]
-            if keys[idx] in ['l2','l9']:
+            if keys[idx] in ['l1','l8']:
                 df[lColumns[idx]] = (stats["sum"]*pix2ha).values
             else:
                 df[lColumns[idx]]= (stats["sum"]/stats['px_count']).values
@@ -558,9 +557,9 @@ class Infra(enca.ENCARun):
 
         #accounting results
 
-        self.path_results_eip = {year: os.path.join(self.temp_dir(), 'NCA_INFRA-EIP_SELU_{}.shp'.format(year))
+        self.path_results_eip = {year: os.path.join(self.temp_dir(), 'NCA_INFRA-EIP_SELU_{}.gpkg'.format(year))
                                  for year in self.years}
-        self.path_results_infra = {year: os.path.join(self.maps, 'NCA_INFRA_SELU_{}.shp'.format(year))
+        self.path_results_infra = {year: os.path.join(self.maps, 'INFRA_Indices_SELU_{}.gpkg'.format(year))
                                    for year in self.years}
         self.path_results_infra_csv = {year: os.path.join(self.temp_dir(), 'NCA_INFRA_SELU_{}.csv'.format(year))
                                        for year in self.years}
