@@ -1987,7 +1987,7 @@ def norm_1(raster):
     #function normalizes and inverts value
     return 1 / (1 + raster/100)
 
-def add_color(file, ctable, path, type = 'Byte'):
+def add_color(file, ctable, type = 'Byte'):
         from osgeo import gdal
         if type == 'Byte':
             max = 255

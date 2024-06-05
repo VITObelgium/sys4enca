@@ -142,7 +142,7 @@ class Water(enca.ENCARun):
             indices.to_csv(os.path.join(self.statistics, f'{self.component}_indices_{year}.csv'))
 
             stats_shape_selu = self.statistics_shape.join(indices)
-            stats_shape_selu.to_file(os.path.join(self.temp_dir(), f'{self.component}_Indices_SELU_{year}.gpkg'))
+            stats_shape_selu.to_file(os.path.join(self.maps, f'{self.component}_Indices_SELU_{year}.gpkg'))
 
             self.write_selu_maps(['W15', 'W2', 'W3', 'W4', 'W6', 'W7', 'W8', 'W9', 'W13', 'W14'],
                                  stats_shape_selu, year)
