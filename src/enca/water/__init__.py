@@ -120,7 +120,7 @@ class Water(enca.ENCARun):
 
         self.input_rasters = [PRECIPITATION, EVAPO, USE_MUNI, USE_AGRI, DROUGHT_VULN, EVAPO_RAINFED,
                               RIVER_LENGTH, LT_PRECIPITATION, LT_EVAPO]
-
+        self.check_leac()
     def _start(self):
         water_config = self.config[self.component]
 
@@ -233,7 +233,7 @@ class Water(enca.ENCARun):
             #now try to rasterize
             LC_lakes = os.path.join(self.temp_dir(), f'Lakes_obtained_from_LC_{year}.tif')
             with rasterio.open(LC_lakes, 'w', **self.accord.ref_profile) as dst, \
-                    rasterio.open(self.config['land_cover'][year]) as src:
+                    rasterio.open(self.config["water"]["leac_result"]) as src:
                 for _, window in block_window_generator( (4096,4096), src.profile['height'], src.profile['width']):
                     output = src.read(1, window =window) == code
                     dst.write(output, 1, window =window)

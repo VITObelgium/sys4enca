@@ -45,8 +45,8 @@ class Infra(enca.ENCARun):
                 "general" : {
                     "gaussian_kernel_radius": ConfigItem(default=10),
                     "gaussian_sigma": ConfigItem(default=50),
-                    "lc_urban" : ConfigItem(),
-                    "lc_water" : ConfigItem(default = [51])
+                    "lc_urban" : ConfigItem(default = 0),
+                    "lc_water" : ConfigItem(default = [12])
                 },
                 "lut_gbli" : ConfigItem(),
                 "tree_cover" : {YEARLY : ConfigRaster(optional=True)},
@@ -425,20 +425,6 @@ class Infra(enca.ENCARun):
         #lExtract = [x for x in df.columns if '_'+str(year) in x]
         path_out = os.path.join(self.temp_dir(),'NCA_INFRA-EIP_{}_SELU_{}.csv'.format(self.aoi_name,year))
         df.to_csv(path_out, na_rep=0, index=True)
-
-    def check_leac(self):
-        logger.info("Checking if LEAC is available")
-        for year in self.years:
-            if year in self.config.get("infra", {}).get("leac_result", []):
-                logger.info("leac information was manual added")
-                continue
-            expected_path = os.path.join((self.maps).replace(self.component, 'leac'),
-                                         f'{os.path.basename(os.path.splitext(self.config["land_cover"][year])[0])}_reclassified.tif')
-            if not os.path.exists(expected_path):
-                logger.error('It seems that no input leac location was given and that the default location ' +\
-                             f'{expected_path} does not contain a valid raster. please run leac module first.' )
-            else:
-                self.config.update({self.component : {'leac_result' : {year : expected_path}}})
 
     def make_output_filenames(self):
         #easier typing

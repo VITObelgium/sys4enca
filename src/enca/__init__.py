@@ -312,6 +312,19 @@ class ENCARun(Run):
             results = pd.merge(self.load_lut(), results, left_index=True, right_index=True)
             results.to_csv(os.path.join(self.reports, f'NCA_{self.component}_report_{area.Index}_{year}.csv'))
 
+    def check_leac(self):
+            logger.info("Checking if LEAC is available")
+        for year in self.years:
+            if year in self.config.get("infra", {}).get("leac_result", []):
+                logger.info("leac information was manual added")
+                continue
+            expected_path = os.path.join((self.maps).replace(self.component, 'leac'),
+                                         f'{os.path.basename(os.path.splitext(self.config["land_cover"][year])[0])}_reclassified.tif')
+            if not os.path.exists(expected_path):
+                logger.error('It seems that no input leac location was given and that the default location ' + \
+                             f'{expected_path} does not contain a valid raster. please run leac module first.' )
+            else:
+                self.config.update({self.component : {'leac_result' : {year : expected_path}}})
     @classmethod
     def load_lut(cls):
         """Return a `pd.DataFrame` with the index codes and their descriptions."""
