@@ -7,6 +7,7 @@ import logging
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+from scipy.optimize import least_squares
 
 import enca
 from enca.framework.config_check import ConfigItem
@@ -95,6 +96,8 @@ def calc_slope_wrapper(row, years):
     if np.inf in row.values:
         # could happen if no information was available for ref. year 2000
         return np.nan
+    if np.all(np.isnan(row.values)):
+        return np.nan
     slope_prct, delta = calc_slope(row.values, years)
     return slope_prct.values[0]
 
@@ -103,14 +106,29 @@ def calc_slope(row, years):
     """Calculate a linear least-squares regression for two sets of measurements (x=values, y=years)."""
     # row_n = row/row[0]      #normalize
     # row2= [470561.71054194274,479377.67820375453,526848.138581338,545165.6345489196,507730.43297329283]
-    a = stats.linregress(years, y=row)  # TODO need to get the dates from years
-    # returns slope, intercept, rvalue, pvalue, stderr  #a._asdict()
+# TODO need to get the dates from years
+    #try something more robust for outliers
+    def fun(x, t ,y):
+        return x[0]*t + x[1] - y
+    x0 = np.array([0.1,1000])
+    #get some variable f_scale
+    data = np.array(row)
+    f_scale = (np.max(data)-np.min(data))*0.1 +0.01
+    if True:
+        res_log = least_squares(fun, x0, loss='soft_l1', f_scale=f_scale, args=(np.array(years) , row))
+        t_start2 = years[0] * res_log.x[0] + res_log.x[1]
+        t_end2 = years[-1] * res_log.x[0] + res_log.x[1]
+        slope = (t_end2 - t_start2)/t_start2
+        delta = (t_end2 - t_start2)
 
-    # calculate trend_start (1st year) & trend_end (last year)
-    t_start = years[0] * a.slope + a.intercept
-    t_end = years[-1] * a.slope + a.intercept
-    slope = (t_end - t_start)/t_start
-    delta = (t_end - t_start)
+    else:
+        # returns slope, intercept, rvalue, pvalue, stderr  #a._asdict()
+        a = stats.linregress(years, y=row)
+        # calculate trend_start (1st year) & trend_end (last year)
+        t_start = years[0] * a.slope + a.intercept
+        t_end = years[-1] * a.slope + a.intercept
+        slope = (t_end - t_start)/t_start
+        delta = (t_end - t_start)
 
     # print(stats.pearsonr(years, y=row))
     # r-value is correlation coefficient, p-value is two-sided p-value for a hypothesis test whose null hypothesis is
