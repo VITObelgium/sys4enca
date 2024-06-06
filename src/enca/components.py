@@ -1,24 +1,25 @@
 """Registry of all available ENCA components."""
 
+from enca.framework.config_check import ConfigError
+
+from .carbon import Carbon
+from .carbon.agriculture import CarbonAgriculture
 from .carbon.fire import CarbonFire
 from .carbon.fire_vuln import CarbonFireVulnerability
-from .carbon.agriculture import CarbonAgriculture
 from .carbon.forest import CarbonForest
-from .carbon.npp import CarbonNPP
 from .carbon.livestock import CarbonLivestock
+from .carbon.npp import CarbonNPP
 from .carbon.soil import CarbonSoil
 from .carbon.soil_erosion import CarbonErosion
-from .carbon import Carbon
 from .infra import Infra
 from .leac import Leac
-from .water import Water
-from .water.precipitation_evapotranspiration import WaterPrecipEvapo
-from .water.usage import Usage
-from .water.drought_vuln import DroughtVuln
-from .water.river_length_pixel import RiverLength
 from .total import Total
 from .trend import Trend
-from enca.framework.config_check import ConfigError
+from .water import Water
+from .water.drought_vuln import DroughtVuln
+from .water.precipitation_evapotranspiration import WaterPrecipEvapo
+from .water.river_length_pixel import RiverLength
+from .water.usage import Usage
 
 COMPONENT = 'component'
 _run_components = {CarbonAgriculture, CarbonFire, CarbonFireVulnerability, CarbonForest, CarbonLivestock, CarbonNPP,
@@ -31,25 +32,44 @@ _run_components = {CarbonAgriculture, CarbonFire, CarbonFireVulnerability, Carbo
 # name.
 _component_registry = {cls.component: cls for cls in _run_components}
 
-
 # Dict of descriptive names for components:
 _component_long_names = {
-    CarbonAgriculture.component: 'Carbon: agriculture (harvest)',
-    CarbonNPP.component: 'Carbon: vegetation productivity (NPP)',
-    CarbonForest.component: 'Carbon: forest stock and wood removal',
-    CarbonFire.component: 'Carbon: fire emission',
-    CarbonErosion.component: 'Carbon: soil erosion',
-    CarbonLivestock.component: 'Carbon: livestock',
-    CarbonSoil.component: 'Carbon: soil stock',
-    CarbonFireVulnerability.component: 'Carbon: fire vulnerability index',
-    WaterPrecipEvapo.component: 'Water: Precipitation & Evapotranspiration',
-    Usage.component: 'Water: Usage',
-    RiverLength.component: 'Water: River length',
-    DroughtVuln.component: 'Water: Drought vulnerability',
-    Carbon.component: 'Carbon',
-    Water.component: 'Water',
-    Infra.component: 'Infrastructure',
-    Leac.component: 'Landcover'
+    CarbonAgriculture.component: {
+        "en": "Carbon: agriculture (harvest)",
+        "fr": "Carbone : agriculture (récolte)",
+    },
+    CarbonNPP.component: {
+        "en": "Carbon: vegetation productivity (NPP)",
+        "fr": "Carbone : productivité de la végétation (PNB)",
+    },
+    CarbonForest.component: {
+        "en": "Carbon: forest stock and wood removal",
+        "fr": "Carbone : stock forestier et prélèvement de bois",
+    },
+    CarbonFire.component: {"en": "Carbon: fire emission", "fr": "Carbone : émission de feu"},
+    CarbonErosion.component: {"en": "Carbon: soil erosion", "fr": "Carbone : érosion du sol"},
+    CarbonLivestock.component: {"en": "Carbon: livestock", "fr": "Carbone : bétail"},
+    CarbonSoil.component: {"en": "Carbon: soil stock", "fr": "Carbone : stock de sol"},
+    CarbonFireVulnerability.component: {
+        "en": "Carbon: fire vulnerability index",
+        "fr": "Carbone : indice de vulnérabilité au feu",
+    },
+    WaterPrecipEvapo.component: {
+        "en": "Water: Precipitation & Evapotranspiration",
+        "fr": "Eau : Précipitations & Évapotranspiration",
+    },
+    Usage.component: {"en": "Water: Usage", "fr": "Eau : Utilisation"},
+    RiverLength.component: {"en": "Water: River length", "fr": "Eau : Longueur de la rivière"},
+    DroughtVuln.component: {
+        "en": "Water: Drought vulnerability",
+        "fr": "Eau : Vulnérabilité à la sécheresse",
+    },
+    Carbon.component: {"en": "Carbon", "fr": "Carbone"},
+    Water.component: {"en": "Water", "fr": "Eau"},
+    Infra.component: {"en": "Infrastructure", "fr": "Infrastructure"},
+    Leac.component: {"en": "Landcover", "fr": "Couverture des terres"},
+    Total.component: {"en": "Total", "fr": "Total"},
+    Trend.component: {"en": "Trend", "fr": "Tendance"},
 }
 
 
@@ -75,7 +95,15 @@ def get_component(component_name):
     return _component_registry[component_name]
 
 
-def get_component_long_name(component_name):
-    """Return a human-readable name of the component with the given name."""
-    # return entry from _component_long_names if it exists, otherwise return input name
-    return _component_long_names.get(component_name, component_name)
+def get_component_long_name(component_key, locale="en"):
+    """
+    Fetches the component name in the specified language.
+
+    :param component_key: The key identifier for the component.
+    :param lang: The language code ('en' for English, 'fr' for French).
+    :return: The name of the component in the specified language.
+    """
+    # The locale is usually in the format 'en_US', 'fr_FR', etc.
+    # If you only need the first two characters (e.g., 'en', 'fr')
+    language_code = locale[0:2]
+    return _component_long_names.get(component_key, {}).get(language_code, "Unknown Component")

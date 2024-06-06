@@ -48,7 +48,7 @@ class RAWI(object):
     def assign_RELU(self):
 
         #overwriting input
-        outfile = os.path.splitext(self.rawi_shape)[0]+'_'+str(self.reporting_profile_epsg)+'.shp'
+        outfile = os.path.splitext(self.rawi_shape)[0]+'.shp'
         self.rawi_shape = outfile
 
         #TODO move to lut table

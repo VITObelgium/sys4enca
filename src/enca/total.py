@@ -81,6 +81,9 @@ class Total(enca.ENCARun):
         config = self.config[self.component]
         carbon_indices = os.path.join(config['carbon_result'], 'statistics', f'{Carbon.component}_indices_{year}.csv')
         water_indices = os.path.join(config['water_result'], 'statistics', f'{Water.component}_indices_{year}.csv')
+        #temporary patch MDG
+        #if year == 2015:
+        #    water_indices = os.path.join(config['water_result'], 'statistics', f'{Water.component}_indices_2021.csv')
         infra_indices = os.path.join(config['infra_result'], 'temp', f'NCA_INFRA_SELU_{year}.csv')
 
         df_carbon = pd.read_csv(carbon_indices)
@@ -114,9 +117,9 @@ class Total(enca.ENCARun):
             df['WEIUV'] = df['WEH'] * df['SIWU']
 
         # normalize
-        df['NECP_n'] = df['NECP'] / config['ECUadj_Carbon']  # (Scaled) gross capability
-        df['NEWP_n'] = df['NEWP'] / config['ECUadj_Water']
-        df['TEIP_n'] = df['TEIP'] / config['ECUadj_Infra']
+        df['NECP_n'] = df['NECP'] / float(config['ECUadj_Carbon'])  # (Scaled) gross capability
+        df['NEWP_n'] = df['NEWP'] / float(config['ECUadj_Water'])
+        df['TEIP_n'] = df['TEIP'] / float(config['ECUadj_Infra'])
 
         # calculate ECU
         df['ECU'] = (df['CEIUV'] + df['WEIUV'] + df['EIIUV']) / 3  # unit-less
