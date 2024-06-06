@@ -313,7 +313,7 @@ class ENCARun(Run):
             results.to_csv(os.path.join(self.reports, f'NCA_{self.component}_report_{area.Index}_{year}.csv'))
 
     def check_leac(self):
-            logger.info("Checking if LEAC is available")
+        logger.info("Checking if LEAC is available")
         for year in self.years:
             if year in self.config.get("infra", {}).get("leac_result", []):
                 logger.info("leac information was manual added")

@@ -169,13 +169,12 @@ class Leac(enca.ENCARun):
                 profile2 = profile.copy()
                 profile2['dtype'] = np.uint16
                 with rasterio.open(self.leac_recl[year], 'w', **dict(profile, nodata = nodata)) as ds_out:
-                    dstdst.write_colormap(1,colormap)
                     for _, window in block_window_generator((2048,2048), ds_open.height, ds_open.width):
                         aBlock = ds_open.read(1, window=window, masked=True)
                         #Doesn't seem a nodata value was set
                         reclassified, dict_classes  = reclassification(aBlock, reclass_dict, nodata, nodata)
                         ds_out.write(reclassified, window=window, indexes=1)
-                add_color(self.leac_recl[year], ctfile, 'Byte')
+                add_color(self.leac_recl[year], self.config[self.component]['lut_ct_lc'], 'Byte')
 
         logger.debug("** Land cover reclassified ...")
 
@@ -234,8 +233,8 @@ class Leac(enca.ENCARun):
 
             reclass_dict = CSV_2_dict(self.config['leac']['lut_lcflows'], old_class='LC_CHANGE', new_class='ID_lcflows')
 
-            with rasterio.open(self.config["land_cover"][year], 'r') as ds_open1, \
-                    rasterio.open(self.config["land_cover"][ref_year],'r') as ds_open2:
+            with rasterio.open(self.leac_recl[year], 'r') as ds_open1, \
+                    rasterio.open(self.leac_recl[ref_year],'r') as ds_open2:
                 profile = ds_open1.profile
                 if profile["nodata"]:
                     nodata = profile["nodata"]
@@ -261,7 +260,7 @@ class Leac(enca.ENCARun):
 
         #C. Calculate the consumption (ref year) and formation (new year) raster + table
         for idx, year in enumerate(self.years):
-            for idy, grid_in in enumerate([self.config["land_cover"][year], self.config["land_cover"][ref_year]]):
+            for idy, grid_in in enumerate([self.leac_recl[year], self.leac_recl[ref_year]]):
                 if idy == 0:
                     account = self.lcf_cons[year]
                 else:
