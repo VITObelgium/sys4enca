@@ -41,9 +41,9 @@ class Leac(enca.ENCARun):
         df = pd.read_csv(self.config['leac']['lut_lc'], comment='#')
         self.config['leac']['max_lc_classes'] = df['RANK'].max()
 
-        #1. Clip land cover maps for region and reclassify
-        self.clip_reclassify()
-        logger.debug("** LANDCOVER clipped ready ...\n\n")
+        #1. reclassify land cover maps
+        self.reclassify()
+        logger.debug("** LANDCOVER reclassification ready ...\n\n")
 
         if self.config['leac'][REF_YEAR]:
             #2. Calculate land cover change in ha
@@ -150,21 +150,7 @@ class Leac(enca.ENCARun):
 
         df.to_csv(table_out, sep=',')
 
-    def clip_reclassify(self):
-        #function to clip the land cover maps to Area of Interest (region) and reclassify classes to subsequent numbering scheme
-        for year in self.years:
-            if os.path.exists(self.leac_clipped[year]):
-                pass
-                #continue
-
-            self.accord.Bring2AOI(self.config["land_cover"][year], path_out = self.leac_clipped[year])
-
-            #let's now translate to colored geotiff
-            ctfile = self.config['leac']['lut_ct_lc']  #'/data/nca_vol1/qgis/legend_CGLOPS_NCA_L2-fr.txt'
-            tiffile = add_color(self.leac_clipped[year], ctfile, self.leac_clipped[year].replace('.tif','_color.tif'), 'Byte')
-
-            #2 - reclassify
-            #perform first a reclassification to LCEU (PS-CLC) if data source not yet prepared
+    def reclassify(self):
 
         for year in self.years:
             if os.path.exists(self.leac_recl[year]):
@@ -172,7 +158,7 @@ class Leac(enca.ENCARun):
 
             reclass_dict = CSV_2_dict(self.config['leac']['lut_lc'], old_class='CD', new_class='RANK')
 
-            with rasterio.open(self.leac_clipped[year], 'r') as ds_open:
+            with rasterio.open(self.config["land_cover"][year], 'r') as ds_open:
                 profile = ds_open.profile
                 #from here driver should allways be gtiff
                 profile['driver'] = 'GTiff'
@@ -188,8 +174,9 @@ class Leac(enca.ENCARun):
                         #Doesn't seem a nodata value was set
                         reclassified, dict_classes  = reclassification(aBlock, reclass_dict, nodata, nodata)
                         ds_out.write(reclassified, window=window, indexes=1)
+                add_color(self.leac_recl[year], self.config[self.component]['lut_ct_lc'], 'Byte')
 
-        logger.debug("** Land cover clipped and reclassified ...")
+        logger.debug("** Land cover reclassified ...")
 
     def calc_lc_changes(self):
         ref_year = self.ref_year
@@ -246,8 +233,8 @@ class Leac(enca.ENCARun):
 
             reclass_dict = CSV_2_dict(self.config['leac']['lut_lcflows'], old_class='LC_CHANGE', new_class='ID_lcflows')
 
-            with rasterio.open(self.leac_clipped[year], 'r') as ds_open1, \
-                    rasterio.open(self.leac_clipped[ref_year],'r') as ds_open2:
+            with rasterio.open(self.leac_recl[year], 'r') as ds_open1, \
+                    rasterio.open(self.leac_recl[ref_year],'r') as ds_open2:
                 profile = ds_open1.profile
                 if profile["nodata"]:
                     nodata = profile["nodata"]
@@ -267,13 +254,13 @@ class Leac(enca.ENCARun):
             # post-process output data
             # let's now translate to colored geotiff
             ctfile = self.config['leac']['lut_ct_lcf']
-            tiffile = add_color(self.lcf[year], ctfile, self.lcf[year].replace('.tif','_color.tif'), 'Byte')
+            add_color(self.lcf[year], ctfile, 'Byte')
 
 
 
         #C. Calculate the consumption (ref year) and formation (new year) raster + table
         for idx, year in enumerate(self.years):
-            for idy, grid_in in enumerate([self.leac_clipped[year], self.leac_clipped[ref_year]]):
+            for idy, grid_in in enumerate([self.leac_recl[year], self.leac_recl[ref_year]]):
                 if idy == 0:
                     account = self.lcf_cons[year]
                 else:
@@ -338,7 +325,6 @@ class Leac(enca.ENCARun):
 
 
     def make_output_filenames(self):
-        self.leac_clipped = {}
         self.leac_recl = {}
         self.leac_change = {}
         self.final_tab = {}
@@ -358,7 +344,7 @@ class Leac(enca.ENCARun):
                 self.leac_change[year] = os.path.join(self.temp_dir(),f'LEAC-change_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.final_tab[year] = os.path.join(self.reports,f'LEAC-change_{self.aoi_name}_{year}-{ref_year}_final.csv')
                 self.lcc[year] = self.leac_change[year].replace('.tif','_4digits.tif')
-                self.lcf[year] = os.path.join(self.temp_dir(),f'LEAC-flow_{self.aoi_name}_{year}-{ref_year}.tif')
+                self.lcf[year] = os.path.join(self.maps,f'LEAC-flow_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lcf_cons[year] = os.path.join(self.temp_dir(),f'LCF_{str(year)}_consumption_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lcf_form[year] = os.path.join(self.temp_dir(),f'LCF_{str(year)}_formation_{self.aoi_name}_{year}-{ref_year}.tif')
                 self.lc_cons[year] = os.path.join(self.maps, f'LEAC_consumption_{str(year)}_{self.aoi_name}_{year}-{ref_year}.tif')
@@ -369,7 +355,6 @@ class Leac(enca.ENCARun):
             else : years = self.years
 
         for idx,year in enumerate(years):
-            self.leac_clipped[year] = os.path.join(self.temp_dir(), os.path.basename(self.config["land_cover"][year]))
             self.leac_recl[year] = os.path.splitext(os.path.join(self.maps, os.path.basename(self.config["land_cover"][year])))[0] \
                                    + '_reclassified.tif'
 

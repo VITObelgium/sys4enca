@@ -39,7 +39,9 @@ class Usage(enca.ENCARun):
                            'y2005': ConfigItem(optional=True),
                            'y2010': ConfigItem(optional=True),
                            'y2015': ConfigItem(optional=True),
-                           'y2020': ConfigItem(optional=True)},
+                           'y2020': ConfigItem(optional=True),
+                           'y2025': ConfigItem(optional=True),
+                           'y2030': ConfigItem(optional=True)},
                 _MUNICIPAL: ConfigItem(check_function=check_csv, delimiter=';'),
                 _AGRICULTURAL: ConfigItem(check_function=check_csv, delimiter=';'),
                 _LC_AGRI: ConfigItem(default=[20])
