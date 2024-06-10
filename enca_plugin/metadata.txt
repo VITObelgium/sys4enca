@@ -4,14 +4,14 @@
 name=ENCA
 qgisMinimumVersion=3.0
 description=Ecosystem accounting plugin
-version=0.1
+version=2.1.0
 author=VITO
 email=thomas.danckaert@vito.be
 
 about=Calculate natural capital accounts for land use, infrastructure, water and carbon.  Revision $Format:%h$.
 
-tracker=http://bugs
-repository=http://git.vito.be
+tracker=https://github.com/VITObelgium/sys4enca/issues
+repository=https://github.com/VITObelgium/sys4enca
 # End of mandatory metadata
 
 # Recommended items:
@@ -23,7 +23,7 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=python
 
-homepage=http://homepage
+homepage=https://papbio.vito.be/en/sys4enca-tool
 category=Plugins
 icon=icon.png
 # experimental flag
