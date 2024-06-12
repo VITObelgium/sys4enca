@@ -124,8 +124,9 @@ class Water(enca.ENCARun):
 
         self.input_rasters = [PRECIPITATION, EVAPO, USE_MUNI, USE_AGRI, DROUGHT_VULN, EVAPO_RAINFED,
                               RIVER_LENGTH, LT_PRECIPITATION, LT_EVAPO]
-        self.check_leac()
+
     def _start(self):
+        self.check_leac()
         water_config = self.config[self.component]
 
         water_stats = self.additional_water_stats()

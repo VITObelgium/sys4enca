@@ -59,9 +59,11 @@ class Infra(enca.ENCARun):
                 "gloric" : ConfigShape(),
                 'leac_result' : {YEARLY : ConfigRaster(optional = True)},
             }})
-        self.check_leac()
+
 
     def _start(self):
+        logger.debug("check leac")
+        self.check_leac()
 
         logger.debug('Hello from ENCA Infra')
         self.make_output_filenames()
