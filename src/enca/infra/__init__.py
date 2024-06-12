@@ -41,11 +41,11 @@ class Infra(enca.ENCARun):
                 REF_YEAR: ConfigItem(optional=True),
                 REF_LANDCOVER: ConfigRaster(optional=True),
                 "paths_indices" :
-                    {layer: ConfigRaster(optional=True) for layer in INDICES},
+                    {layer: {YEARLY: ConfigRaster(optional=True)} for layer in INDICES},
                 "general" : {
                     "gaussian_kernel_radius": ConfigItem(default=10),
                     "gaussian_sigma": ConfigItem(default=50),
-                    "lc_urban" : ConfigItem(default = 0),
+                    "lc_urban" : ConfigItem(default = 1),
                     "lc_water" : ConfigItem(default = [12])
                 },
                 "lut_gbli" : ConfigItem(),
@@ -111,7 +111,7 @@ class Infra(enca.ENCARun):
         lColumns = []
 
         #remove keys with none or empty value
-        self.config["infra"]["paths_indices"] = {k: v for k, v in self.config["infra"]["paths_indices"].items() if v}
+        self.config["infra"]["paths_indices_cleaned"] = {k: v[year] for k, v in self.config["infra"]["paths_indices"].items() if v[year]}
 
         #TODO move to yaml incl key to indicate layer for indexing
         #note indexing the layer starts from 0
@@ -123,8 +123,8 @@ class Infra(enca.ENCARun):
         # Layer-6 = Fire Vulnerability (ad_9)
         # Layer-7 = Mine Pollution Risk (ad_10)
         # Layer-8 = Population statsitcs (ad_3)
-        paths= [path for path in self.config["infra"]["paths_indices"].values()]
-        keys = [keys for keys in self.config["infra"]["paths_indices"].keys()]
+        paths= [path for path in self.config["infra"]["paths_indices_cleaned"].values()]
+        keys = [keys for keys in self.config["infra"]["paths_indices_cleaned"].keys()]
         rename_dict= {'l1':'ad_8','l2':'ad_6',
                       'l3':'ad_7','l4':'ad_5','l5':'ad_4',
                       'l6':'ad_9','l7':'ad_10','l8':'ad_3',
@@ -233,7 +233,7 @@ class Infra(enca.ENCARun):
 
         # save to disk
         logger.debug('** save to disk shapefile')
-        df.to_file(self.path_results_infra[year], driver='ESRI Shapefile')
+        df.to_file(self.path_results_infra[year])
 
         # now drop geometry polygons to write out csv
         df.drop('geometry', axis=1)
@@ -414,7 +414,7 @@ class Infra(enca.ENCARun):
 
         # save to disk
         logger.debug('** save to disk shapefile')
-        df.to_file(self.path_results_eip[year], driver='ESRI Shapefile')
+        df.to_file(self.path_results_eip[year])
 
         #now drop geometry polygons to write out csv
         df = df.drop('geometry', axis=1).drop('Area_delta', axis=1)
