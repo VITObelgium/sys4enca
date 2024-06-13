@@ -73,7 +73,7 @@ class Total(enca.ENCARun):
             indices.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
             stats_shape_selu = self.statistics_shape.join(indices)
             stats_shape_selu.to_file(
-                os.path.join(self.temp_dir(), f'{self.component}_Indices_SELU_{year}.gpkg'))
+                os.path.join(self.maps, f'{self.component}_Indices_SELU_{year}.gpkg'))
 
             self.write_reports(indices, area_stats, year)
 
