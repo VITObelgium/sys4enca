@@ -33,10 +33,11 @@ class Leac(enca.ENCARun):
                 "lut_lcflows": ConfigItem()
                 },
         })
-        self.make_output_filenames()
+
 
     def _start(self):
         logger.debug('Hello from ENCA Leac')
+        self.make_output_filenames()
         #calc max_lc_classes
         df = pd.read_csv(self.config['leac']['lut_lc'], comment='#')
         self.config['leac']['max_lc_classes'] = df['RANK'].max()
@@ -355,8 +356,7 @@ class Leac(enca.ENCARun):
             else : years = self.years
 
         for idx,year in enumerate(years):
-            self.leac_recl[year] = os.path.splitext(os.path.join(self.maps, os.path.basename(self.config["land_cover"][year])))[0] \
-                                   + '_reclassified.tif'
+            self.leac_recl[year] = os.path.join(self.maps,f'LEAC_{self.aoi_name}_{year}.tif')
 
 
 

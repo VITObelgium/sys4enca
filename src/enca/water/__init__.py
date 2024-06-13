@@ -9,7 +9,7 @@ import pandas as pd
 
 import enca
 from enca import AREA_RAST
-from enca.framework.config_check import ConfigItem, ConfigRaster, ConfigShape
+from enca.framework.config_check import ConfigItem, ConfigRaster, ConfigShape, YEARLY
 from enca.framework.geoprocessing import (
     RasterType,
     block_window_generator,
@@ -56,6 +56,7 @@ HYBAS_LAKE_VOL = 'hybas_lake_vol'
 MAJOR_AQUIFER = 'Major-aquifer'
 LOCAL_AQUIFER = 'Local-aquifer'
 LC_LAKES = 'LC_code_lakes'
+LEAC_RESULT = 'leac_result'
 
 input_codes = dict(
     CoastID=COAST,
@@ -104,12 +105,12 @@ class Water(enca.ENCARun):
 
         self.config_template.update({
             self.component: {
-                PRECIPITATION: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-                EVAPO: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-                USE_MUNI: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-                USE_AGRI: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-                DROUGHT_VULN: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-                EVAPO_RAINFED: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
+                PRECIPITATION: {YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+                EVAPO: {YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+                USE_MUNI: {YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+                USE_AGRI: {YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+                DROUGHT_VULN: {YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+                EVAPO_RAINFED: {YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
                 RIVER_LENGTH: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
                 LT_PRECIPITATION: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
                 LT_EVAPO: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
@@ -118,14 +119,16 @@ class Water(enca.ENCARun):
                 SALINITY: ConfigShape(),
                 HYDRO_LAKES: ConfigShape(),
                 GLORIC: ConfigShape(),
-                LC_LAKES : ConfigItem()
+                LC_LAKES : ConfigItem(),
+                LEAC_RESULT : {YEARLY :ConfigRaster( optional=True)}
             }
         })
 
-        self.input_rasters = [PRECIPITATION, EVAPO, USE_MUNI, USE_AGRI, DROUGHT_VULN, EVAPO_RAINFED,
-                              RIVER_LENGTH, LT_PRECIPITATION, LT_EVAPO]
-        self.check_leac()
+        self.input_rasters_yearly = [PRECIPITATION, EVAPO, USE_MUNI, USE_AGRI, DROUGHT_VULN, EVAPO_RAINFED]
+        self.input_rasters_LTA = [RIVER_LENGTH, LT_PRECIPITATION, LT_EVAPO]
+
     def _start(self):
+        self.check_leac()
         water_config = self.config[self.component]
 
         water_stats = self.additional_water_stats()
@@ -135,7 +138,9 @@ class Water(enca.ENCARun):
 
         area_stats = self.area_stats()
         for year in self.years:
-            stats = self.selu_stats({key: water_config[key] for key in self.input_rasters if water_config[key]})
+            cleaned_raster_dict = {key: water_config[key] for key in self.input_rasters_LTA if water_config[key]}
+            cleaned_raster_dict.update({key: water_config[key][year] for key in self.input_rasters_yearly if water_config[key][year]})
+            stats = self.selu_stats(cleaned_raster_dict)
             stats[enca.AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
@@ -238,7 +243,7 @@ class Water(enca.ENCARun):
             #now try to rasterize
             LC_lakes = os.path.join(self.temp_dir(), f'Lakes_obtained_from_LC_{year}.tif')
             with rasterio.open(LC_lakes, 'w', **self.accord.ref_profile) as dst, \
-                    rasterio.open(self.config["water"]["leac_result"]) as src:
+                    rasterio.open(self.config[self.component]["leac_result"][year]) as src:
                 for _, window in block_window_generator( (4096,4096), src.profile['height'], src.profile['width']):
                     output = src.read(1, window =window) == code
                     dst.write(output, 1, window =window)

@@ -7,7 +7,7 @@ import numpy as np
 
 import enca
 from enca import _
-from enca.framework.config_check import ConfigRaster
+from enca.framework.config_check import ConfigRaster, YEARLY
 from enca.framework.geoprocessing import RasterType
 
 FOREST_AGB = 'ForestAGB'
@@ -96,32 +96,32 @@ class Carbon(enca.ENCARun):
 
         self.config_template.update({
           self.component: {
-              FOREST_LITTER: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              FOREST_AGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              FOREST_BGB: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              SOIL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              LIVESTOCK: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              NPP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_CEREALS: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_FIBER: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_FRUIT: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_OILCROP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_PULSES: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_ROOTS: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_CAFE: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_VEGETABLES: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              AGRICULTURE_SUGAR: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              WOODREMOVAL: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              SOIL_EROSION: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              ILUP: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              CEH1: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              CEH4: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              CEH6: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              CEH7: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              COW: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              FIRE: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              FIRE_SPLIT: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True),
-              FIRE_INTEN: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)
+              FOREST_LITTER: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              FOREST_AGB: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              FOREST_BGB: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              SOIL: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              LIVESTOCK: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              NPP: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_CEREALS: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_FIBER: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_FRUIT: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_OILCROP: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_PULSES: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_ROOTS: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_CAFE: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_VEGETABLES: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              AGRICULTURE_SUGAR: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              WOODREMOVAL: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              SOIL_EROSION: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              ILUP:  { YEARLY:ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              CEH1:  { YEARLY:ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              CEH4: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              CEH6:  { YEARLY:ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              CEH7:  { YEARLY:ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              COW: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              FIRE: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              FIRE_SPLIT: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)},
+              FIRE_INTEN: { YEARLY: ConfigRaster(raster_type=RasterType.ABSOLUTE_VOLUME, optional=True)}
           }
         })
 
@@ -143,7 +143,8 @@ class Carbon(enca.ENCARun):
 
         area_stats = self.area_stats()
         for year in self.years:
-            selu_stats = self.selu_stats({key: carbon_config[key] for key in self.input_rasters if carbon_config[key]})
+
+            selu_stats = self.selu_stats({key: carbon_config[key][year] for key in self.input_rasters if carbon_config[key][year]})
             selu_stats[enca.AREA_RAST] = area_stats.unstack(self.reporting_shape.index.name, fill_value=0).sum(axis=1)
             selu_stats.to_csv(os.path.join(self.statistics, f'SELU_stats_{year}.csv'))
 
