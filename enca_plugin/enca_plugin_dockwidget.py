@@ -4,13 +4,6 @@ import os
 import threading
 from functools import reduce
 
-import yaml
-from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsSettings, QgsTask
-from qgis.gui import QgsDoubleSpinBox, QgsFileWidget
-from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
-from qgis.PyQt.QtCore import QLocale, pyqtSignal
-from qgis.utils import iface
-
 import enca
 import enca.carbon as carbon
 import enca.carbon.agriculture as carbon_agriculture
@@ -32,18 +25,25 @@ import enca.water.drought_vuln as water_drought_vuln
 import enca.water.precipitation_evapotranspiration as water_precip_evapo
 import enca.water.river_length_pixel as water_river_length_px
 import enca.water.usage as water_usage
+import yaml
 from enca.carbon.livestock import get_livestock_long_name
 from enca.components import get_component_long_name
 from enca.framework.config_check import YEARLY, ConfigError
 from enca.framework.errors import Error
 from enca.framework.run import Cancelled
+from qgis.core import Qgis, QgsApplication, QgsMessageLog, QgsSettings, QgsTask
+from qgis.gui import QgsDoubleSpinBox, QgsFileWidget
+from qgis.PyQt import QtCore, QtGui, QtWidgets, uic
+from qgis.PyQt.QtCore import QLocale, pyqtSignal
+from qgis.utils import iface
 
 from .help import show_help
 from .qgis_tools import load_vector_layer
 from .qt_tools import expand_template, writeWidget
 
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'enca_plugin_dockwidget_base.ui'))
+FORM_CLASS, _ = uic.loadUiType(
+    os.path.join(os.path.dirname(__file__), "enca_plugin_dockwidget_base.ui")
+)
 
 # We need to keep a reference to our tasks prevent tasks from "disappearing" when we pass them on to the taskmanager.
 _tasks = []  #: global reference to currently launched tasks.
@@ -51,163 +51,221 @@ _tasks = []  #: global reference to currently launched tasks.
 #:  names of input widgets per component.
 # Note: names must match the name of the corresponding ui widget *and* the config key to which they refer.
 component_input_widgets = [
-    (carbon.Carbon.component, [
-        (carbon.FOREST_AGB, [YEARLY]),
-        (carbon.FOREST_BGB, [YEARLY]),
-        (carbon.FOREST_LITTER, [YEARLY]),
-        (carbon.SOIL, [YEARLY]),
-        (carbon.LIVESTOCK, [YEARLY]),
-        (carbon.NPP, [YEARLY]),
-        (carbon.AGRICULTURE_CEREALS, [YEARLY]),
-        (carbon.AGRICULTURE_FIBER, [YEARLY]),
-        (carbon.AGRICULTURE_FRUIT, [YEARLY]),
-        (carbon.AGRICULTURE_OILCROP, [YEARLY]),
-        (carbon.AGRICULTURE_PULSES, [YEARLY]),
-        (carbon.AGRICULTURE_ROOTS, [YEARLY]),
-        (carbon.AGRICULTURE_CAFE, [YEARLY]),
-        (carbon.AGRICULTURE_VEGETABLES, [YEARLY]),
-        (carbon.AGRICULTURE_SUGAR, [YEARLY]),
-        (carbon.WOODREMOVAL, [YEARLY]),
-        (carbon.SOIL_EROSION, [YEARLY]),
-        (carbon.ILUP, [YEARLY]),
-        (carbon.CEH1, [YEARLY]),
-        (carbon.CEH4, [YEARLY]),
-        (carbon.CEH6, [YEARLY]),
-        (carbon.CEH7, [YEARLY]),
-        (carbon.COW, [YEARLY]),
-        (carbon.FIRE, [YEARLY]),
-        (carbon.FIRE_SPLIT, [YEARLY]),
-        (carbon.FIRE_INTEN [YEARLY])]),
-    (water.Water.component, [
-        (water.USE_AGRI, [YEARLY]),
-        (water.USE_MUNI, [YEARLY]),
-        (water.EVAPO_RAINFED, [YEARLY]),
-        (water.PRECIPITATION, [YEARLY]),
-        (water.EVAPO, [YEARLY]),
-        water.LT_PRECIPITATION,
-        water.LT_EVAPO,
-        (water.DROUGHT_VULN, [YEARLY]),
-        (water.LEAC_RESULT, [YEARLY]),
-        water.RIVER_LENGTH,
-        water.LT_OUTFLOW,
-        water.AQUIFER,
-        water.SALINITY,
-        water.HYDRO_LAKES,
-        water.GLORIC,
-        water.LC_LAKES]),
-    (water_precip_evapo.WaterPrecipEvapo.component, [
-        water_precip_evapo._WORLDCLIM,
-        water_precip_evapo._CGIAR_AET,
-        (water_precip_evapo._COPERNICUS_PRECIPITATION, [YEARLY]),
-        water_precip_evapo._LC_RAINFED_AGRI]),
-    (water_usage.Usage.component, [
-        (water_usage._GHS_POP, ['y1990',
-                                'y1995',
-                                'y2000',
-                                'y2005',
-                                'y2010',
-                                'y2015',
-                                'y2020',
-                                'y2025',
-                                'y2030']),
-        water_usage._MUNICIPAL,
-        water_usage._AGRICULTURAL,
-        water_usage._LC_AGRI]),
-    (water_drought_vuln.DroughtVuln.component, [
-        (water_drought_vuln.DROUGHT_CODE, [YEARLY]),
-        water_drought_vuln.DROUGHT_CODE_LTA]),
-    (water_river_length_px.RiverLength.component, [
-        water_river_length_px._GLORIC]),
-    (carbon_npp.CarbonNPP.component, [
-        (carbon_npp.GDMP_DIR, [YEARLY]),
-        carbon_npp.GDMP_2_NPP]),
-    (carbon_soil.CarbonSoil.component, [
-        carbon_soil.SEAL_ADJUST,
-        carbon_soil.SOC,
-        carbon_soil.SOC_MANGROVES,
-        carbon_soil.MANGROVE_CLASSES,
-        carbon_soil.NONSOIL_CLASSES,
-        carbon_soil.URBAN_CLASSES]),
-    (carbon_soil_erosion.CarbonErosion.component, [
-        carbon_soil_erosion.R_FACTOR_1,
-        carbon_soil_erosion.R_FACTOR_25,
-        carbon_soil_erosion.SOIL_CARBON_10,
-        carbon_soil_erosion.SOIL_CARBON_20,
-        carbon_soil_erosion.SOIL_CARBON_30,
-        (carbon_soil_erosion.SOIL_LOSS, [YEARLY])]),
-    (carbon_livestock.CarbonLivestock.component, [
-        (carbon_livestock.LIVESTOCK_CARBON, carbon.livestock._livestock_types),
-        (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),
-        (carbon_livestock.WEIGHTS, carbon.livestock._livestock_types)]),
-    (carbon_fire_vuln.CarbonFireVulnerability.component, [
-        (carbon_fire_vuln.SEVERITY_RATING, [YEARLY]),
-        carbon_fire_vuln.SEVERITY_RATING_LTA]),
-    (carbon_agriculture.CarbonAgriculture.component, [
-        carbon_agriculture.AGRICULTURE_DISTRIBUTION,
-        carbon_agriculture.AGRICULTURE_STATS]),
-    (carbon_fire.CarbonFire.component, [
-        (carbon_fire.BURNT_AREAS, [YEARLY]),
-        carbon_fire.FOREST_BIOMASS]),
-    (carbon_forest.CarbonForest.component, [
-        carbon_forest.FAOFRA_AGB,
-        carbon_forest.FAOFRA_BGB,
-        carbon_forest.FAOFRA_LITTER,
-        carbon_forest.FAOFRA_WREM,
-        carbon_forest.FOREST_LC_CLASSES,
-        carbon_forest.LAND_COVER_FRACTION,
-        carbon_forest.WOOD_REMOVAL_LIMIT
-    ]),
-    (infra.Infra.component, [
-        infra.REF_YEAR,
-        infra.REF_LANDCOVER,
-        ('paths_indices', [(indices, [YEARLY])for indices in list(infra.INDICES.keys())]),
-        ('general', [
-            'lc_urban',
-            'lc_water']),
-        'lut_gbli',
-        'naturalis',
-        'osm',
-        ('catchments', [
-            'catchment_6',
-            'catchment_8',
-            'catchment_12'
-        ]),
-        'dams',
-        'gloric',
-        ('leac_result', [YEARLY]),
-        ('tree_cover', [YEARLY])
-    ]),
-    (leac.Leac.component, [
-        leac.REF_YEAR,
-        leac.REF_LANDCOVER,
-        'lut_ct_lc',
-        'lut_ct_lcf',
-        'lut_lc',
-        'lut_lcflows',
-    ]),
-    (total.Total.component, [
-        'infra_result',
-        'carbon_result',
-        'water_result',
-        'ECUadj_Carbon',
-        'ECUadj_Water',
-        'ECUadj_Infra'
-    ]),
-    (trend.Trend.component, [
-        'total_result'
-    ])
+    (
+        carbon.Carbon.component,
+        [
+            (carbon.FOREST_AGB, [YEARLY]),
+            (carbon.FOREST_BGB, [YEARLY]),
+            (carbon.FOREST_LITTER, [YEARLY]),
+            (carbon.SOIL, [YEARLY]),
+            (carbon.LIVESTOCK, [YEARLY]),
+            (carbon.NPP, [YEARLY]),
+            (carbon.AGRICULTURE_CEREALS, [YEARLY]),
+            (carbon.AGRICULTURE_FIBER, [YEARLY]),
+            (carbon.AGRICULTURE_FRUIT, [YEARLY]),
+            (carbon.AGRICULTURE_OILCROP, [YEARLY]),
+            (carbon.AGRICULTURE_PULSES, [YEARLY]),
+            (carbon.AGRICULTURE_ROOTS, [YEARLY]),
+            (carbon.AGRICULTURE_CAFE, [YEARLY]),
+            (carbon.AGRICULTURE_VEGETABLES, [YEARLY]),
+            (carbon.AGRICULTURE_SUGAR, [YEARLY]),
+            (carbon.WOODREMOVAL, [YEARLY]),
+            (carbon.SOIL_EROSION, [YEARLY]),
+            (carbon.ILUP, [YEARLY]),
+            (carbon.CEH1, [YEARLY]),
+            (carbon.CEH4, [YEARLY]),
+            (carbon.CEH6, [YEARLY]),
+            (carbon.CEH7, [YEARLY]),
+            (carbon.COW, [YEARLY]),
+            (carbon.FIRE, [YEARLY]),
+            (carbon.FIRE_SPLIT, [YEARLY]),
+            (carbon.FIRE_INTEN, [YEARLY]),
+        ],
+    ),
+    (
+        water.Water.component,
+        [
+            (water.USE_AGRI, [YEARLY]),
+            (water.USE_MUNI, [YEARLY]),
+            (water.EVAPO_RAINFED, [YEARLY]),
+            (water.PRECIPITATION, [YEARLY]),
+            (water.EVAPO, [YEARLY]),
+            water.LT_PRECIPITATION,
+            water.LT_EVAPO,
+            (water.DROUGHT_VULN, [YEARLY]),
+            (water.LEAC_RESULT, [YEARLY]),
+            water.RIVER_LENGTH,
+            water.LT_OUTFLOW,
+            water.AQUIFER,
+            water.SALINITY,
+            water.HYDRO_LAKES,
+            water.GLORIC,
+            water.LC_LAKES,
+        ],
+    ),
+    (
+        water_precip_evapo.WaterPrecipEvapo.component,
+        [
+            water_precip_evapo._WORLDCLIM,
+            water_precip_evapo._CGIAR_AET,
+            (water_precip_evapo._COPERNICUS_PRECIPITATION, [YEARLY]),
+            water_precip_evapo._LC_RAINFED_AGRI,
+        ],
+    ),
+    (
+        water_usage.Usage.component,
+        [
+            (
+                water_usage._GHS_POP,
+                [
+                    "y1990",
+                    "y1995",
+                    "y2000",
+                    "y2005",
+                    "y2010",
+                    "y2015",
+                    "y2020",
+                    "y2025",
+                    "y2030",
+                ],
+            ),
+            water_usage._MUNICIPAL,
+            water_usage._AGRICULTURAL,
+            water_usage._LC_AGRI,
+        ],
+    ),
+    (
+        water_drought_vuln.DroughtVuln.component,
+        [
+            (water_drought_vuln.DROUGHT_CODE, [YEARLY]),
+            water_drought_vuln.DROUGHT_CODE_LTA,
+        ],
+    ),
+    (water_river_length_px.RiverLength.component, [water_river_length_px._GLORIC]),
+    (
+        carbon_npp.CarbonNPP.component,
+        [(carbon_npp.GDMP_DIR, [YEARLY]), carbon_npp.GDMP_2_NPP],
+    ),
+    (
+        carbon_soil.CarbonSoil.component,
+        [
+            carbon_soil.SEAL_ADJUST,
+            carbon_soil.SOC,
+            carbon_soil.SOC_MANGROVES,
+            carbon_soil.MANGROVE_CLASSES,
+            carbon_soil.NONSOIL_CLASSES,
+            carbon_soil.URBAN_CLASSES,
+        ],
+    ),
+    (
+        carbon_soil_erosion.CarbonErosion.component,
+        [
+            carbon_soil_erosion.R_FACTOR_1,
+            carbon_soil_erosion.R_FACTOR_25,
+            carbon_soil_erosion.SOIL_CARBON_10,
+            carbon_soil_erosion.SOIL_CARBON_20,
+            carbon_soil_erosion.SOIL_CARBON_30,
+            (carbon_soil_erosion.SOIL_LOSS, [YEARLY]),
+        ],
+    ),
+    (
+        carbon_livestock.CarbonLivestock.component,
+        [
+            (carbon_livestock.LIVESTOCK_CARBON, carbon.livestock._livestock_types),
+            (carbon_livestock.LIVESTOCK_DIST, carbon.livestock._livestock_types),
+            (carbon_livestock.WEIGHTS, carbon.livestock._livestock_types),
+        ],
+    ),
+    (
+        carbon_fire_vuln.CarbonFireVulnerability.component,
+        [
+            (carbon_fire_vuln.SEVERITY_RATING, [YEARLY]),
+            carbon_fire_vuln.SEVERITY_RATING_LTA,
+        ],
+    ),
+    (
+        carbon_agriculture.CarbonAgriculture.component,
+        [
+            carbon_agriculture.AGRICULTURE_DISTRIBUTION,
+            carbon_agriculture.AGRICULTURE_STATS,
+        ],
+    ),
+    (
+        carbon_fire.CarbonFire.component,
+        [(carbon_fire.BURNT_AREAS, [YEARLY]), carbon_fire.FOREST_BIOMASS],
+    ),
+    (
+        carbon_forest.CarbonForest.component,
+        [
+            carbon_forest.FAOFRA_AGB,
+            carbon_forest.FAOFRA_BGB,
+            carbon_forest.FAOFRA_LITTER,
+            carbon_forest.FAOFRA_WREM,
+            carbon_forest.FOREST_LC_CLASSES,
+            carbon_forest.LAND_COVER_FRACTION,
+            carbon_forest.WOOD_REMOVAL_LIMIT,
+        ],
+    ),
+    (
+        infra.Infra.component,
+        [
+            infra.REF_YEAR,
+            infra.REF_LANDCOVER,
+            (
+                "paths_indices",
+                [(indices, [YEARLY]) for indices in list(infra.INDICES.keys())],
+            ),
+            ("general", ["lc_urban", "lc_water"]),
+            "lut_gbli",
+            "naturalis",
+            "osm",
+            ("catchments", ["catchment_6", "catchment_8", "catchment_12"]),
+            "dams",
+            "gloric",
+            ("leac_result", [YEARLY]),
+            ("tree_cover", [YEARLY]),
+        ],
+    ),
+    (
+        leac.Leac.component,
+        [
+            leac.REF_YEAR,
+            leac.REF_LANDCOVER,
+            "lut_ct_lc",
+            "lut_ct_lcf",
+            "lut_lc",
+            "lut_lcflows",
+        ],
+    ),
+    (
+        total.Total.component,
+        [
+            "infra_result",
+            "carbon_result",
+            "water_result",
+            "ECUadj_Carbon",
+            "ECUadj_Water",
+            "ECUadj_Infra",
+        ],
+    ),
+    (trend.Trend.component, ["total_result"]),
 ]
 
 #: vector output files to be loaded after a run, with visualization parameters (keyword arguments for
 component_vector_layers = {
-    carbon.Carbon.component: [(os.path.join('temp', 'CARBON_Indices_SELU_{year}.gpkg'), dict(
-        layer_name='NEACS [ha]',
-        attribute_name='C10_ha'))],
-    water.Water.component: [(os.path.join('temp', 'WATER_Indices_SELU_{year}.gpkg'), dict(
-        layer_name='TOTuseEW',
-        attribute_name='W9_ha',
-        color_ramp='Blues'))],
-    carbon_livestock.CarbonLivestock.component: []
+    carbon.Carbon.component: [
+        (
+            os.path.join("temp", "CARBON_Indices_SELU_{year}.gpkg"),
+            dict(layer_name="NEACS [ha]", attribute_name="C10_ha"),
+        )
+    ],
+    water.Water.component: [
+        (
+            os.path.join("temp", "WATER_Indices_SELU_{year}.gpkg"),
+            dict(layer_name="TOTuseEW", attribute_name="W9_ha", color_ramp="Blues"),
+        )
+    ],
+    carbon_livestock.CarbonLivestock.component: [],
 }
 
 
@@ -219,11 +277,17 @@ def findChild(widget: QtWidgets.QWidget, name: str):
     if not exactly one matching widget is found.
     """
     try:
-        result, = widget.findChildren(QtWidgets.QWidget,
-                                      QtCore.QRegularExpression(f'^{QtCore.QRegularExpression.escape(name)}_\\d*$'))
+        (result,) = widget.findChildren(
+            QtWidgets.QWidget,
+            QtCore.QRegularExpression(
+                f"^{QtCore.QRegularExpression.escape(name)}_\\d*$"
+            ),
+        )
     except ValueError:
-        QgsMessageLog.logMessage(f'findChildren() did not find a unique result for widget name "{name}"',
-                                 level=Qgis.Critical)
+        QgsMessageLog.logMessage(
+            f'findChildren() did not find a unique result for widget name "{name}"',
+            level=Qgis.Critical,
+        )
         raise
     return result
 
@@ -271,7 +335,6 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         settings = QgsSettings()
         locale = settings.value("locale/userLocale", QLocale.system().name())
 
-        
         # Set up the user interface from Designer.
         # After setupUI you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see
@@ -286,11 +349,17 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.toolbar = QtWidgets.QToolBar()
         self.toolbar.setIconSize(iface.iconSize(dockedToolbar=True))
 
-        self.loadact = QtWidgets.QAction(QtGui.QIcon(":/plugins/enca_plugin/mActionFileOpen.svg"),
-                                         translate_common(locale, 'Load Configuration'), self)
+        self.loadact = QtWidgets.QAction(
+            QtGui.QIcon(":/plugins/enca_plugin/mActionFileOpen.svg"),
+            translate_common(locale, "Load Configuration"),
+            self,
+        )
         self.loadact.triggered.connect(self.loadConfig)
-        self.saveact = QtWidgets.QAction(QtGui.QIcon(":/plugins/enca_plugin/mActionFileSaveAs.svg"),
-                                         translate_common(locale, 'Save Configuration'), self)
+        self.saveact = QtWidgets.QAction(
+            QtGui.QIcon(":/plugins/enca_plugin/mActionFileSaveAs.svg"),
+            translate_common(locale, "Save Configuration"),
+            self,
+        )
         self.saveact.triggered.connect(self.saveConfig)
         self.toolbar.addAction(self.loadact)
         self.toolbar.addAction(self.saveact)
@@ -298,19 +367,25 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.runact = QtWidgets.QAction(
             QtGui.QIcon(":/plugins/enca_plugin/play-button-svgrepo-com.svg"),
-            translate_common(locale, 'Run'), self)
+            translate_common(locale, "Run"),
+            self,
+        )
         self.runact.triggered.connect(self.run)
         self.toolbar.addAction(self.runact)
 
-        self.continue_run = QtWidgets.QCheckBox(translate_common(locale, 'Continue existing run'))
-        self.continue_run.setObjectName('continue_run')
+        self.continue_run = QtWidgets.QCheckBox(
+            translate_common(locale, "Continue existing run")
+        )
+        self.continue_run.setObjectName("continue_run")
         self.toolbar.addWidget(self.continue_run)
 
         spacer = QtWidgets.QWidget()
-        spacer.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        spacer.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
+        )
         self.toolbar.addWidget(spacer)
 
-        self.helpact = QtWidgets.QAction(translate_common(locale, 'Help'), self)
+        self.helpact = QtWidgets.QAction(translate_common(locale, "Help"), self)
         self.helpact.triggered.connect(show_help)
         self.toolbar.addAction(self.helpact)
 
@@ -320,32 +395,36 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.reporting_areas.set_id_label(enca.REP_ID)
 
         # Initialize Tier level combobox
-        self.tier.addItem('1', 1)
-        self.tier.addItem('2', 2)
-        self.tier.addItem('3', 3)
+        self.tier.addItem("1", 1)
+        self.tier.addItem("2", 2)
+        self.tier.addItem("3", 3)
 
         self.config_template = {
-            'years': [self.year],
-            'output_dir': self.output_dir,
-            'aoi_name': self.aoi_name,
-            'statistics_shape': self.data_areas,
-            'reporting_shape': self.reporting_areas._filewidget,
-            'selected_regions': self.reporting_areas._selected_regions,
+            "years": [self.year],
+            "output_dir": self.output_dir,
+            "aoi_name": self.aoi_name,
+            "statistics_shape": self.data_areas,
+            "reporting_shape": self.reporting_areas._filewidget,
+            "selected_regions": self.reporting_areas._selected_regions,
             enca._ADMIN_BOUNDS: self.admin_boundaries,
-            'land_cover': {self.year: self.land_cover},
-            'continue': self.continue_run,
-            'tier': self.tier
+            "land_cover": {self.year: self.land_cover},
+            "continue": self.continue_run,
+            "tier": self.tier,
         }
-        self.component_templates = self.build_template_tree(component_input_widgets, self.run_types)
+        self.component_templates = self.build_template_tree(
+            component_input_widgets, self.run_types
+        )
 
     def set_up_component_dropdowns(self, locale: str):
         """Fill the dropdown menu for preprocessing/run/ accounts tabs, and connect signals."""
         for i in range(self.run_types.count()):
             tab = self.run_types.widget(i)
-            dropdown = findChild(tab, 'component')
-            components_stack = findChild(tab, 'components_stack')
+            dropdown = findChild(tab, "component")
+            components_stack = findChild(tab, "components_stack")
             for j in range(components_stack.count()):
-                name = components_stack.widget(j).objectName()[:-1]  # cut off trailing '_'
+                name = components_stack.widget(j).objectName()[
+                    :-1
+                ]  # cut off trailing '_'
                 dropdown.addItem(get_component_long_name(name, locale), name)
             dropdown.currentIndexChanged.connect(components_stack.setCurrentIndex)
 
@@ -355,42 +434,60 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.livestock_distribution_.setLayout(QtWidgets.QFormLayout())
         self.weights_.setLayout(QtWidgets.QFormLayout())
         for key in enca.carbon.livestock._livestock_types:
-            carbon_widget = QgsFileWidget(self, objectName=key + '_')
-            carbon_widget.setFilter('CSV (*.csv);; All Files (*.*)')
-            self.livestock_carbon_.layout().addRow(get_livestock_long_name(key, locale), carbon_widget)
-            distribution_widget = QgsFileWidget(self, objectName=key + '_')
-            distribution_widget.setFilter('Geotiff (*.tiff *.tif);; All Files (*.*)')
-            self.livestock_distribution_.layout().addRow(get_livestock_long_name(key, locale), distribution_widget)
-            widget_weight = QgsDoubleSpinBox(self, objectName=key + '_')
-            widget_weight.setRange(0., 1000.)
-            self.weights_.layout().addRow(get_livestock_long_name(key, locale), widget_weight)
+            carbon_widget = QgsFileWidget(self, objectName=key + "_")
+            carbon_widget.setFilter("CSV (*.csv);; All Files (*.*)")
+            self.livestock_carbon_.layout().addRow(
+                get_livestock_long_name(key, locale), carbon_widget
+            )
+            distribution_widget = QgsFileWidget(self, objectName=key + "_")
+            distribution_widget.setFilter("Geotiff (*.tiff *.tif);; All Files (*.*)")
+            self.livestock_distribution_.layout().addRow(
+                get_livestock_long_name(key, locale), distribution_widget
+            )
+            widget_weight = QgsDoubleSpinBox(self, objectName=key + "_")
+            widget_weight.setRange(0.0, 1000.0)
+            self.weights_.layout().addRow(
+                get_livestock_long_name(key, locale), widget_weight
+            )
 
     def set_up_infra(self):
         """Set up Infra indices input widgets."""
-        widget_infra = self.ENCA_.findChild(QtWidgets.QWidget, infra.Infra.component + '_')
-        widget_infra_indices = widget_infra.findChild(QtWidgets.QGroupBox, 'paths_indices_')
+        widget_infra = self.ENCA_.findChild(
+            QtWidgets.QWidget, infra.Infra.component + "_"
+        )
+        widget_infra_indices = widget_infra.findChild(
+            QtWidgets.QGroupBox, "paths_indices_"
+        )
         widget_infra_indices.setLayout(QtWidgets.QFormLayout())
         for idx, label in infra.INDICES.items():
             # Add suffix '_' to index widget object names because they end in an integer
-            widget_infra_indices.layout().addRow(f'{idx}. {label}', QgsFileWidget(self, objectName=f'{idx}_'))
+            widget_infra_indices.layout().addRow(
+                f"{idx}. {label}", QgsFileWidget(self, objectName=f"{idx}_")
+            )
 
     def saveConfig(self):
         """Save current ui state as a yaml config file."""
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Config File", "config.yaml", "*.yaml")
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save Config File", "config.yaml", "*.yaml"
+        )
         if not filename:
             return
-        with open(filename, 'wt') as f:
+        with open(filename, "wt") as f:
             f.write(yaml.dump(self.make_config()))
 
     def loadConfig(self):
         """Load a yaml config file."""
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, self.tr("Load Config File"), "",
-                                                            self.tr("Config files (*.yaml);; All files (*.*)"))
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("Load Config File"),
+            "",
+            self.tr("Config files (*.yaml);; All files (*.*)"),
+        )
         if not filename:
             return
 
         try:
-            with open(filename, 'rt') as f:
+            with open(filename, "rt") as f:
                 config = yaml.safe_load(f)
 
             # Clear existing configuration:
@@ -398,16 +495,19 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 writeWidget(widget, None)
 
             # Handle year selection and reporting regions manually:
-            self.year.setValue(config['years'][0])
-            self.reporting_areas.setShapefile(config.get('reporting_shape'))
+            self.year.setValue(config["years"][0])
+            self.reporting_areas.setShapefile(config.get("reporting_shape"))
 
             # remaining config values can be read automatically using the config templates
-            main_template = {key: value for key, value in self.config_template.items()
-                             if key not in ('years', 'reporting_regions')}
+            main_template = {
+                key: value
+                for key, value in self.config_template.items()
+                if key not in ("years", "reporting_regions")
+            }
             self.load_template(config, main_template)
 
             # select the right tab (preprocessing/components/accounts), and the right component within that tab:
-            component_name = config['component']
+            component_name = config["component"]
             run_class = enca.components.get_component(component_name)
             run_type = run_class.run_type
             # select tab:
@@ -415,23 +515,27 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.run_types.setCurrentWidget(run_type_tab)
             # select component:
             component_page = findChild(run_type_tab, component_name)
-            component_combo = findChild(run_type_tab, 'component')
+            component_combo = findChild(run_type_tab, "component")
             idx = component_combo.findData(component_name, QtCore.Qt.UserRole)
             component_combo.setCurrentIndex(idx)
 
             # handle run name:
             try:
-                findChild(component_page, 'run_name').setText(config['run_name'])
+                findChild(component_page, "run_name").setText(config["run_name"])
             except ValueError:
                 pass  # Not all input pages have a run_name widget yet
             # read other config values using the template
-            self.load_template(config, {component_name: self.component_templates[component_name]})
+            self.load_template(
+                config, {component_name: self.component_templates[component_name]}
+            )
 
         except BaseException as e:
-            QtWidgets.QMessageBox.critical(self, 'Error loading config', f'Could not load config {filename}: {e}.')
+            QtWidgets.QMessageBox.critical(
+                self, "Error loading config", f"Could not load config {filename}: {e}."
+            )
 
-        if 'metadata' in config:
-            self.metadata[config['service']] = config['metadata'][config['years'][0]]
+        if "metadata" in config:
+            self.metadata[config["service"]] = config["metadata"][config["years"][0]]
 
     def list_widgets(self, element):
         result = []
@@ -448,7 +552,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return result
 
     def list_config_widgets(self):
-        result = self.list_widgets(self.config_template) + self.list_widgets(self.component_templates)
+        result = self.list_widgets(self.config_template) + self.list_widgets(
+            self.component_templates
+        )
         return result
 
     def load_template(self, config, template):
@@ -466,22 +572,31 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 try:
                     self.load_template(config[key], template_value)
                 except KeyError as e:
-                    QgsMessageLog.logMessage(f'While loading config: missing config key {e}.', level=Qgis.Warning)
+                    QgsMessageLog.logMessage(
+                        f"While loading config: missing config key {e}.",
+                        level=Qgis.Warning,
+                    )
         elif type(template) in (int, bool, str):
             # We're only interested in the widgets referenced from the template.
             pass
         elif isinstance(template, QtCore.QObject):
             writeWidget(template, config)
         else:
-            raise RuntimeError(f'Failed to process template {template}.')
+            raise RuntimeError(f"Failed to process template {template}.")
 
     def run(self):
         template = self.make_template()
-        taskname = f'{template["component"].currentText()} run {template["run_name"].text()}'
+        taskname = (
+            f'{template["component"].currentText()} run {template["run_name"].text()}'
+        )
         component_name = template["component"].currentData(QtCore.Qt.UserRole)
-        task = Task(taskname, template, output_vectors=component_vector_layers.get(component_name, []))
+        task = Task(
+            taskname,
+            template,
+            output_vectors=component_vector_layers.get(component_name, []),
+        )
         _tasks.append(task)
-        QgsMessageLog.logMessage(f'Submitting task {taskname}', level=Qgis.Info)
+        QgsMessageLog.logMessage(f"Submitting task {taskname}", level=Qgis.Info)
         QgsApplication.taskManager().addTask(task)
 
     def closeEvent(self, event):
@@ -496,7 +611,9 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for entry in widget_names:
             if isinstance(entry, tuple):
                 name, children = entry
-                result[name] = self.build_template_tree(children, findChild(root_widget, name))
+                result[name] = self.build_template_tree(
+                    children, findChild(root_widget, name)
+                )
             else:
                 assert isinstance(entry, str)  # entry is the name of a widget
                 result[entry] = findChild(root_widget, entry)
@@ -511,21 +628,22 @@ class ENCAPluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # 1. see which tab we are on (preprocessing / components / accounts)
         tab_runtype = self.run_types.currentWidget()
         # 2. select the component from this tab
-        component_dropdown = findChild(tab_runtype, 'component')
+        component_dropdown = findChild(tab_runtype, "component")
         component_name = component_dropdown.currentData(QtCore.Qt.UserRole)
-        template = {**self.config_template,
-                    'component': component_dropdown,
-                    component_name: self.component_templates[component_name]}
+        template = {
+            **self.config_template,
+            "component": component_dropdown,
+            component_name: self.component_templates[component_name],
+        }
         component_widget = findChild(tab_runtype, component_name)
         try:
-            template['run_name'] = findChild(component_widget, 'run_name')
+            template["run_name"] = findChild(component_widget, "run_name")
         except ValueError:  # Some pages are currently incomplete
             pass
         return template
 
 
 class Task(QgsTask):
-
     def __init__(self, description, template, output_rasters=None, output_vectors=None):
         super().__init__(description)
         self.config = expand_template(template)
@@ -541,15 +659,20 @@ class Task(QgsTask):
         super().cancel()
         if self.run_thread is not None:
             # Use the Python C API to raise an exception in another thread:
-            ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_ulong(self.run_thread.ident),
-                                                             ctypes.py_object(Cancelled))
+            ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_ulong(self.run_thread.ident), ctypes.py_object(Cancelled)
+            )
             # ref: http://docs.python.org/c-api/init.html#PyThreadState_SetAsyncExc
             if ret == 0:
-                QgsMessageLog.logMessage('Failed to cancel run thread.', level=Qgis.Critical)
+                QgsMessageLog.logMessage(
+                    "Failed to cancel run thread.", level=Qgis.Critical
+                )
 
     def run(self):
         try:
-            self.run_thread = threading.current_thread()  # save current thread so we can stop it if task is canceled.
+            self.run_thread = (
+                threading.current_thread()
+            )  # save current thread so we can stop it if task is canceled.
             self.run = enca.components.make_run(self.config)
             self.run.start(progress_callback=self.setProgress)
             return True
@@ -559,33 +682,44 @@ class Task(QgsTask):
 
     def finished(self, result):
         if result:
-            QgsMessageLog.logMessage('Task completed', level=Qgis.Info)
+            QgsMessageLog.logMessage("Task completed", level=Qgis.Info)
             for raster in self.output_rasters:
                 path = os.path.join(self.run.run_dir, raster)
                 iface.addRasterLayer(path)
 
             for filename, kwargs in self.output_vectors:
-                path = os.path.join(self.run.run_dir, filename).format(year=self.run.config['years'][0])
+                path = os.path.join(self.run.run_dir, filename).format(
+                    year=self.run.config["years"][0]
+                )
                 load_vector_layer(path, **kwargs)
 
         else:
             if self.exception is None:
-                QgsMessageLog.logMessage('Task failed for unknown reason')
+                QgsMessageLog.logMessage("Task failed for unknown reason")
             elif isinstance(self.exception, Cancelled):
-                QtWidgets.QMessageBox.information(iface.mainWindow(), 'Cancelled', 'Run was cancelled by user.')
+                QtWidgets.QMessageBox.information(
+                    iface.mainWindow(), "Cancelled", "Run was cancelled by user."
+                )
             elif isinstance(self.exception, ConfigError):
                 widget = reduce(operator.getitem, self.exception.path, self.widget_dict)
                 if isinstance(widget, QgsFileWidget):  # TODO clean up!
                     widget = widget.lineEdit()
-                widget.setStyleSheet('border: 1px solid red')
-                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'Configuration error', self.exception.message)
-                widget.setStyleSheet('')
+                widget.setStyleSheet("border: 1px solid red")
+                QtWidgets.QMessageBox.warning(
+                    iface.mainWindow(), "Configuration error", self.exception.message
+                )
+                widget.setStyleSheet("")
             elif isinstance(self.exception, Error):
-                QtWidgets.QMessageBox.warning(iface.mainWindow(), 'Error', str(self.exception.message))
+                QtWidgets.QMessageBox.warning(
+                    iface.mainWindow(), "Error", str(self.exception.message)
+                )
             else:
-                QtWidgets.QMessageBox.critical(iface.mainWindow(), 'Unexpected error',
-                                               f'Something went wrong: "{self.exception}".  Please refer to the '
-                                               f'log file at {enca.framework.run.get_logfile()} for more details.')
+                QtWidgets.QMessageBox.critical(
+                    iface.mainWindow(),
+                    "Unexpected error",
+                    f'Something went wrong: "{self.exception}".  Please refer to the '
+                    f"log file at {enca.framework.run.get_logfile()} for more details.",
+                )
         _tasks.remove(self)
 
 

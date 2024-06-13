@@ -4,7 +4,7 @@
 name=ENCA
 qgisMinimumVersion=3.0
 description=Ecosystem accounting plugin
-version=2.1.0
+version=2.1.0-alpha.1
 author=VITO
 email=thomas.danckaert@vito.be
 
