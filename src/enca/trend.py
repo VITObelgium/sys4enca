@@ -86,10 +86,10 @@ class Trend(enca.ENCARun):
         area_Hybas = 1500  # minimal size of HYBAS to get reliable results
         df_trend.loc[df_trend['Area_rast'] < area_Hybas, 'ECU_slope'] = np.nan
 
-        output_file = os.path.join(self.statistics, f'NCA_TEC-trend_Indices_SELU_{years[0]}-{years[-1]}')
-        df_trend.to_csv(output_file + '.csv')
+        output_file =  f'NCA_TEC-trend_Indices_SELU_{years[0]}-{years[-1]}'
+        df_trend.to_csv(os.path.join(self.statistics,output_file + '.csv'))
         stats_shape_selu = self.statistics_shape.join(df_trend)
-        stats_shape_selu.to_file(output_file + '.gpkg')
+        stats_shape_selu.to_file(os.path.join(self.maps,output_file + '.gpkg'))
 
 
 def calc_slope_wrapper(row, years):
