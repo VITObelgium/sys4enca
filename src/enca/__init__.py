@@ -315,16 +315,16 @@ class ENCARun(Run):
     def check_leac(self):
         logger.info("Checking if LEAC is available")
         for year in self.years:
-            if self.config.get("infra", {}).get("leac_result",{}).get(year,None):
+            if self.config.get(self.component, {}).get("leac_result",{}).get(year,None):
                 logger.info("leac information was manual added")
                 continue
-            expected_path = os.path.join((self.maps).replace(self.component, 'leac'),
+            expected_path = os.path.join((self.maps).replace(self.component, 'leac').replace(self.run_name,'leac'),
                                          f'LEAC_{self.aoi_name}_{year}.tif')
             if not os.path.exists(expected_path):
                 logger.error('It seems that no input leac location was given and that the default location ' + \
                              f'{expected_path} does not contain a valid raster. please run leac module first.' )
             else:
-                self.config["infra"]["leac_result"].update({year : expected_path})
+                self.config[self.component]["leac_result"].update({year : expected_path})
     @classmethod
     def load_lut(cls):
         """Return a `pd.DataFrame` with the index codes and their descriptions."""
