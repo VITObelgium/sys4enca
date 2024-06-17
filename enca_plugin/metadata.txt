@@ -4,9 +4,9 @@
 name=ENCA
 qgisMinimumVersion=3.0
 description=Ecosystem accounting plugin
-version=2.1.0-alpha.1
+version=2.1.0
 author=VITO
-email=thomas.danckaert@vito.be
+email=robin.houdmeyers@vito.be
 
 about=Calculate natural capital accounts for land use, infrastructure, water and carbon.  Revision $Format:%h$.
 
