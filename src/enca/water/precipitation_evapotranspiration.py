@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 class WaterPrecipEvapo(enca.ENCARun):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'WATER_PRECIPITATION_EVAPOTRANSPIRATION'
 
     def __init__(self, config):
@@ -149,23 +148,29 @@ class WaterPrecipEvapo(enca.ENCARun):
             tags = src.tags()
             profile = src.profile
             bounds = src.bounds
-            psizex, psizey= src.res
+            psizex =  float(tags["tp#GRIB_iDirectionIncrementInDegrees"])
+            psizey =  float(tags["tp#GRIB_jDirectionIncrementInDegrees"])
 
         # check that the variable time is available
-        if "NETCDF_DIM_time_VALUES" not in tags.keys():
+        if "NETCDF_DIM_valid_time_VALUES" not in tags.keys():
             raise ValueError("Time variable can not be found in the NetCDF.")
 
 
         # these netCDFs are special lons.min() is all the time zeros, but we know that this is a global dataset (subtract 180)
         # but do a check
-        if (bounds.right < 180.5) :
+        if float(tags["tp#GRIB_longitudeOfLastGridPointInDegrees"]) < 180.5 :
             # is a normal netCDF ranging from -180 to +180 in longitude
-            affine = profile['transform']
-            data_roll = False
-        else:
             # is a special netCDF ranging from 0 - 360 in longitude
             # do a data rolling by 180deg and change Image origin
-            UL_x, UL_y = bounds.left - 180, bounds.top
+            UL_x, UL_y = float(tags["tp#GRIB_longitudeOfFirstGridPointInDegrees"]), float(
+                tags["tp#GRIB_latitudeOfFirstGridPointInDegrees"])
+            affine = rasterio.transform.from_origin(UL_x, UL_y, abs(psizex), abs(psizey))
+            data_roll = False
+        else:
+
+            # is a special netCDF ranging from 0 - 360 in longitude
+            # do a data rolling by 180deg and change Image origin
+            UL_x, UL_y = float(tags["tp#GRIB_longitudeOfFirstGridPointInDegrees"])  - 180, float(tags["tp#GRIB_latitudeOfFirstGridPointInDegrees"])
             affine = rasterio.transform.from_origin(UL_x, UL_y, abs(psizex), abs(psizey))
             data_roll = True
 
@@ -189,6 +194,12 @@ class WaterPrecipEvapo(enca.ENCARun):
         if tags['tp#units'] != 'm':
             raise ValueError(f"Unit of the netCDF does not seem te be correct. It was expected to be in m but is in {tags['tp#units']}")
 
+        time_units = tags.get('valid_time#units').split(' since ')[0]
+        time_start = tags.get('valid_time#units').split(' since ')[1].split('-')
+        refdate = date(int(time_start[0]), int(time_start[1]), int(time_start[2]))
+        if not 'sec' in time_units:
+            logger.error(f"The unit of the time dimension was expected to be in seconds however it is in {time_units}")
+
         # ini output raster
         aOut = np.zeros((profile['height'], profile['width']), dtype=np.float32)
 
@@ -196,14 +207,20 @@ class WaterPrecipEvapo(enca.ENCARun):
         with rasterio.open(self.config[self.component][_COPERNICUS_PRECIPITATION][year]) as src:
             for i in range(profile['count']):
                 tags_band = src.tags(i+1)
-                refdate  =  date(1900, 1,1)
-                timeref = tags_band['NETCDF_DIM_time']
-                time_coverage_start = refdate + timedelta(hours=int(timeref))
+                #refdate  =  date(1900, 1,1)
+                timeref = tags_band['NETCDF_DIM_valid_time']
+                time_coverage_start = refdate + timedelta(seconds=int(timeref))
                 startday,days = monthrange(int(year), time_coverage_start.month)
 
                 logger.debug("* Working on timestep: %s/%s")
                 # read out data for first time step (scaling and offset is directly applied)
-                datax = src.read(i+1, masked = True)*float(tags['tp#scale_factor'])+ float(tags['tp#add_offset'])
+                try :
+                    scale = float(tags['tp#scale_factor'])
+                except: scale =1
+                try:
+                    offset = float(tags['tp#add_offset'])
+                except: offset = 0
+                datax = src.read(i+1, masked = True)* scale + offset
                 logger.info(datax.dtype)
                 # check if masked array - if not create
                 if type(datax) != np.ma.core.MaskedArray:

@@ -17,7 +17,6 @@ SOC_MANGROVES = 'SOC_MANGROVES'
 
 class CarbonSoil(enca.ENCARun):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_SOIL'
 
     def __init__(self, config):

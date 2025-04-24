@@ -18,7 +18,6 @@ _block_shape = (1024, 1024)
 
 class DroughtVuln(enca.ENCARun):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'WATER_DROUGHT_VULNERABILITY'
 
     def __init__(self, config):
@@ -43,10 +42,26 @@ class DroughtVuln(enca.ENCARun):
             with rasterio.open(nc_files) as src:
                 profile = src.profile
                 tags = src.tags()
-                time_units = tags.get('time#units').split(' since ')[0]
-                time_start = tags.get('time#units').split(' since ')[1].split('-')
+                if (float(tags["drtcode#GRIB_longitudeOfLastGridPointInDegrees"]) < 180.5):
+                    affine = rasterio.transform.from_origin(float(tags["drtcode#GRIB_longitudeOfFirstGridPointInDegrees"]),
+                                                            float(tags["drtcode#GRIB_latitudeOfFirstGridPointInDegrees"]),
+                                                            float(tags["drtcode#GRIB_iDirectionIncrementInDegrees"]),
+                                                            float(tags["drtcode#GRIB_jDirectionIncrementInDegrees"]))
+                    data_roll = False
+                else:
+                    affine = rasterio.transform.from_origin(float(tags["drtcode#GRIB_longitudeOfFirstGridPointInDegrees"])-180,
+                                                            float(tags["drtcode#GRIB_latitudeOfFirstGridPointInDegrees"]),
+                                                            float(tags["drtcode#GRIB_iDirectionIncrementInDegrees"]),
+                                                            float(tags["drtcode#GRIB_jDirectionIncrementInDegrees"]))
+                    data_roll = True
+
+
+
+
+                time_units = tags.get('valid_time#units').split(' since ')[0]
+                time_start = tags.get('valid_time#units').split(' since ')[1].split('-')
                 refdate  =  date(int(time_start[0]), int(time_start[1]),int(time_start[2]))
-                times = tags.get('NETCDF_DIM_time_VALUES')[1:-1].split(',')
+                times = tags.get('NETCDF_DIM_valid_time_VALUES')[1:-1].split(',')
                 if 'sec' in time_units:
                     time_coverage = [refdate + timedelta(seconds=int(secs)) for secs in times]
                 else:
@@ -65,11 +80,16 @@ class DroughtVuln(enca.ENCARun):
 
             annual = np.divide(sum, count, where=count != 0, out=sum)
             path_out = os.path.join(self.temp_dir(), f'drought_code_annual-average_{year}.tif')
+            # do the data_roll if needed to bring data in -180 to +180 longitude format
+            if data_roll:
+                logger.debug("** do a data roll to get 0deg center meridian.. ")
+                annual = np.roll(annual, int(annual.shape[1] / 2), axis=1)
             with rasterio.open(path_out, 'w', **dict(profile,
                                                      count=1,
                                                      driver='Gtiff',
                                                      crs='EPSG:4326',
-                                                     dtype=np.float32)) as dst:
+                                                     dtype=np.float32,
+                                                     transform=affine)) as dst:
                 dst.update_tags(creator='sys4enca', info=f'annual average of the drought code for year {year}')
                 dst.write(annual, 1)
 

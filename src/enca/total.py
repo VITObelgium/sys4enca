@@ -44,7 +44,6 @@ _output_codes = {'ECU': 'Ecosystem Capability Unit',
 class Total(enca.ENCARun):
     """TEC account Run class."""
 
-    run_type = enca.RunType.ACCOUNT
     component = 'TOTAL'
 
     _indices_average = ['CEH', 'CEIUV', 'SCU', 'ECU', 'EIH', 'EIIUV', 'EISUI',

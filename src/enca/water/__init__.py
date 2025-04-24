@@ -91,7 +91,6 @@ input_codes = dict(
 class Water(enca.ENCARun):
     """Water accounting class."""
 
-    run_type = enca.RunType.ENCA
     component = 'WATER'
 
     #: The following indices are SELU-wide indicators, for which we calculate an average weighted by area.
@@ -611,6 +610,7 @@ class Water(enca.ENCARun):
         # for that we also need i7 = SELU quality weighted SRMUs
         indices['i7'] = indices['i6'] * indices['i5']
         indices['W14_12'] = indices['i7'] / indices['W1_21']
+        indices['W14_12'][indices['i7']==0] = 0
         # glacier, snow & ice
         indices['W14_13'] = 1  # TODO: why is that one - Excel table says 'per memory'
         # accessible ground water

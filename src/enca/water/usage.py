@@ -23,7 +23,6 @@ _block_shape = (256, 256)
 
 class Usage(enca.ENCARun):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'WATER_USAGE'
 
     def __init__(self, config):

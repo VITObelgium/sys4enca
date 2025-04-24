@@ -2,7 +2,6 @@ import gettext
 import logging
 import math
 import os
-from enum import Enum
 from importlib.metadata import PackageNotFoundError, version
 from importlib.resources import as_file, files
 
@@ -18,12 +17,11 @@ import enca
 import enca.parameters
 from enca.framework.config_check import (
     YEARLY,
-    ConfigError,
     ConfigItem,
     ConfigRaster,
     check_csv,
 )
-from enca.framework.errors import Error
+from enca.framework.errors import Error, ConfigError
 from enca.framework.geoprocessing import (
     MINIMUM_RESOLUTION,
     POLY_MIN_SIZE,
@@ -37,7 +35,7 @@ from enca.framework.geoprocessing import (
 from enca.framework.run import _LAND_COVER, Run
 
 try:
-    dist_name = 'sys4enca'
+    dist_name = 'enca'
     __version__ = version(dist_name)
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
@@ -49,16 +47,7 @@ with as_file(files(__name__).joinpath('locale')) as path:
     _ = t.gettext
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
-class RunType(Enum):
-    """ENCA runs belong to one of these types."""
-
-    ENCA = 0  #: Regular run for a single component.
-    ACCOUNT = 1  #: Yearly account or trend.
-    PREPROCESS = 2  #: Preprocessing.
-
+logger.setLevel(logging.INFO)
 
 HYBAS_ID = 'HYBAS_ID'
 ADMIN_ID = 'ADMIN_ID'  # id attribute for administrative boundaries shapefile
@@ -76,16 +65,14 @@ LAND_COVER = 'land_cover'
 # Use non-interactive matplotlib backend
 matplotlib.use('Agg')
 
-
 class ENCARun(Run):
     """Run class with extra properties for ENCA."""
 
     component = None  #: ENCA component, to be set in each subclass.
-    run_type = None  #: One of ENCA, ACCOUNT, or PREPROCESS
-    software_name = 'ENCA Tool'
+    run_type_name = None  
+    software_name = 'SYS4ENCA'
     id_col_statistics = HYBAS_ID
     id_col_reporting = REP_ID
-
 
     _indices_average = None  #: List of SELU-wide indicators, to be defined in each subclass
 
@@ -96,6 +83,7 @@ class ENCARun(Run):
         try:
             self.aoi_name = config['aoi_name']
             self.tier = config['tier']
+            self.run_type_name = config['run_type_name']  #: One of 'ENCA', 'ACCOUNT', or 'PREPROCESS'
         except KeyError as e:
             raise ConfigError(f'Missing config key {str(e)}', [str(e)])
 
@@ -105,7 +93,7 @@ class ENCARun(Run):
             }
         )
 
-        self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), self.run_type.name, self.component,
+        self.run_dir = os.path.join(self.output_dir, self.aoi_name, str(self.tier), self.run_type_name, self.component,
                                     self.run_name)
         self.maps = os.path.join(self.run_dir, 'maps')
         self.reports = os.path.join(self.run_dir, 'reports')
@@ -141,12 +129,10 @@ class ENCARun(Run):
                                   ['parameters_csv'])
             self.parameters.update(custom_params)
 
-    def version_info(self):
-        """Return string with describing version of ENCA and its main dependencies."""
-        return f'ENCA version {__version__} using ' \
-               f'GDAL (osgeo) {version("GDAL")}, rasterio {version("rasterio")}, geopandas {version("geopandas")} ' \
-               f'numpy {version("numpy")}, pandas {version("pandas")}, ' \
-               f'pyproj {pyproj.__version__}., PROJ {pyproj.proj_version_str}'
+    def _dump_config(self, config_filename=None):
+        if not config_filename:
+            config_filename = f'{self.component.lower().replace(" ", "_")}-config.yaml'
+        super()._dump_config(config_filename)
 
     def area_stats(self, block_shape=(2048, 2048), add_progress=lambda p: None):
         """Count number of pixels per statistics region, and number of overlapping pixels with each reporting region.
@@ -186,6 +172,13 @@ class ENCARun(Run):
         )
 
         return df_overlap
+
+    def version_info(self):
+        """Return string with describing version of ENCA and its main dependencies."""
+        return f'{self.software_name} version {__version__} using ' \
+               f'GDAL (osgeo) {version("GDAL")}, rasterio {version("rasterio")}, geopandas {version("geopandas")} ' \
+               f'numpy {version("numpy")}, pandas {version("pandas")}, ' \
+               f'pyproj {pyproj.__version__}., PROJ {pyproj.proj_version_str}'
 
     def _load_region_shapes(self):
         """Extend _load_region_shapes to also load the administrative boundaries file."""
@@ -250,7 +243,7 @@ class ENCARun(Run):
         :returns: `pd.DataFrame` with the sum of each raster per SELU region.
 
         """
-        logger.debug('Calculate SELU stats %s', ', '.join(raster_files))
+        logger.info('Calculate SELU stats %s', ', '.join(raster_files))
         result = pd.DataFrame(index=self.statistics_shape.index)
         for key, filename in raster_files.items():
             stats = statistics_byArea(filename, self.statistics_raster, self.statistics_shape[SHAPE_ID])
@@ -260,6 +253,7 @@ class ENCARun(Run):
 
     def write_selu_maps(self, parameters, selu_stats, year):
         """Plot some columns of the SELU + statistics GeoDataFrame."""
+        logger.info('Plotting SELU maps')
         for column in parameters:
             fig, ax = plt.subplots(figsize=(10, 10))
             selu_stats.plot(column=column, ax=ax, legend=True,
@@ -277,6 +271,7 @@ class ENCARun(Run):
 
     def write_reports(self, indices, area_stats, year):
         """Write final reporting CSV per reporting area."""
+        logger.info('Writing CSV reports')
         # Calculate fraction of pixels of each SELU region within reporting regions:
         area_ratios = area_stats['count'] / indices[AREA_RAST]
 
@@ -299,8 +294,14 @@ class ENCARun(Run):
             results['num_SELU'] = len(df)
 
             # Also collect indicators per dominant landcover type
-            col_dlct = 'DLCT'
-            grp_dlct = df.join(self.statistics_shape[col_dlct]).groupby(col_dlct)
+
+            try:
+                col_dlct = f'DLCT_{year}'
+                grp_dlct = df.join(self.statistics_shape[col_dlct]).groupby(col_dlct)
+            except:
+                col_dlct = f'DLCT'
+                grp_dlct = df.join(self.statistics_shape[col_dlct]).groupby(col_dlct)
+
             # Aggregate sum per DLCT for all columns, plus count of a single column to get 'num_SELU':
             results_dlct = grp_dlct.sum().join(grp_dlct[AREA_RAST].count().rename('num_SELU'))
             results = pd.concat([results, results_dlct.T], axis=1)
@@ -378,7 +379,7 @@ class ENCARunAdminAOI(ENCARun):
                                    'tiled': True,
                                    'compress': 'deflate',
                                    'interleave': 'band',
-                                   'bigtiff': 'if_saver'}
+                                   'bigtiff': 'if_safer'}
         # create rasterio profile for the reporting area also for further processing
         logger.debug('* set up the raster profile and extent for the reporting regions')
         self._create_reporting_profile()

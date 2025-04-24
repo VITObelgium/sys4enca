@@ -30,7 +30,6 @@ _GDAL_EDIT = 'gdal_edit.bat' if os.name == 'nt' else 'gdal_edit.py'
 class CarbonErosion(enca.ENCARun):
     """Carbon Soil Erosion preprocessing run."""
 
-    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_SOIL_EROSION'
 
     def __init__(self, config):

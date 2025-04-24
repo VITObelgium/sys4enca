@@ -30,7 +30,6 @@ REF_LANDCOVER = 'ref_landcover'
 
 class Infra(enca.ENCARun):
 
-    run_type = enca.RunType.ENCA
     component = 'infra'
 
     def __init__(self, config):
@@ -139,7 +138,7 @@ class Infra(enca.ENCARun):
         lColumns= [rename_dict.get(key) for key in keys]
 
 
-        df = pd.DataFrame(index=self.statistics_shape.index.astype(str) ,  dtype=float)
+        df = pd.DataFrame(index=self.statistics_shape.index ,  dtype=float)
         df.index.name = ID_FIELD
         # m2_2ha = 1/100**2
         pix2ha = self.accord.pixel_area_m2()/100**2
@@ -256,6 +255,8 @@ class Infra(enca.ENCARun):
         # intersect
         gdf['HYBAS_HA'] = gdf.geometry.area/(10000.)
         gdf[ID_FIELD] = gdf.index
+        if ID_FIELD in gdf_country.columns:
+            gdf_country.drop(ID_FIELD, axis=1, inplace=True)
         gdf = gpd.overlay(gdf, gdf_country, how='intersection')
         gdf['AREA_HA'] = gdf.geometry.area/(10000.)
         # calculate factor of hybas_area used after cut (<1.0 means hybas not fully used)
@@ -372,7 +373,12 @@ class Infra(enca.ENCARun):
         df.index.name = ID_FIELD
         m2_2ha = 1/100**2
         pix2ha = self.accord.pixel_area_m2()/100**2
-        df['DLCT'] = self.statistics_shape["DLCT"]
+        try:
+            df['DLCT'] = self.statistics_shape["DLCT"]
+        except:
+            try: df['DLCT'] = self.statistics_shape[f'DLCT_{str(year)}']
+            except: df['DLCT'] = 0
+
         df['Area_poly'] = df.area * m2_2ha
 
         for idx,path in enumerate(lPaths):
@@ -385,6 +391,7 @@ class Infra(enca.ENCARun):
                 df[lColumns[idx]] = stats["sum"] * pix2ha
             else:
                 df[lColumns[idx]] = stats["sum"]/stats["px_count"]
+                df.loc[stats['sum']==0, lColumns[idx]] = 0
 
 
         df['Area_delta'] = (df['Area_poly'] - df["Area_rast"]*m2_2ha) * 100.0 / df['Area_poly']
@@ -403,6 +410,7 @@ class Infra(enca.ENCARun):
         df['TEIP_ha']   = df['EIP4'] / df['Area_poly']
 
         #TODO remove temporary patch merge in river length + area
+        '''
         srmu = gpd.read_file(self.rawi_selu)
         srmu = srmu.set_index('HYBAS_ID')
         df = pd.merge(df, srmu['LENGTH_GEO'], on=ID_FIELD)
@@ -411,7 +419,7 @@ class Infra(enca.ENCARun):
         for col in cols_to_rename:
             if list(col.keys())[0] in df.columns:
                 df = df.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
-
+        '''
         df.crs = self.accord.reporting_profile.get('crs')
 
         # save to disk

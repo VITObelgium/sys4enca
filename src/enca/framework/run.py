@@ -9,72 +9,23 @@ import geopandas as gpd
 import rasterio
 import yaml
 
-from .config_check import ConfigError, ConfigCheck, ConfigRaster, ConfigRasterDir
-from .errors import Error
+import traceback
+
+from .config_check import ConfigCheck, ConfigRaster, ConfigRasterDir
+from .errors import Error, ConfigError
 from .geoprocessing import SHAPE_ID, MINIMUM_RESOLUTION, POLY_MIN_SIZE, GeoProcessing
+from .log_helper import set_up_log_file_for_logger, set_up_console_logging_for_logger, remove_log_file_handlers_from_logger
+from .cancelled import Cancelled
 
-logger = logging.getLogger(__name__)
-_log_format = logging.Formatter('%(asctime)s %(name)s [%(levelname)s] - %(message)s')
-_logfile_handler = None
-_logfile = None
-
+# activate the py.warnings Logger that captures Python warnings
 logging.captureWarnings(True)
-warnlogger = logging.getLogger('py.warnings')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 _LAND_COVER = 'land_cover'
 _STATISTICS_SHAPE = 'statistics_shape'
 _REPORTING_SHAPE = 'reporting_shape'
 _DEFLATOR = 'deflator'
-
-
-def set_up_console_logging(root_logger, verbose=False):
-    """Install a log handler that prints to the terminal."""
-    ch = logging.StreamHandler()
-    ch.setFormatter(_log_format)
-    ch.setLevel(logging.DEBUG if verbose else logging.WARNING)
-    root_logger.addHandler(ch)
-    warnlogger.addHandler(ch)
-
-
-def set_up_logfile(log_dir, root_logger, verbose=False, filename=f'{__name__}.log'):
-    """Install a log handler that prints to a file in the provided directory."""
-    global _logfile_handler
-    global _logfile
-    _logfile = os.path.join(log_dir, filename)
-    fh = logging.FileHandler(_logfile, encoding='utf-8')
-    fh.setLevel(logging.DEBUG if verbose else logging.WARNING)
-    fh.setFormatter(_log_format)
-
-    root_logger.addHandler(fh)
-    warnlogger.addHandler(fh)
-    _logfile_handler = fh
-
-
-def remove_logfile_handler():
-    """Remove the log file handler.
-
-    Required to clean up when we reload the plugin.  Otherwise, an extra log handler starts writing to the same
-    file every time we reload the plugin.
-    """
-    global _logfile_handler
-    if _logfile_handler is not None:
-        logger.removeHandler(_logfile_handler)
-
-
-def get_logfile():
-    """Return the filename of the current log file."""
-    return _logfile
-
-
-class Cancelled(Exception):
-    """Custom Exception to signal cancellation of a Run.
-
-    This Exception not raised by the package itself.  Rather, it is "injected" into the thread of a running calculation
-    by the QGIS plugin when the user clicks the cancel button.
-    """
-
-    pass
-
 
 class Run:
     """Common skeleton for all runs, takes care of logging, output directories, config validation, ...
@@ -85,7 +36,7 @@ class Run:
     id_col_statistics = None  #: Column name to use as index in input statistics region file.
     id_col_reporting = None  #: Column name to use as index in reporting region file.
     component = None  #: Name of module / component, to be set in subclasses.
-    software_name = 'NCA Framework'
+    software_name = 'NCA Framework' # Name of software tool, to be overridden in subclasses
 
     def __init__(self, config):
         """Initialize a run from a config dict.
@@ -93,13 +44,13 @@ class Run:
         :param config: Dictionary describing run settings and input.
 
         """
-        logger.debug('Run.__init__')
         self.config_template = {
         }  #: Dictionary of :obj:`.config_check.ConfigItem` describing the required configuration for this run.
 
         # If running from command line, config contains a 'func' attribute used to select the run type (side effect of
         # our use of argparse subparsers).  This attribute must not be written to the final config file.
         config.pop('func', None)
+
         self.years = config.get('years')
         # Check self.years is a non-empty list of integers
         if not self.years or not isinstance(self.years, list) or any(not isinstance(y, int) for y in self.years):
@@ -122,34 +73,62 @@ class Run:
         """Call this method to start the actual calculation.
 
         Wraps :meth:`.config_check.ConfigCheck.validate` and :meth:`.run.Run._start` with exception handlers.
+
+        :param progress_callback: progressbar for the QGIS plug-in
         """
         self._progress_callback = progress_callback
         assert (0. <= self._progress_weight_run <= 1.0)
         self.add_progress(0.)
 
         self._create_dirs()
-        global _logfile_handler
-        if _logfile_handler is None:
-            set_up_logfile(self.run_dir, self.root_logger, self.config.get('verbose', False))
-        logger.info(self.version_info())
+
+        # log to console (for runs via CLI) and to a log file in directory run_dir
+        set_up_log_file_for_logger(None,log_dir = self.run_dir, verbose = self.config['verbose'], filename = self.config['run_name']+'.log')
+        set_up_log_file_for_logger("py.warnings",log_dir = self.run_dir, verbose = self.config['verbose'], filename = self.config['run_name']+'.log')
+        set_up_console_logging_for_logger(None, verbose = False)
+        set_up_console_logging_for_logger("py.warnings", verbose = False)
+        if 'verbose' in self.config and self.config['verbose']:
+            logger.setLevel(logging.DEBUG)
+
+        logger.info(f'*** Welcome to the SYS4ENCA-tool ***')
 
         # dump config as provided by user, so we can see exactly what the input was when we want to debug
         self._dump_config()
 
+        logger.info(self.version_info())
+
+        if 'started_from' in self.config:
+            logger.info('Started from ' + self.config['started_from'])
+
         try:
             self._configure()
             self._progress = 100. * (1. - self._progress_weight_run)
+            logger.info('Starting account calculations')
             self._start()
-        except Cancelled:
-            logger.exception('Run canceled.')
-            raise
-        except BaseException:
-            logger.exception('Error:')
-            raise
+        except Cancelled as e:
+            logger.error(f'{self.software_name} run cancelled.')
+            raise e
+        except ConfigError as e:
+            logger.error(f'Configuration error: {e.message}')
+            logger.error(f'Please check following section:')
+            logger.error('   ' + ': '.join(str(x) for x in e.path))
+            raise e
+        except Error as e:
+            logger.error('Processing error: %s', e.message)
+            raise e
+        except BaseException as e:
+            logger.error(f'{self.software_name} raised exception {type(e).__name__}: {e}')
+            logger.debug(traceback.format_exc(chain=False))
+            raise Error(f'{self.software_name} raised exception {type(e).__name__}: {e}')
+        finally:
+            logger.info(f'{self.software_name} run complete.')
+            remove_log_file_handlers_from_logger(__name__)
+            remove_log_file_handlers_from_logger("py.warnings")
         logger.info('Run complete.')
 
     def _configure(self):
         """Set up reference CRS and AOI, check configuration, and adjust input rasters."""
+        logger.info('Examining the resolution of first land cover raster')
         # Get the resolution of the first land cover raster.
         try:
             land_cover_year0 = self.config[_LAND_COVER][self.years[0]]
@@ -163,7 +142,7 @@ class Run:
                 self.epsg = src.crs.to_epsg()
                 if self.epsg == 4326:
                     logger.exception(f'Land cover {land_cover_year0} is in EPSG:4326 is not supported, please reproject')
-                    raise ConfigError(f'Land cover {land_cover_year0} is in EPSG:4326 is not supported, please reproject')
+                    raise ConfigError(f'Land cover {land_cover_year0} is in EPSG:4326 is not supported, please reproject', [_LAND_COVER, self.years[0]])
         except Exception as e:
             raise ConfigError(f'Failed to open land cover file for year {self.years[0]}: "{e}"',
                               [_LAND_COVER, self.years[0]])
@@ -176,11 +155,16 @@ class Run:
                 'produces non-desired results.')
             self.src_res = (MINIMUM_RESOLUTION, MINIMUM_RESOLUTION)
 
+        logger.info('Loading region shapes')
         self._load_region_shapes()
+        logger.info('Validating study scope')
         self._StudyScopeCheck()
+        logger.info('Rasterizing shapes')
         self._rasterize_shapes()
+        logger.info('Validating config items')
         config_check = ConfigCheck(self.config_template, self.config, self.accord)
         config_check.validate()
+        logger.info('Adjusting input rasters')
         self.adjust_rasters(config_check)
 
     def _start(self):
@@ -218,17 +202,16 @@ class Run:
             os.makedirs(self.run_dir)
         except FileExistsError:
             if self.config.get('continue'):
-                logger.debug('Continuing work in existing run directory %s', self.run_dir)
+                logger.debug('Continuing work in existing run directory %s' % self.run_dir)
             else:
-                raise Error(f'Run directory {self.run_dir} already exists.  '
-                            'Use option "continue" to resume a previous run.')
+                raise ConfigError(f'Run directory {self.run_dir} already exists.  Use option "continue" to resume a previous run.', ['run_dir'])
 
         os.makedirs(self.temp_dir(), exist_ok=True)
 
-    def _dump_config(self):
+    def _dump_config(self, config_filename='config.yaml'):
         """Write a YAML dump of the current config in our run directory."""
         logger.debug('Dump config at %s', self.run_dir)
-        with open(os.path.join(self.run_dir, 'config.yaml'), 'w') as f:
+        with open(os.path.join(self.run_dir, config_filename), 'w') as f:
             f.write(yaml.dump(self.config))
 
     def _load_region_shapes(self):
@@ -251,7 +234,11 @@ class Run:
             raise ConfigError(f'The provided file "{file_statistics}" for input statistics geographical regions does '
                               f'not have a column {self.id_col_statistics}.', [_STATISTICS_SHAPE])
         except Exception as e:
-            raise Error(f'Failed to read input stastistics geographical regions file "{file_statistics}": {e}.')
+            raise ConfigError(f'Failed to read input statistics geographical regions file "{file_statistics}": {e}.', [_STATISTICS_SHAPE])
+
+        #bug fix it seems sometimes the statistics file 'fid' column is not correctly read : as float iso int. Since this is a protected columns this gives rise to errors in write out of gpkg's
+        if 'fid' in self.statistics_shape.columns:
+            self.statistics_shape['fid'] = self.statistics_shape['fid'].astype(int)
 
         #: Column name to use as index in reporting region file.
         file_reporting = self.config.get(_REPORTING_SHAPE)
@@ -264,13 +251,13 @@ class Run:
             raise ConfigError(f'The provided file "{file_reporting}" for reporting geographical regions does not have '
                               f'a column {self.id_col_reporting}.', [_REPORTING_SHAPE])
         except Exception as e:
-            raise Error(f'Failed to read reporting geographical regions file "{file_reporting}": {e}.')
+            raise ConfigError(f'Failed to read reporting geographical regions file "{file_reporting}": {e}.', [_REPORTING_SHAPE])
 
         # Reduce reporting regions GeoDataFrame to the set of selected regions:
         logger.debug('* get the reporting regions')
         # first we check the given "selected_regions" from  config all exist in reporting_shape
         # mainly needed when tool is run in command line mode
-        logger.debug('** check if even all selected_regions (reporting_regions) exist in the reporting vector file')
+        logger.debug('** check if all selected_regions (reporting_regions) exist in the reporting vector file')
         selected_regions = self.config.get('selected_regions')
         if not isinstance(selected_regions, list) or not len(selected_regions):
             raise ConfigError('Please select one or more reporting regions.', ['selected_regions'])
@@ -373,7 +360,7 @@ class Run:
                                    'tiled': True,
                                    'compress': 'deflate',
                                    'interleave': 'band',
-                                   'bigtiff': 'if_saver'}
+                                   'bigtiff': 'if_safer'}
         # create rasterio profile for the reporting area also for further processing
         logger.debug('* set up the raster profile and extent for the reporting regions')
         self._create_reporting_profile()

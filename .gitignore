@@ -60,6 +60,3 @@ enca_plugin/resources.py
 
 # gettext binary files
 *.mo
-
-# qt compiled translation files
-*.qm

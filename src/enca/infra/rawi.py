@@ -92,7 +92,7 @@ class RAWI(object):
                 data = data.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
 
         # write result with extra column HSRU (homegeneous stream reach units classes)
-        data.to_file(outfile, drivers='ESRI Shapefile')
+        data.to_file(outfile, driver='ESRI Shapefile')
 
     def group_SRMUperSELU(self):
 
@@ -135,7 +135,7 @@ class RAWI(object):
                 df = df.rename(index=str, columns={list(col.keys())[0]: list(col.values())[0]})
 
         # write out grouped shapefile
-        df.to_file(outfile, drivers='ESRI Shapefile')
+        df.to_file(outfile, driver='ESRI Shapefile')
 
     #rasterize Gloric rivers
     def rasterize_rivers(self):
@@ -146,7 +146,7 @@ class RAWI(object):
             file = os.path.splitext(self.rawi_shape)[0] + '_buffered'+ str(self.resolution) +'m'+ '.tif'
             gdb = gpd.read_file(self.rawi_shape)
             gdb["geometry"] = gdb.geometry.buffer(self.river_buffer)
-            gdb.to_file(file, drivers='ESRI Shapefile')
+            gdb.to_file(file, driver='ESRI Shapefile')
 
         self.accord.rasterize_burn(file, self.rawi_mask)
 
@@ -211,7 +211,7 @@ class RAWI(object):
             if 'level_0' in df.columns:
                 df.drop('level_0', axis = 1, inplace = True)
 
-            df.to_file(catchment, drivers='ESRI Shapefile')
+            df.to_file(catchment, driver='ESRI Shapefile')
 
         except Exception as e:
             print("Updating shapefile to rename column to RS failed")

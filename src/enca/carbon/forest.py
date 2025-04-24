@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 class CarbonForest(enca.ENCARunAdminAOI):
     """Forest carbon preprocessing run."""
 
-    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_FOREST'
 
     def __init__(self, config):

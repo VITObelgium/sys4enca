@@ -1,49 +1,100 @@
-[build-system]
-requires = ["setuptools", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "sys4enca"
+description = "Natural Capital Accounting package"
 authors = [
     {name = "Thomas Danckaert", email = "thomas.danckaert@vito.be"},
-    {name = "Marcel Buchhorn", email = "marcel.buchhorn@vito.be"},
+    {name = "Dr Marcel Buchhorn", email = "marcel.buchhorn@vito.be"},
     {name = "Bruno Smets", email = "bruno.smets@vito.be"},
-    {name = "Catherine Van Den Hoof", email = "catherine.vandenhoof@vito.be"}
+    {name = "Bert De Roo", email = "bert.deroo@vito.be"}
 ]
-description = "Natural Capital Accounting package"
-readme = "README.rst"
+readme = {file = "README.rst", content-type = "text/x-rst"}
 requires-python = ">=3.9"
-keywords = ["ecosystem", "accounting", "SEEA"]
+keywords = ["ecosystem", "accounting", "SEEA", "ENCA"]
 license = {text = "BSD-3-Clause"}
 classifiers = [
+    # Add here all kinds of additional classifiers as defined under
+    # https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
-]
-dependencies = [
-    'GDAL>=3.1.0',
-    'pandas',
-    'matplotlib',
-    'netCDF4',
-    'numpy',
-    'geopandas>=0.9',
-    'rasterio',
-    'scipy',
-    'scikit-learn',
-    'openpyxl',
-    'Rtree',
-    'shapely>=2.0.0',
-    'pyyaml'
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://papbio.vito.be/en/sys4enca-tool/"
+Repository = "https://github.com/VITObelgium/sys4enca"
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "win-64", "osx-64", "linux-64"]
+
+[tool.pixi.feature.testing.dependencies]
+pytest = "*"
+pytest-cov = "5.0.0"
+coverage = "7.6.4"
+git = "*"
+
+[tool.pixi.feature.docs.pypi-dependencies]
+sphinx = "==8.1.3"
+sphinx_rtd_theme = "==3.0.2"
+
+[tool.pixi.feature.dev.pypi-dependencies]
+sys4enca = { path = ".", editable = true}
+
+[tool.pixi.environments]
+default = { features = ["dev"], solve-group = "default" }
+prod = { solve-group = "default" }  # pixi-pack does not support pypi dependencies yet, must package sys4enca manually
+dev = { features = ["testing", "dev", "docs"], solve-group = "default" }
+testing = { features = ["testing", "docs"], solve-group = "default" }
+
+[tool.pixi.tasks]
+test = "pytest tests"
+integration = "pytest integration_tests"
+build = "python -m pip wheel . --no-deps"
+docs = "sphinx-build -M html docs _build"
+
+[tool.pixi.dependencies]
+python = ">=3.9"
+affine = "*"
+fiona = "*"
+gdal = ">=3.1.0"
+geopandas = ">=0.9"
+matplotlib = "*"
+numpy = "*"
+pandas = "*"
+psutil = "*"
+pyproj = "*"
+rasterio = "*"
+rio-cogeo = "*"
+rtree = "*"
+scipy = "*"
+scikit-learn = "*"
+seaborn = "*"
+shapely = ">=2.0.0"
+tqdm = "*"
+pyyaml = "*"
+netcdf4 = "*"
+pip = ">=25.0.1,<26"
 
 [project.scripts]
 enca = "enca.__main__:main"
 bring2aoi = "enca.tools.bring2aoi:main"
 
+[build-system]
+# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
+requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools]
+include-package-data = true
 package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-enca = ["*.mo"]
+sys4enca = ["*.mo"]
 
 [tool.setuptools_scm]
 

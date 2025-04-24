@@ -1,144 +1,169 @@
-# sys4enca
+# SYS4ENCA tool
 
-## Check out marvin_qgis_tools submodule
+## Components
 
-Make sure the `qgis_tools` submodule is checked out as well. If it is
-not, run :
+SYS4ENCA tool and codebase consists of two components:
 
-    git submodule init
-    git submodule update
+* The Python package _enca_ which calculates natural capital accounts according to the ENCA methodology (Weber et al). This package can be integrated into other Python programs, or it can be used directly with a command line interface. It resides in the src/enca folder.
+* A QGIS plugin, which provides a graphical interface to configure and run calculations with the Python package. The plugin code resides in the enca_plugin/ folder.
 
-Make sure the symbolic link to the `marvin_qgis_tool` directory in the
-`enca_plugin` directory is working (if the link is not working on
-Windows, you can try the following:
+## Python dependencies and virtual environment
 
--   make sure Developer Mode is turned on in windows so symlinks are
-    enabled.
+For both components, the Python dependencies are managed using [Pixi](https://pixi.sh/latest/).
 
--   make sure git `core.symlinks` setting is `True`for your repository
-    (or globally) :
+Pixi is an improved alternative to conda which allows us to manage dependencies in a modern way. 
 
-        git config --global core.symlinks True
+Install Pixi as instructed on the web site, or manually download the binary from the [github releases page](https://github.com/prefix-dev/pixi/releases) and put it in a location that is on your PATH.
 
--   On windows, symlinks only seem to work if using git from windows cmd
-    prompt. If using git bash on windows, adding
-    `MSYS=winsymlinks:nativestrict` to its bashrc file may help.
+The QGIS plugin code is to run in the QGIS environment and depends on QGIS components, such as the Qt GUI ones.
 
--   If you have a broken symlink, apply above settings, delete the
-    broken `marvin_qgis_tool` link in `enca_plugin`, and use
-    `git reset --hard HEAD` to restore it.
+The Python package for calculating the ENCA accounts is designed to run in its own, virtual environment.
 
-## Making a new release
+To add and install new dependencies, run `pixi add <conda-forge package>` or add it manually in the _pyproject.toml_ file and activate the environment.
+Both the lock and _pyproject.toml_ files must be tracked in git to ensure all developers are working in the same environment. 
+Have a look [here](https://pixi.sh/latest/advanced/pyproject_toml/) on the syntax.
 
-To release a new plugin, we need to prepare a zip file to install the
-plugin with, and upload a new sys4enca package to the artifactory
-(unless the sys4enca package is unchanged, and only the QGIS plugin was
-updated).
+## Python package enca
 
-### Update sys4enca
+### Activating the virtual environment
 
-1.  Update the attributes `_min_version` and `_version_next` in
-    `enca_plugin/install_deps.p` so the `_min_version` is the new
-    version the plugin to use, and `_version_next` is e.g. the next
-    minor version.
+To activate the Python virtual environment, run `pixi shell` in the root directory.
 
-2.  Commit this version of the code, and tag the git commit with the new
-    version. (Remember to push the tag to other repositories, so tags
-    remain in sync with all users of the code\...)
+Optional arguments include 
+* _-e <environment>_, which will choose a different environment with additional dependencies, and 
+* _--no-lockfile-update_ which will create the environment without updating any dependencies.
 
-3.  Build a new wheel for sys4enca from a clean git checkout of the new
-    release tag, e.g. by running :
+### Building the wheel file
 
-        python -m pip wheel . --no-deps
+In the root directory run `pixi run build`. This will produce a Python wheel file in your current directory.
 
-    (`.` refers to the current working direectory, if you are not in the
-    repository root, change that to the path to the repository root
-    directory. This should produce a file
-    `sys4enca-<VERSION>-py3-none-any.whl`.
+### Running tests
 
-4.  Add the wheel file to the
-    [Artifactory](https://artifactory.vgt.vito.be). package repository
-    directory `python-packages-public/sys4enca`.
+Additionally, Pixi can be used for automations like `make`, so you can run the unit tests with `pixi run test`.
+
+### Command line interface
+
+Installing the _enca_ package will also install the _enca_ command line tool defined in enca/__main__.py.
+
+In order to run _enca_, make sured the location of the installed executable is on your _PATH_ environment variable.
+You can look up the installation directory of the ``enca`` package as follows ::
+
+`python -m pip show enca`
+
+The _Location:_ key contains the location of the _enca_ package.  The _enca_ executable is typically located
+in the _bin_ (Unix) or _Scripts_ (Windows) sibling directory of the package location.  Run `enca -h` for an
+overview of the different account modules, or `enca <account_name> -h` for an overview of the command line options for
+a specific account.
+
+## QGIS plugin
+
+### Development
+
+The plugin uses its own _pyproject.toml_ to define environments which are managed by _pixi_.
+Inside the _enca_plugin_ folder, you can run `pixi shell` to enter a development environment specific to the plugin.
+
+### Building the plugin zip file
+
+You can build the plugin zip by from the _enca_plugin_ folder running `pixi run build-all` (to build a zip for all platforms). `build-windows` and `build-linux` are also available. 
+
+This will call the _enca_plugin/src/make/make_plugin_release.py_ script, which produces zip files for each platform in _enca_plugin/build_.
+
+### About make_plugin_release.py
+
+The script _enca_plugin/src/make/make_plugin_release.py_ is used to create a zip file which can be installed in QGIS.
+
+The strategy for shipping the plugin is to ship _enca_ package together with all its dependencies, including GDAL and a Python interpreter.
+
+Instead of installing these in the QGIS Python environment, everything except the UI components live in their own environment, and QGIS communicates with _enca_ through its CLI. 
+
+At the cost of some additional disk space useage, the reasons for doing this are:
+* it guarantees fully reproducible environments. Everything is shipped together like a poor man's docker container. No network requests are necessary to install the plugin and its dependencies.
+* the _enca_ development environment is not constrained by the environment provided by QGIS over which we have no control.
+* we can tap into the conda ecosystem for installing packages/dependencies using _pixi_.
+
+The script takes care of the following:
+
+* Compile the resources.qrc file using pyrcc5.
+* Substitute the current commit id in the plugin metadata.txt.  The commit hash of the current HEAD is used, so run from a clean checkout to have the hash match the contents...
+* Zip the contents of the plugin, skipping files that should not be distributed.
+* Downloads and packages [pixi-pack](https://github.com/quantco/pixi-pack), a tool for bundling and shipping a pixi environment.
+* Creates a python wheel out of _enca_ package and includes it in the zip.
+* Packages the entire _prod_ environment defined in enca's _pyproject.toml_ as _environment.tar_ using _pixi-pack_ and includes it in the zip.
+
+**Note** The GUI translation is left out of this release script on purpose, to avoid dependency of the build environment on Qt linguist and pb_tools.
+
+### Plugin interface translation
+
+Previously, the scripts _release_plugin.bat_ and _release_plugin.sh_ automated the code and Zip build process,
+including resource compilation and translation, if the plugin builder tool _pb_tool_ and other tools (make, etc) are installed.
+For _make_ on Windows, [GNUWin32](https://gnuwin32.sourceforge.net/downlinks/make.php) can be used.
+
+_pb_tool_ can be installed from Thomas' fork through `python -m pip install git+https://github.com/tdanckaert/plugin_build_tool.git@https://github.com/tdanckaert/plugin_build_tool.git@qgis3_version`
+and has a configuration (.cfg) file in the _enca_plugin/src_ directory.
+
+While most of the functionality is now done by the make_plugin_release.py script, the pb_tool code (method _translate_) 
+shows how to compile the i18n .ts files into .qm files via the lrelease tool (from Qt4). It does not extract the translatable strings (lupdate) from the code files first.
+
+For the translation via Qt Linquist on Windows, you can install the pyside6 software, and execute following commands:
+
+To extract the translatable strings from the given .ui and .py files:
+`pyside6-lupdate -tr-function-alias tr+=self.tr -extensions ui,py enca_plugin_dockwidget_base.ui enca_plugin.py enca_plugin_dockwidget.py region_picker.py -ts i18n\fr.ts`
+
+To make this extraction work correctly, it is recommended to
+* Use double quotes
+* Avoid f-strings and use str.format() syntax so that substitution values are {0}, {1} ...
+* Avoid u'' (all Python 3 strings are unicode by default)
+* File dialogs are customized by code for the filter patterns and dialog title. Some labels of the dialog, e.g. 'selected file name', are inherited from the OS' locale when static dialog class methods are used.
+
+Then update the .ts file, adding in the translated strings.
+
+To compile the .ts file into the .qm file:
+`pyside6-lrelease i18n\fr.ts`
+
+For reference, see [Qt linguist manual](https://doc.qt.io/qt-6/qtlinguist-index.html).
+
+### Running the plugin
+
+When the plugin is first installed or loaded, the functions in _enca_plugin/src/exe_utils.py_ become relevant.
+
+These will:
+* Unpack the _environment.tar_ using the shipped _pixi-pack_ binary, to a pixi environment that lives in the _env_ folder, if the .tar file is found in the plugin installation directory.
+* Install the wheel into this environment, if the .whl file is found in the plugin directory. This can be used to update the enca package code without having to re-install (un-pack) the whole plugin (i.e. for testing and patching).
+
+The code that interacts with the UI interacts with the _enca_ CLI that is installed in this environment.
+
+You must test installing the resulting zip file and running the plugin before publishing it.
+
+## Release checklist
+
+### Update the ENCA core package and/or plugin code
+
+Commit the code. 
+
+### Update the translation file, compile it and push it into Git.
+
+### Tag the code
+
+Tag the git commit with the new version ('1.0.0' in our example).
+
+Remember to push the tag to other repositories, so tags remain in sync with all users of the code.
 
 ### Update the plugin
 
-Before you distribute the plugin, make sure the files resources.qrc and
-pip_install_dialog_base.ui are compiled. This is done using `pyrcc5` and
-`pyuic5` respectively. Youcan use the script `release_plugin.bat` or
-`release_plugin.sh` to automatically build a plugin zip file for the
-current version. Before you can run the scripts, you need to make sure
-all required tools are installed on your system. Requirements are:
+Create plugin zip files using `pixi run build-all` and publish them.
 
--   Plugin builder tool (`pb_tool`). You should install the fork from
-    <https://github.com/tdanckaert/plugin_build_tool.git>, because the
-    official version has a some issues. Install in your python
-    environment with :
+Check if the plugin's metadata.txt file reflects the proper version and Git commit (build), and update it if needed.
 
-        python -m pip install git+https://github.com/tdanckaert/plugin_build_tool.git@qgis3_version
+### Update the documentation
 
--   Sphinx to build documentation (you can install it using pip, or
-    using the OSGeo4W installer).
+To generate HTML documentation in the __build_ directory run `pixi run docs`.
 
--   Zip or [7zip](https://www.7-zip.org).
+To generate pdf documentation, you will also need a LaTeX installation.  Then, navigate to the _docs_ subdirectory and
+run ::
 
--   Make (windows version available from
-    [GnuWin32](https://gnuwin32.sourceforge.net/downlinks/make.php).
+`make latexpdf`
 
--   `pyuic5` and `pyrcc5` PyQt command line tools. These are installed
-    as part of QGIS, so the easiest solution to get everything working
-    on windows may be to work from the OSGeo4W Shell.
+**Note**
 
-If all these tools are installed and available from the command line
-(you may need to add Make, git and 7-zip directories) to your `PATH`
-environment variable for this), run :
-
-    ./release_plugin.sh <VERSION_TAG>
-
-where `<VERSION_TAG>` is the git tag we created in the previous step. A
-file `enca_plugin_<COMMIT_HASH>.zip` should now appear in the current
-directory.
-
-## Building a plugin zip
-
-Before you distribute the plugin, make sure the files resources.qrc and
-pip_install_dialog_base.ui are compiled. This is done using `pyrcc5` and
-`pyuic5` respectively (in Ubuntu, these are part of the pyqt5-dev-tools,
-on Windows, these are included in your QGIS installation). If you use
-the plugin builder tool, it will compile when your run the \'zip\' or
-\'deploy\' commands.
-
-To build a plugin zip for distribution, I recommend using the following
-two steps:
-
-1.  Use `git archive` to build an archive of the plugin source files.
-    This will also embed the current git commit hash into the plugin
-    metadata.txt file. Take extra care to include the symlinked files
-    from marvin_qgis_tools :
-
-        git archive -o enca_plugin.zip HEAD enca_plugin \
-            --prefix enca_plugin/marvin_qgis_tools/ --add-file qgis_tools/src/marvin_qgis_tools/osgeo4w.py --prefix ""
-
-    (Replace [HEAD]{.title-ref} by another tree or commit to build a
-    plugin zip for that version)
-
-2.  Extract the resulting archive and use
-    [pb_tool](https://pypi.org/project/pb-tool) to build an installable
-    plugin zip file. `pb_tool` will compile resources, .ui, translation
-    and help files. Due to a limitation in the official `pb_tool`
-    version, I recommend using the version from
-    <https://github.com/tdanckaert/plugin_build_tool/tree/qgis3_version>
-    for now, which you can install using pip :
-
-        python -m pip install git+https://github.com/tdanckaert/plugin_build_tool.git@qgis3_version
-
-    You will also need a `make` program to run `pb_tool`. On Linux, this
-    is readily available, on Windows, you can install `make` from
-    [GNUWin32](https://gnuwin32.sourceforge.net/downlinks/make.php) .
-
-    From the `enca_plugin` directory of the unzipped git archive, run :
-
-        pb_tool translate
-        pb_tool zip
-
-The scripts `release_plugin.bat` and `release_plugin.sh` automate this
-process (if `pb_tool` and `make` are installed).
+This project has been set up using PyScaffold 4.0.1. For details and usage
+information see [PyScaffold](https://pyscaffold.org/).

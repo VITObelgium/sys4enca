@@ -76,7 +76,7 @@ class FRAGRIV(object):
         polygons['dams'] =pts_in_polys
         polygons['fragriv'] = fragriv_in_polys
 
-        #polygons.to_file(outfile, drivers='ESRI Shapefile')
+        #polygons.to_file(outfile, driver='ESRI Shapefile')
 
         #rasterize
         self.accord.rasterize(polygons, 'fragriv', self.fragriv_hybas[level])

@@ -21,7 +21,6 @@ _keys_trend = ['C_EC', 'W_EC', 'EI_EC', 'ECU', 'TEC']
 class Trend(enca.ENCARun):
     """Trend Run class."""
 
-    run_type = enca.RunType.ACCOUNT
     component = 'TREND'
 
     def __init__(self, config):
@@ -84,7 +83,7 @@ class Trend(enca.ENCARun):
 
         # push small hybas out of reference calculation
         area_Hybas = 1500  # minimal size of HYBAS to get reliable results
-        df_trend.loc[df_trend['Area_rast'] < area_Hybas, 'ECU_slope'] = np.nan
+        #df_trend.loc[df_trend['Area_rast'] < area_Hybas, 'ECU_slope'] = np.nan
 
         output_file =  f'NCA_TEC-trend_Indices_SELU_{years[0]}-{years[-1]}'
         df_trend.to_csv(os.path.join(self.statistics,output_file + '.csv'))

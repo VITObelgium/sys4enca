@@ -16,7 +16,6 @@ _weight_2_carbon = 0.475
 
 class CarbonFire(enca.ENCARun):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_FIRE'
 
     def __init__(self, config):

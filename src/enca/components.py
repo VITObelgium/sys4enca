@@ -1,6 +1,6 @@
 """Registry of all available ENCA components."""
 
-from enca.framework.config_check import ConfigError
+from enca.framework.errors import ConfigError
 
 from .carbon import Carbon
 from .carbon.agriculture import CarbonAgriculture
@@ -100,7 +100,7 @@ def get_component_long_name(component_key, locale="en"):
     Fetches the component name in the specified language.
 
     :param component_key: The key identifier for the component.
-    :param lang: The language code ('en' for English, 'fr' for French).
+    :param locale: The locale.
     :return: The name of the component in the specified language.
     """
     # The locale is usually in the format 'en_US', 'fr_FR', etc.

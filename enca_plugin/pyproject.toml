@@ -1,0 +1,65 @@
+[project]
+name = "enca_plugin"
+description = "QGIS plugin for ENCA"
+authors = [
+  {name = "Dr. Marcel Buchhorn", email = "marcel.buchhorn@vito.be"},
+  {name = "Thomas Danckaert", email = "thomas.danckaert@vito.be"},
+  {name = "Bert De Roo", email = "bert.deroo@vito.be"},
+  {name = "Bruno Smets", email = "bruno.smets@vito.be"},
+]
+readme = {file = "README.rst", content-type = "text/x-rst"}
+requires-python = ">= 3.9"
+keywords = ["ecosystem", "accounting", "SEEA", "ENCA"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+# Add here all kinds of additional classifiers as defined under
+# https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://papbio.vito.be/en/sys4enca-tool/"
+Repository = "https://github.com/VITObelgium/sys4enca"
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "win-64", "osx-64", "linux-64"]
+
+[tool.pixi.pypi-dependencies]
+enca_plugin = { path = ".", editable = true}
+
+[tool.pixi.tasks]
+build-all = "python src/make/make_plugin_release.py all"
+build-linux = "python src/make/make_plugin_release.py linux-64"
+build-windows = "python src/make/make_plugin_release.py win-64"
+
+[tool.pixi.dependencies]
+python = ">=3.9"
+pip = "*"
+setuptools = "*"
+setuptools_scm = "*"
+wheel = "*"
+qgis = "3.34"
+pixi-pack = ">=0.2.2"
+requests = "*"
+geopandas = ">=1.0.1,<2"
+pyyaml = "*"
+
+[build-system]
+# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
+requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests*"]

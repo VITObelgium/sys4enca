@@ -45,8 +45,7 @@ class NATURALIS(object):
             with rasterio.open(self.nosm, 'w', **dict(profile, driver='geotiff', dtype=np.ubyte, nodata = 255)) as ds_out:
                 for _, window in block_window_generator(self.block_shape, ds_open.height, ds_open.width):
                     ablock = ds_open.read(1, window=window, masked=True)
-                    ablock[ablock == -99999] = 255
-                    ablock[ablock == -9999] = 255
+                    ablock[ablock < 0] = 255
 
                     ds_out.write(ablock, window=window, indexes=1)
 

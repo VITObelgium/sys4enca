@@ -1,0 +1,72 @@
+"""Water reporting."""
+
+PRECIPITATION = 'precipitation'
+EVAPO = 'evapotranspiration'
+USE_MUNI = 'MUNIusage'
+USE_AGRI = 'AGRIusage'
+DROUGHT_VULN = 'drought_vulnerability'
+EVAPO_RAINFED = 'ET_rainfed_agriculture'
+RIVER_LENGTH = 'river_length'
+LT_PRECIPITATION = 'LTA_precipitation'
+LT_EVAPO = 'LTA_evapotranspiration'
+LT_OUTFLOW = 'LTA_river_outflow'
+AQUIFER = 'aquifer'
+SALINITY = 'salinity'
+HYDRO_LAKES = 'HYDROlakes'
+GLORIC = 'GLORIC'
+
+COAST = 'COAST'
+COEFF = 'coeff'
+INFLOW = 'inf'
+OUTFLOW = 'outf'
+
+LT_OUT_M3 = 'LT_out_m3'
+NEXT_DOWN = 'NEXT_DOWN'
+LOG_Q_AVG = 'Log_Q_avg'
+SRMU = 'SRMU'
+HYGEO2 = 'HYGEO2'
+AREA_HA = 'area_ha'
+LAKE_AREA = 'Lake_area'
+TOTAL_LAKE_AREA = 'total_lake_area'
+TOTAL_LAKE_RUNOFF = 'total_lake_runoff'
+VOL_TOTAL = 'Vol_total'
+DIS_AVG = 'Dis_avg'
+HYLAK_ID = 'Hylak_id'
+OWN_TOTAL = 'own_total'
+HYBAS_LAKE_AREA = 'hybas_lake_area'
+HYBAS_LAKE_VOL = 'hybas_lake_vol'
+MAJOR_AQUIFER = 'Major-aquifer'
+LOCAL_AQUIFER = 'Local-aquifer'
+LC_LAKES = 'LC_code_lakes'
+LEAC_RESULT = 'leac_result'
+
+input_codes = dict(
+    CoastID=COAST,
+    W1_11=HYBAS_LAKE_VOL,
+    W1_12=HYBAS_LAKE_AREA,
+    W1_21=SRMU,
+    W1_22=RIVER_LENGTH,
+    W1_41=MAJOR_AQUIFER,
+    W1_42=LOCAL_AQUIFER,
+    W2_1=PRECIPITATION,
+    W2_31=INFLOW,
+    W2_51a=0,
+    W3_1=EVAPO,
+    W3_3=OUTFLOW,
+    W3_43=0,
+    W3_44=0,
+    W3_4a=USE_AGRI,
+    W3_4b=USE_MUNI,
+    W3_81a=0,
+    W3_82=0,
+    W9_21=EVAPO_RAINFED,
+    i2=TOTAL_LAKE_RUNOFF,
+    i3=0.8,
+    i5=0.8,
+    i9=1.0,
+    i10=SALINITY,
+    i11=0.8,
+    i12=TOTAL_LAKE_AREA,
+    W13_23=DROUGHT_VULN)
+
+component = 'WATER'

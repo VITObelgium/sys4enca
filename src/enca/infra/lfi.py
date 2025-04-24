@@ -57,7 +57,7 @@ class Catchment(object):
             for col in cols_to_rename:
                 if list(col.keys())[0] in data.columns:
                     data = data.rename(index=str, columns={list(col.keys())[0]:list(col.values())[0]})
-            data.to_file(self.catchment_temp, drivers='ESRI Shapefile')
+            data.to_file(self.catchment_temp, driver='ESRI Shapefile')
         except Error as e:
             raise Error(e)
         
@@ -179,7 +179,7 @@ class LFI(object):
                 data = data.rename(index=str, columns={list(col.keys())[0]:list(col.values())[0]})
 
         #write out MESH shapefile
-        data.to_file(self.lfi_mesh[basin], drivers='ESRI Shapefile')
+        data.to_file(self.lfi_mesh[basin], driver='ESRI Shapefile')
 
     def intersect_LCclass(self, year, lcName='None'):
         
@@ -303,8 +303,8 @@ class LFI(object):
             #TODO clean also data (lfi_mesh) file
 
             #write out new cleaned MEFF shapefile
-            data.to_file(outfile, drivers='ESRI Shapefile')
-            data_catchment.to_file(outfile_catchment, drivers='ESRI Shapefile')
+            data.to_file(outfile, driver='ESRI Shapefile')
+            data_catchment.to_file(outfile_catchment, driver='ESRI Shapefile')
         except Error as e:
             logger.ERROR("GEOPANDAS MESH calculation failed")
             raise Error(e)

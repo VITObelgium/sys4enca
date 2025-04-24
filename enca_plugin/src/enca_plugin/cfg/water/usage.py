@@ -1,0 +1,16 @@
+GHS_POP = 'GHS_POP'
+MUNICIPAL = 'municipal_water'
+AGRICULTURAL = 'agricultural_water'
+LC_AGRI = 'lc_agri'
+
+component = 'WATER_USAGE'
+
+Y1990 = 'y1990'
+Y1995 = 'y1995'
+Y2000 = 'y2000'
+Y2005 = 'y2005'
+Y2010 = 'y2010'
+Y2015 = 'y2015'
+Y2020 = 'y2020'
+Y2025 = 'y2025'
+Y2030 = 'y2030'

@@ -17,7 +17,6 @@ REF_LANDCOVER = 'ref_landcover'
 
 class Leac(enca.ENCARun):
 
-    run_type = enca.RunType.ENCA
     component = 'leac'
 
     def __init__(self, config):
@@ -168,14 +167,15 @@ class Leac(enca.ENCARun):
                 else: nodata = 0
 
                 profile2 = profile.copy()
-                profile2['dtype'] = np.uint16
-                with rasterio.open(self.leac_recl[year], 'w', **dict(profile, nodata = nodata)) as ds_out:
+                profile2['dtype'] = np.byte
+                with rasterio.open(self.leac_recl[year], 'w', **dict(profile2, nodata = nodata)) as ds_out:
                     for _, window in block_window_generator((2048,2048), ds_open.height, ds_open.width):
                         aBlock = ds_open.read(1, window=window, masked=True)
                         #Doesn't seem a nodata value was set
                         reclassified, dict_classes  = reclassification(aBlock, reclass_dict, nodata, nodata)
                         ds_out.write(reclassified, window=window, indexes=1)
-                add_color(self.leac_recl[year], self.config[self.component]['lut_ct_lc'], 'Byte')
+
+            add_color(self.leac_recl[year], self.config[self.component]['lut_ct_lc'], 'Byte')
 
         logger.debug("** Land cover reclassified ...")
 

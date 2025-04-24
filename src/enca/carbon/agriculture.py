@@ -49,7 +49,6 @@ _carbon = {
 
 class CarbonAgriculture(enca.ENCARunAdminAOI):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_AGRICULTURE'
 
     def __init__(self, config):

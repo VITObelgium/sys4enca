@@ -60,7 +60,6 @@ _livestock_long_names = {
 
 class CarbonLivestock(enca.ENCARunAdminAOI):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'CARBON_LIVESTOCK'
 
     def __init__(self, config):

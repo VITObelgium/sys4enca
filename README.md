@@ -8,4 +8,4 @@ Information can be found in https://papbio.vito.be/en/sys4enca-tool.
 
 ## Installation
 
-The package is provided as a ZIP file to be installed as an plug-in for QGIS3.28 or higher.
+The package is provided as a ZIP file to be installed as an plug-in for QGIS3.34 or higher.

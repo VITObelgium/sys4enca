@@ -1,0 +1,3 @@
+GLORIC = 'GLORIC'
+
+component = 'WATER_RIVER_LENGTH_PX'

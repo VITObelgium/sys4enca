@@ -1,0 +1,44 @@
+# 💩add unicode character here to trigger utf-8 detection...
+# (QGIS docs say "all metadata must be encoded as utf-8", but actually QGIS doesn't always use utf-8 charset to read the file...  Adding a "clearly unicode" character at the start seems to help...)
+[general]
+name=ENCA
+qgisMinimumVersion=3.34
+description=Ecosystem accounting plugin
+version=2.3.0
+author=VITO
+email=tim.jacobs@vito.be
+
+about=Calculate natural capital accounts for land use, infrastructure, water and carbon.  Revision $GIT_REVISION.
+
+tracker=https://github.com/VITObelgium/sys4enca/issues
+repository=https://github.com/VITObelgium/sys4enca
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=python
+
+homepage=https://papbio.vito.be/en/sys4enca-tool
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False

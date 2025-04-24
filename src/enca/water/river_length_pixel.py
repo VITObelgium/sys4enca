@@ -10,7 +10,6 @@ _GLORIC = 'GLORIC'
 
 class RiverLength(enca.ENCARun):
 
-    run_type = enca.RunType.PREPROCESS
     component = 'WATER_RIVER_LENGTH_PX'
 
     def __init__(self, config):

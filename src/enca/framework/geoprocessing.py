@@ -1736,7 +1736,6 @@ def statistics_byArea_byET(path_data_raster, path_area_raster, area_names, path_
     # convert area_names and ET_names to DataFrame, indexed by SHAPE_ID and ECO_ID
     area_names = pd.DataFrame(area_names.items(), columns=[GEO_ID, SHAPE_ID]).set_index(SHAPE_ID)
     ET_names = pd.DataFrame(ET_names.items(), columns=[ECOTYPE, ECO_ID]).set_index(ECO_ID)
-
     # ini pandas DataFrame to hold the results
     index = pd.MultiIndex.from_product([area_names.index, ET_names.index], names=[SHAPE_ID, ECO_ID])
     df = pd.DataFrame(0., index=index, columns=[SUM, COUNT], dtype=float)
@@ -1989,28 +1988,32 @@ def norm_1(raster):
     return 1 / (1 + raster/100)
 
 def add_color(file, ctable, type = 'Byte'):
-        from osgeo import gdal
-        if type == 'Byte':
-            max = 255
-        else:
-            max = 65535
+    from osgeo import gdal
+    if type == 'Byte':
+        max = 255
+    else:
+        max = 65535
 
-        ds = gdal.Open(file, gdal.GA_Update)
-        band = ds.GetRasterBand(1)     #single band VRT mosaics
-        ct = gdal.ColorTable()         #gdal.GCI_PaletteIndex)
+    ds = gdal.Open(file, 1)
+    band = ds.GetRasterBand(1)     #single band VRT mosaics
+    ct = gdal.ColorTable()         #gdal.GCI_PaletteIndex)
 
-        #create dummy table
-        for i in range(0,max):
-            ct.SetColorEntry(i,(255,255,255,255))
+    #create dummy table
+    '''
+    for i in range(0,max):
+        ct.SetColorEntry(i,(255,255,255,255))
+    '''
+    with open(ctable) as f:
+        next(f)
+        next(f)
+        for line in f:
+            #overwrite values
+            ct.SetColorEntry(int(line.split(',')[0]),(int(line.split(',')[1]),int(line.split(',')[2]),int(line.split(',')[3]),int(line.split(',')[4])))    #(value,(R,G,B,alpha))
 
-        with open(ctable) as f:
-            next(f)
-            next(f)
-            for line in f:
-                #overwrite values
-                ct.SetColorEntry(int(line.split(',')[0]),(int(line.split(',')[1]),int(line.split(',')[2]),int(line.split(',')[3]),int(line.split(',')[4])))    #(value,(R,G,B,alpha))
-
-        band.SetColorTable(ct)
-        band.FlushCache()
-        #push to file
+    band.SetRasterColorTable(ct)
+    band.SetRasterColorInterpretation(gdal.GCI_PaletteIndex)
+    #band.FlushCache()
+    del band, ds
+    #push to file
+    return
 
